@@ -1,0 +1,43 @@
+# Build artifacts
+[Bb]in/
+[Oo]bj/
+[Pp]ublish/
+*.dll
+*.exe
+*.pdb
+*.zip
+*.7z
+*.tar.gz
+
+# IDE and OS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+Thumbs.db
+.DS_Store
+
+# Copyright Protection / Nintendo IP (Never commit proprietary assets)
+# All graphical sprites and textures are downloaded/extracted via scripts/setup_assets
+pokeemerald/
+pokeemerald-expansion/
+pokefirered/
+pokeplatinum/
+Content/Pokemon/*.png
+Content/Pokemon/*.jpg
+Content/Pokemon/*.bmp
+Content/Pokemon/*.ico
+*.xnb
+*.png
+*.bmp
+*.ico
+*.wav
+*.mp3
+*.ogg
+
+# Temporary files
+*.tmp
+*.log
+mod_payload.zip
+PokemonStardewInstaller.exe
