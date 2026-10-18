@@ -55,7 +55,19 @@ ilspycmd -p -o "$OUTPUT_DIR" "$STARDEW_DLL"
 
 echo "[-] Integrando código-fonte do PokeValley..."
 mkdir -p "$OUTPUT_DIR/StardewValley/Pokemon"
-cp -r "$REPO_ROOT/StardewValley/Pokemon/"* "$OUTPUT_DIR/StardewValley/Pokemon/"
+POKEMON_SRC="$REPO_ROOT/src/Pokemon"
+if [ ! -d "$POKEMON_SRC" ]; then POKEMON_SRC="$REPO_ROOT/StardewValley/Pokemon"; fi
+cp -r "$POKEMON_SRC/"* "$OUTPUT_DIR/StardewValley/Pokemon/"
+
+if [ -d "$REPO_ROOT/src/Overrides" ]; then
+    echo "    Aplicando overrides de hooks no jogo base..."
+    cp -r "$REPO_ROOT/src/Overrides/"* "$OUTPUT_DIR/"
+fi
+
+if [ -d "$REPO_ROOT/src/Content/Pokemon" ]; then
+    mkdir -p "$OUTPUT_DIR/Content/Pokemon"
+    cp -r "$REPO_ROOT/src/Content/Pokemon/"* "$OUTPUT_DIR/Content/Pokemon/"
+fi
 
 echo "[-] Baixando sprites dos decomps..."
 chmod +x "$SCRIPT_DIR/setup_assets.sh"

@@ -77,9 +77,10 @@ if (-not (Test-Path $OutputDir)) {
 Write-Host "    Executando: ilspycmd -p -o `"$OutputDir`" `"$stardewDll`"" -ForegroundColor Gray
 ilspycmd -p -o "$OutputDir" "$stardewDll"
 
-# 5. Integrar o código do PokeValley
+# 5. Integrar o código do PokeValley e os Overrides
 $repoRoot = (Get-Item $PSScriptRoot).Parent.FullName
-$pokemonSrc = Join-Path $repoRoot "StardewValley\Pokemon"
+$pokemonSrc = Join-Path $repoRoot "src\Pokemon"
+if (-not (Test-Path $pokemonSrc)) { $pokemonSrc = Join-Path $repoRoot "StardewValley\Pokemon" }
 $targetPokemon = Join-Path $OutputDir "StardewValley\Pokemon"
 
 Write-Host "`n[-] Integrando código-fonte do PokeValley..." -ForegroundColor Cyan
@@ -87,6 +88,30 @@ if (-not (Test-Path $targetPokemon)) {
     New-Item -ItemType Directory -Force -Path $targetPokemon | Out-Null
 }
 Copy-Item -Path "$pokemonSrc\*" -Destination $targetPokemon -Recurse -Force
+
+# Copiar os arquivos de override/hooks no jogo base
+$overridesSrc = Join-Path $repoRoot "src\Overrides"
+if (Test-Path $overridesSrc) {
+    Write-Host "    Aplicando overrides de hooks no jogo base..." -ForegroundColor Gray
+    Copy-Item -Path "$overridesSrc\*" -Destination $OutputDir -Recurse -Force
+}
+
+# Copiar dados do Content/Pokemon
+$contentSrc = Join-Path $repoRoot "src\Content\Pokemon"
+if (-not (Test-Path $contentSrc)) { $contentSrc = Join-Path $repoRoot "Content\Pokemon" }
+$targetContent = Join-Path $OutputDir "Content\Pokemon"
+if (Test-Path $contentSrc) {
+    if (-not (Test-Path $targetContent)) {
+        New-Item -ItemType Directory -Force -Path $targetContent | Out-Null
+    }
+    Copy-Item -Path "$contentSrc\*" -Destination $targetContent -Recurse -Force
+}
+if (Test-Path $contentSrc) {
+    if (-not (Test-Path $targetContent)) {
+        New-Item -ItemType Directory -Force -Path $targetContent | Out-Null
+    }
+    Copy-Item -Path "$contentSrc\*" -Destination $targetContent -Recurse -Force
+}
 
 # 6. Baixar Sprites dos Decomps
 Write-Host "`n[-] Integrando sprites comunitários (pokeemerald / pokefirered)..." -ForegroundColor Cyan
