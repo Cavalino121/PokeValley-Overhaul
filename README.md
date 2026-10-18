@@ -84,27 +84,42 @@ Este repositório contém **exclusivamente código-fonte aberto** desenvolvido c
 
 ---
 
-## 🛠️ Guia de Instalação via Terminal
+## 🛠️ Guia de Instalação via Terminal (Arquitetura Clean-Room)
 
 ### Pré-requisitos
 1. **.NET SDK 6.0 ou 8.0** instalado ([Download .NET](https://dotnet.microsoft.com/download)).
 2. **Git** instalado no terminal (`git --version`).
-3. Uma cópia limpa do **Stardew Valley 1.6.15+** instalada.
+3. Uma cópia legalmente adquirida do **Stardew Valley 1.6.15+** instalada (Steam ou GOG).
 
 ---
 
-### Passo 1: Clonar o Repositório de Código
-```bash
-git clone https://github.com/Cavalino121/PokeValley-Overhaul.git
-cd PokeValley-Overhaul
-```
-
----
-
-### Passo 2: Baixar e Integrar os Sprites dos Projetos Decomp
-Para não incluir arquivos proprietários no repositório, utilize o script automatizado que busca os sprites públicos dos repositórios decomp oficiais:
+### 🛡️ Método 1: Descompilação Local com ILSpy (Recomendado & 100% Anti-DMCA)
+Para garantir total conformidade jurídica, este repositório adota o modelo **Clean-Room**: ele não hospeda nem distribui o código-fonte comercial do Stardew Valley. Em vez disso, o script utiliza a ferramenta open-source oficial **ILSpy (`ilspycmd`)** da ICSharpCode para ler e descompilar o `Stardew Valley.dll` legalmente existente no seu computador e aplicar o código do PokeValley:
 
 #### No Windows (PowerShell):
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_with_ilspy.ps1
+```
+
+#### No Linux / macOS / Steam Deck:
+```bash
+chmod +x scripts/setup_with_ilspy.sh
+./scripts/setup_with_ilspy.sh
+```
+
+O script automaticamente:
+1. Detecta ou solicita a sua pasta do Stardew Valley.
+2. Descompila o jogo localmente via `ilspycmd`.
+3. Injeta a camada de código do PokeValley.
+4. Faz o download dos sprites públicos dos repositórios decomp comunitários (`pret/pokeemerald`, `pret/pokefirered`).
+5. Compila o jogo pronto para jogar!
+
+---
+
+### ⚡ Método 2: Instalação Manual de Assets & Compilação
+Caso você já possua uma pasta com a base descompilada:
+
+#### Baixar e Integrar os Sprites dos Projetos Decomp:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup_assets.ps1
 ```
