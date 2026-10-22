@@ -110,6 +110,204 @@ public class PokemonBattleMenu : IClickableMenu
 		return (stage >= 0) ? ((2f + stage) / 2f) : (2f / (2f - stage));
 	}
 
+	private ref int StageRef(PokemonInstance mon, PokemonStat stat)
+	{
+		bool player = mon == PlayerPokemon;
+		if (player)
+		{
+			switch (stat)
+			{
+				case PokemonStat.Attack: return ref _playerAtkStage;
+				case PokemonStat.Defense: return ref _playerDefStage;
+				case PokemonStat.SpAttack: return ref _playerSpAtkStage;
+				case PokemonStat.SpDefense: return ref _playerSpDefStage;
+				default: return ref _playerSpeedStage;
+			}
+		}
+
+		switch (stat)
+		{
+			case PokemonStat.Attack: return ref _enemyAtkStage;
+			case PokemonStat.Defense: return ref _enemyDefStage;
+			case PokemonStat.SpAttack: return ref _enemySpAtkStage;
+			case PokemonStat.SpDefense: return ref _enemySpDefStage;
+			default: return ref _enemySpeedStage;
+		}
+	}
+
+	private static string StatLabel(PokemonStat stat)
+	{
+		return stat switch
+		{
+			PokemonStat.Attack => "Ataque",
+			PokemonStat.Defense => "Defesa",
+			PokemonStat.SpAttack => "Ataque Especial",
+			PokemonStat.SpDefense => "Defesa Especial",
+			_ => "Velocidade"
+		};
+	}
+
+	/// <summary>Applies one stage change and returns the message to show, or null when nothing happened.</summary>
+	private string ApplyStageChange(PokemonInstance target, StatStageChange change)
+	{
+		if (target == null || target.IsFainted) return null;
+		if (change.Chance < 100 && Game1.random.Next(1, 101) > change.Chance) return null;
+
+		ref int stage = ref StageRef(target, change.Stat);
+		int before = stage;
+		stage = Math.Clamp(stage + change.Stages, -6, 6);
+		if (stage == before) return null;
+
+		string label = StatLabel(change.Stat);
+		bool up = change.Stages > 0;
+		string intensity = Math.Abs(change.Stages) >= 2 ? " muito" : "";
+		return up
+			? $"{label} de {target.Nickname} subiu{intensity}!"
+			: $"{label} de {target.Nickname} caiu{intensity}!";
+	}
+
+	private void ApplyStatChanges(PokemonInstance target, IReadOnlyList<StatStageChange> changes, Action onDone)
+	{
+		if (changes == null || changes.Count == 0)
+		{
+			onDone?.Invoke();
+			return;
+		}
+
+		var messages = new List<string>();
+		foreach (var change in changes)
+		{
+			if (change.Chance < 100 && Game1.random.Next(1, 101) > change.Chance) continue;
+			string message = ApplyStageChange(target, change);
+			if (message != null) messages.Add(message);
+		}
+
+		if (messages.Count == 0)
+		{
+			onDone?.Invoke();
+			return;
+		}
+
+		Game1.playSound(messages[0].Contains("subiu") ? "reward" : "debuffHit");
+		QueueMessageChain(messages, 0, onDone);
+	}
+
+	private void QueueMessageChain(List<string> messages, int index, Action onDone)
+	{
+		if (messages == null || index >= messages.Count)
+		{
+			onDone?.Invoke();
+			return;
+		}
+
+		QueueMessage(messages[index], () => QueueMessageChain(messages, index + 1, onDone));
+	}
+
+	private void ResetStages(PokemonInstance target)
+	{
+		if (target == null) return;
+		StageRef(target, PokemonStat.Attack) = 0;
+		StageRef(target, PokemonStat.Defense) = 0;
+		StageRef(target, PokemonStat.SpAttack) = 0;
+		StageRef(target, PokemonStat.SpDefense) = 0;
+		StageRef(target, PokemonStat.Speed) = 0;
+	}
+
+	private void InvertStages(PokemonInstance target)
+	{
+		if (target == null) return;
+		StageRef(target, PokemonStat.Attack) = -StageRef(target, PokemonStat.Attack);
+		StageRef(target, PokemonStat.Defense) = -StageRef(target, PokemonStat.Defense);
+		StageRef(target, PokemonStat.SpAttack) = -StageRef(target, PokemonStat.SpAttack);
+		StageRef(target, PokemonStat.SpDefense) = -StageRef(target, PokemonStat.SpDefense);
+		StageRef(target, PokemonStat.Speed) = -StageRef(target, PokemonStat.Speed);
+	}
+
+	private int PositiveStages(PokemonInstance mon)
+	{
+		if (mon == null) return 0;
+		int total = 0;
+		total += Math.Max(0, StageRef(mon, PokemonStat.Attack));
+		total += Math.Max(0, StageRef(mon, PokemonStat.Defense));
+		total += Math.Max(0, StageRef(mon, PokemonStat.SpAttack));
+		total += Math.Max(0, StageRef(mon, PokemonStat.SpDefense));
+		total += Math.Max(0, StageRef(mon, PokemonStat.Speed));
+		return total;
+	}
+
+	private static int EffectiveSpeedOf(PokemonInstance mon)
+	{
+		if (mon == null) return 1;
+		int speed = mon.Status == PokemonStatusCondition.Paralysis ? mon.Speed / 2 : mon.Speed;
+		return Math.Max(1, speed);
+	}
+
+	/// <summary>Resolves power scaling and conditional doubling for the current board state.</summary>
+	private int ResolveMovePower(PokemonMove move, PokemonInstance attacker, PokemonInstance defender, int basePower)
+	{
+		if (move == null || attacker == null || defender == null) return basePower;
+
+		int power = basePower;
+		switch (move.PowerScaling)
+		{
+			case MovePowerScaling.UserHp:
+				power = Math.Max(1, (int)(basePower * (float)attacker.CurrentHP / Math.Max(1, attacker.MaxHP)));
+				break;
+			case MovePowerScaling.TargetHp:
+				power = Math.Max(1, (int)(basePower * (float)defender.CurrentHP / Math.Max(1, defender.MaxHP)));
+				break;
+			case MovePowerScaling.GyroBall:
+				power = Math.Clamp(25 * EffectiveSpeedOf(defender) / EffectiveSpeedOf(attacker), 1, 150);
+				break;
+			case MovePowerScaling.ElectroBall:
+			{
+				float ratio = (float)EffectiveSpeedOf(attacker) / EffectiveSpeedOf(defender);
+				power = ratio >= 4f ? 150 : ratio >= 3f ? 120 : ratio >= 2f ? 80 : ratio >= 1f ? 60 : 40;
+				break;
+			}
+			case MovePowerScaling.UserBoosts:
+				power = Math.Min(860, basePower + 20 * PositiveStages(attacker));
+				break;
+			case MovePowerScaling.TargetBoosts:
+				power = Math.Min(200, basePower + 20 * PositiveStages(defender));
+				break;
+		}
+
+		switch (move.BonusCondition)
+		{
+			case MoveBonusCondition.TargetBelowHalfHp:
+				if (defender.CurrentHP <= defender.MaxHP / 2) power *= 2;
+				break;
+			case MoveBonusCondition.TargetHasStatus:
+				if (defender.Status != PokemonStatusCondition.None) power *= 2;
+				break;
+			case MoveBonusCondition.VenoshockTargetPoisoned:
+				if (defender.Status is PokemonStatusCondition.Poison or PokemonStatusCondition.Toxic) power *= 2;
+				break;
+			case MoveBonusCondition.SmellingSaltsTargetParalyzed:
+				if (defender.Status == PokemonStatusCondition.Paralysis) power *= 2;
+				break;
+			case MoveBonusCondition.WakeUpSlapTargetAsleep:
+				if (defender.Status == PokemonStatusCondition.Sleep) power *= 2;
+				break;
+		}
+
+		return Math.Max(1, power);
+	}
+
+	private int ResolveHitCount(PokemonMove move)
+	{
+		if (move == null || move.HitCountMax <= 1) return 1;
+		if (move.HitCountMin == move.HitCountMax) return move.HitCountMin;
+
+		// Gen 5+ distribution: 35% two hits, 35% three, 15% four, 15% five.
+		int roll = Game1.random.Next(100);
+		if (roll < 35) return 2;
+		if (roll < 70) return 3;
+		if (roll < 85) return 4;
+		return 5;
+	}
+
 	private int _boxX;
 	private int _boxY;
 	private int _boxWidth;
@@ -136,6 +334,7 @@ public class PokemonBattleMenu : IClickableMenu
 		public Vector2 AttackerPos;
 		public Vector2 DefenderPos;
 		public int Damage;
+		public int Hits = 1;
 		public bool IsCrit;
 		public float TypeMult;
 		public PokemonInstance Attacker;
@@ -993,6 +1192,10 @@ public class PokemonBattleMenu : IClickableMenu
 	{
 		playerMove.CurrentPP--;
 
+		// Flinch only lasts for the current turn: whatever was set last turn is stale now.
+		if (PlayerPokemon != null) PlayerPokemon.Flinched = false;
+		if (EnemyPokemon != null) EnemyPokemon.Flinched = false;
+
 		bool triggerDynamax = _dynamaxToggled && !_dynamaxUsedThisBattle && !PlayerPokemon.IsMegaEvolved && !PlayerPokemon.IsDynamaxed
 			&& PokemonItemManager.IsWearingDynamaxBand(Game1.player);
 		bool triggerGmax = _gmaxToggled && !_dynamaxUsedThisBattle && !PlayerPokemon.IsMegaEvolved && !PlayerPokemon.IsDynamaxed
@@ -1217,6 +1420,23 @@ public class PokemonBattleMenu : IClickableMenu
 			if (EnemyPokemon != null && !EnemyPokemon.IsFainted)
 			{
 				bool magicGuard = string.Equals(EnemyPokemon.Ability, "MagicGuard", StringComparison.OrdinalIgnoreCase);
+				if (EnemyPokemon.SaltCureTurns > 0 && !magicGuard)
+				{
+					bool waterOrSteel = EnemyPokemon.Species != null
+						&& (EnemyPokemon.Species.PrimaryType == PokemonType.Water || EnemyPokemon.Species.SecondaryType == PokemonType.Water
+							|| EnemyPokemon.Species.PrimaryType == PokemonType.Steel || EnemyPokemon.Species.SecondaryType == PokemonType.Steel);
+					int saltDmg = Math.Max(1, EnemyPokemon.MaxHP / (waterOrSteel ? 4 : 8));
+					EnemyPokemon.SaltCureTurns--;
+					EnemyPokemon.TakeDamage(saltDmg);
+					_enemyDamageShake = 0.6f;
+					Game1.playSound("dwoop");
+					QueueMessage($"{EnemyPokemon.Nickname} sofreu {saltDmg} de dano pelo Sal Cure!", () =>
+					{
+						if (EnemyPokemon.IsFainted) HandleEnemyFainted();
+						else checkEnemyHeldItems();
+					});
+					return;
+				}
 				if (EnemyPokemon.Status == PokemonStatusCondition.Burn && !magicGuard)
 				{
 					int dmg = Math.Max(1, EnemyPokemon.MaxHP / 16);
@@ -1352,6 +1572,23 @@ public class PokemonBattleMenu : IClickableMenu
 		if (PlayerPokemon != null && !PlayerPokemon.IsFainted)
 		{
 			bool magicGuard = string.Equals(PlayerPokemon.Ability, "MagicGuard", StringComparison.OrdinalIgnoreCase);
+			if (PlayerPokemon.SaltCureTurns > 0 && !magicGuard)
+			{
+				bool waterOrSteel = PlayerPokemon.Species != null
+					&& (PlayerPokemon.Species.PrimaryType == PokemonType.Water || PlayerPokemon.Species.SecondaryType == PokemonType.Water
+						|| PlayerPokemon.Species.PrimaryType == PokemonType.Steel || PlayerPokemon.Species.SecondaryType == PokemonType.Steel);
+				int saltDmg = Math.Max(1, PlayerPokemon.MaxHP / (waterOrSteel ? 4 : 8));
+				PlayerPokemon.SaltCureTurns--;
+				PlayerPokemon.TakeDamage(saltDmg);
+				_playerDamageShake = 0.6f;
+				Game1.playSound("dwoop");
+				QueueMessage($"{PlayerPokemon.Nickname} sofreu {saltDmg} de dano pelo Sal Cure!", () =>
+				{
+					if (PlayerPokemon.IsFainted) HandlePlayerFainted();
+					else checkDynamaxTick();
+				});
+				return;
+			}
 			if (PlayerPokemon.Status == PokemonStatusCondition.Burn && !magicGuard)
 			{
 				int dmg = Math.Max(1, PlayerPokemon.MaxHP / 16);
@@ -1476,6 +1713,14 @@ public class PokemonBattleMenu : IClickableMenu
 	{
 		bool isPlayerAttacking = (attacker == PlayerPokemon);
 
+		if (attacker.Flinched)
+		{
+			attacker.Flinched = false;
+			Game1.playSound("cancel");
+			QueueMessage($"{attacker.Nickname} hesitou e não conseguiu se mover!", onComplete);
+			return;
+		}
+
 		Action performMove = () =>
 		{
 			bool hasSigZ = false;
@@ -1563,7 +1808,7 @@ public class PokemonBattleMenu : IClickableMenu
 							}
 						}
 						Game1.playSound("heal");
-						QueueMessage($"{attacker.Nickname} recuperou {healAmt} de HP!", onComplete);
+						QueueMessage($"{attacker.Nickname} recuperou {healAmt} de HP!", () => ApplyStatChanges(defender, move.TargetStages, onComplete));
 						return;
 					}
 
@@ -1602,17 +1847,53 @@ public class PokemonBattleMenu : IClickableMenu
 						return;
 					}
 
+					if (move.HpCostRatio > 0f)
+					{
+						int cost = Math.Max(1, (int)(attacker.MaxHP * move.HpCostRatio));
+						cost = Math.Min(cost, Math.Max(0, attacker.CurrentHP - 1));
+						attacker.TakeDamage(cost);
+						Game1.playSound("ow");
+						QueueMessage($"{attacker.Nickname} sacrificou {cost} de HP!", () =>
+						{
+							ApplyStatChanges(attacker, move.SelfStages, () => ApplyStatChanges(defender, move.TargetStages, onComplete));
+						});
+						return;
+					}
+
+					if (move.SelfStages.Count > 0 || move.TargetStages.Count > 0)
+					{
+						ApplyStatChanges(attacker, move.SelfStages, () => ApplyStatChanges(defender, move.TargetStages, onComplete));
+						return;
+					}
+
+					if (move.RandomSelfBoost)
+					{
+						PokemonStat[] stats = { PokemonStat.Attack, PokemonStat.Defense, PokemonStat.SpAttack, PokemonStat.SpDefense, PokemonStat.Speed };
+						var change = new StatStageChange(stats[Game1.random.Next(stats.Length)], 2);
+						ApplyStatChanges(attacker, new List<StatStageChange> { change }, onComplete);
+						return;
+					}
+
+					if (move.InvertsTargetStages)
+					{
+						InvertStages(defender);
+						Game1.playSound("debuffHit");
+						QueueMessage($"Os atributos de {defender.Nickname} foram invertidos!", onComplete);
+						return;
+					}
+
 					Game1.playSound("heal");
-					QueueMessage($"Os atributos de combate de {attacker.Nickname} se intensificaram!", onComplete);
+					QueueMessage("Mas nada aconteceu!", onComplete);
 					return;
 				}
 
 				// Gen 5+ Damage calculation (Physical/Special split, STAB, Burn penalty, Weather, Crit)
-				float attackStat = (moveCat == MoveCategory.Physical) ? attacker.Attack : attacker.SpAttack;
-				float defStat = (moveCat == MoveCategory.Physical) ? defender.Defense : defender.SpDefense;
+				bool physicalStats = moveCat == MoveCategory.Physical || move.UsesPhysicalStats;
+				float attackStat = physicalStats ? attacker.Attack : attacker.SpAttack;
+				float defStat = physicalStats ? defender.Defense : defender.SpDefense;
 
-				int atkStage = isPlayerAttacking ? (moveCat == MoveCategory.Physical ? _playerAtkStage : _playerSpAtkStage) : (moveCat == MoveCategory.Physical ? _enemyAtkStage : _enemySpAtkStage);
-				int defStage = isPlayerAttacking ? (moveCat == MoveCategory.Physical ? _enemyDefStage : _enemySpDefStage) : (moveCat == MoveCategory.Physical ? _playerDefStage : _playerSpDefStage);
+				int atkStage = isPlayerAttacking ? (physicalStats ? _playerAtkStage : _playerSpAtkStage) : (physicalStats ? _enemyAtkStage : _enemySpAtkStage);
+				int defStage = isPlayerAttacking ? (physicalStats ? _enemyDefStage : _enemySpDefStage) : (physicalStats ? _playerDefStage : _playerSpDefStage);
 
 				attackStat *= GetStageMultiplier(atkStage);
 				defStat *= GetStageMultiplier(defStage);
@@ -1783,7 +2064,7 @@ public class PokemonBattleMenu : IClickableMenu
 					else if (moveType == PokemonType.Fire) weatherMult = 0.5f;
 				}
 
-				bool isCrit = Game1.random.NextDouble() < 0.0625;
+				bool isCrit = move.AlwaysCrit || Game1.random.NextDouble() < (move.HighCrit ? 0.125 : 0.0625);
 				if (string.Equals(defender.Ability, "ShellArmor", StringComparison.OrdinalIgnoreCase) || string.Equals(defender.Ability, "BattleArmor", StringComparison.OrdinalIgnoreCase))
 				{
 					isCrit = false;
@@ -1791,8 +2072,27 @@ public class PokemonBattleMenu : IClickableMenu
 				float critMult = isCrit ? 1.5f : 1.0f;
 				float randMult = (float)(0.85 + Game1.random.NextDouble() * 0.15);
 
-				int baseDmg = (int)((((2f * attacker.Level / 5f + 2f) * effectivePower * (attackStat / Math.Max(1f, defStat))) / 50f + 2f) * stab * burnMod * typeMult * weatherMult * critMult * randMult * itemDamageMult);
+				int movePower = ResolveMovePower(move, attacker, defender, effectivePower);
+				int hitCount = ResolveHitCount(move);
+
+				int baseDmg = (int)((((2f * attacker.Level / 5f + 2f) * movePower * (attackStat / Math.Max(1f, defStat))) / 50f + 2f) * stab * burnMod * typeMult * weatherMult * critMult * randMult * itemDamageMult) * hitCount;
 				int finalDamage = (typeMult <= 0.05f) ? 0 : Math.Max(1, baseDmg);
+
+				// Fixed-damage moves ignore the formula. Level/Flat damage also ignore
+				// type immunities (Night Shade hits Normal, Seismic Toss hits Ghost);
+				// half-HP moves still respect them (Super Fang vs Ghost).
+				if (move.FixedDamage != FixedDamageMode.None && !useZMove && !useMaxMove)
+				{
+					int fixedDamage = move.FixedDamage switch
+					{
+						FixedDamageMode.HalfCurrentHp => Math.Max(1, defender.CurrentHP / 2),
+						FixedDamageMode.Level => Math.Max(1, attacker.Level),
+						FixedDamageMode.Flat => Math.Max(1, move.FixedDamageValue),
+						_ => finalDamage
+					};
+					bool ignoresType = move.FixedDamage is FixedDamageMode.Level or FixedDamageMode.Flat;
+					finalDamage = ignoresType ? fixedDamage : ((typeMult <= 0.05f) ? 0 : fixedDamage);
+				}
 
 				// Focus Sash check
 				if (finalDamage >= defender.CurrentHP && defender.CurrentHP == defender.MaxHP && string.Equals(defender.HeldItem, "Poke_FocusSash", StringComparison.OrdinalIgnoreCase))
@@ -1837,6 +2137,7 @@ public class PokemonBattleMenu : IClickableMenu
 					AttackerPos = aPos,
 					DefenderPos = dPos,
 					Damage = finalDamage,
+					Hits = hitCount,
 					IsCrit = isCrit,
 					TypeMult = typeMult,
 					Attacker = attacker,
@@ -2534,6 +2835,13 @@ public class PokemonBattleMenu : IClickableMenu
 			return;
 		}
 
+		// Volatile battle state ends when the Pokémon leaves the field.
+		if (PlayerPokemon != null)
+		{
+			PlayerPokemon.Flinched = false;
+			PlayerPokemon.SaltCureTurns = 0;
+		}
+
 		_isSwitching = true;
 		_switchTargetIndex = targetIndex;
 
@@ -2607,22 +2915,127 @@ public class PokemonBattleMenu : IClickableMenu
 
 	private void QueuePostAttackMessages(AttackFx fx)
 	{
-		if (fx.IsCrit)
+		Action showCrit = () =>
 		{
-			QueueMessage("Um acerto crítico!", () =>
+			if (fx.IsCrit)
+			{
+				QueueMessage("Um acerto crítico!", () => CheckEffectiveness(fx));
+			}
+			else
 			{
 				CheckEffectiveness(fx);
-			});
+			}
+		};
+
+		if (fx.Hits > 1)
+		{
+			QueueMessage($"Acertou {fx.Hits} vezes!", showCrit);
 		}
 		else
 		{
-			CheckEffectiveness(fx);
+			showCrit();
 		}
+	}
+
+	/// <summary>
+	/// Applies the secondaries that ride on a damaging hit: target/self stat stages,
+	/// flinch, Salt Cure, Clear Smog and recoil. Runs before the legacy drain/status
+	/// chain so a move can both drop a stat and burn.
+	/// </summary>
+	private void ApplyDamagingSecondaryEffects(AttackFx fx, Action onDone)
+	{
+		if (fx?.Move == null)
+		{
+			onDone?.Invoke();
+			return;
+		}
+
+		PokemonMove move = fx.Move;
+		PokemonInstance attacker = fx.Attacker;
+		PokemonInstance defender = fx.Defender;
+
+		// Immunities (and Protect-like zero-damage results) must not hand out
+		// stat drops, flinch or Salt Cure.
+		if (fx.TypeMult <= 0.05f)
+		{
+			onDone?.Invoke();
+			return;
+		}
+
+		var messages = new List<string>();
+
+		if (defender != null && !defender.IsFainted)
+		{
+			foreach (StatStageChange change in move.TargetStages)
+			{
+				if (change.Chance < 100 && Game1.random.Next(1, 101) > change.Chance) continue;
+				string message = ApplyStageChange(defender, change);
+				if (message != null) messages.Add(message);
+			}
+
+			if (move.ResetsTargetStages)
+			{
+				ResetStages(defender);
+				messages.Add($"Os atributos de {defender.Nickname} voltaram ao normal!");
+			}
+
+			if (move.InvertsTargetStages)
+			{
+				InvertStages(defender);
+				messages.Add($"Os atributos de {defender.Nickname} foram invertidos!");
+			}
+
+			if (move.FlinchChance > 0 && Game1.random.Next(1, 101) <= move.FlinchChance)
+			{
+				defender.Flinched = true;
+			}
+
+			if (move.AppliesSaltCure && defender.SaltCureTurns <= 0)
+			{
+				defender.SaltCureTurns = 99;
+				messages.Add($"{defender.Nickname} foi coberto de sal!");
+			}
+		}
+
+		if (attacker != null && !attacker.IsFainted)
+		{
+			foreach (StatStageChange change in move.SelfStages)
+			{
+				if (change.Chance < 100 && Game1.random.Next(1, 101) > change.Chance) continue;
+				string message = ApplyStageChange(attacker, change);
+				if (message != null) messages.Add(message);
+			}
+
+			if (move.KoAttackBoost && defender != null && defender.IsFainted)
+			{
+				string message = ApplyStageChange(attacker, new StatStageChange(PokemonStat.Attack, 3));
+				if (message != null) messages.Add(message);
+			}
+		}
+
+		if (attacker != null && !attacker.IsFainted && move.RecoilRatio > 0f && fx.Damage > 0
+			&& !string.Equals(attacker.Ability, "RockHead", StringComparison.OrdinalIgnoreCase)
+			&& !string.Equals(attacker.Ability, "MagicGuard", StringComparison.OrdinalIgnoreCase))
+		{
+			int recoil = Math.Max(1, (int)(fx.Damage * move.RecoilRatio));
+			recoil = Math.Min(recoil, Math.Max(0, attacker.CurrentHP - 1));
+			attacker.TakeDamage(recoil);
+			messages.Add($"{attacker.Nickname} sofreu {recoil} de dano de recuo!");
+		}
+
+		if (messages.Count == 0)
+		{
+			onDone?.Invoke();
+			return;
+		}
+
+		Game1.playSound(messages[0].Contains("subiu") ? "reward" : "debuffHit");
+		QueueMessageChain(messages, 0, onDone);
 	}
 
 	private void CheckEffectiveness(AttackFx fx)
 	{
-		Action finishChain = () =>
+		Action coreEffects = () =>
 		{
 			PokemonMove m = fx.Move;
 
@@ -2771,7 +3184,8 @@ public class PokemonBattleMenu : IClickableMenu
 			string mName = fx.MoveName ?? fx.Move?.Name ?? "";
 			bool isRampageMove = mName.Equals("Outrage", StringComparison.OrdinalIgnoreCase)
 				|| mName.Equals("Thrash", StringComparison.OrdinalIgnoreCase)
-				|| mName.Equals("Petal Dance", StringComparison.OrdinalIgnoreCase);
+				|| mName.Equals("Petal Dance", StringComparison.OrdinalIgnoreCase)
+				|| mName.Equals("Raging Fury", StringComparison.OrdinalIgnoreCase);
 
 			if (isRampageMove && !fx.Attacker.IsFainted)
 			{
@@ -2796,6 +3210,8 @@ public class PokemonBattleMenu : IClickableMenu
 
 			fx.OnComplete?.Invoke();
 		};
+
+		Action finishChain = () => ApplyDamagingSecondaryEffects(fx, coreEffects);
 
 		if (fx.TypeMult > 1.1f)
 		{

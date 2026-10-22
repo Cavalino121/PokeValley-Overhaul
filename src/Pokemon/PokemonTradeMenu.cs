@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -19,6 +21,23 @@ public class PokemonTradeMenu : IClickableMenu
 {
 	private const int MenuWidth = 940;
 	private const int MenuHeight = 580;
+
+	/// <summary>Prefix that routes a chat message to the trade terminal instead of the chat log.</summary>
+	private const string PacketPrefix = "[POKE_TRADE]:";
+	/// <summary>Maximum number of payload characters per chat message; larger packets are split.</summary>
+	private const int MaxPayloadPerMessage = 300;
+	/// <summary>Seconds before a half-received packet is discarded.</summary>
+	private const float PacketTimeout = 20f;
+
+	private sealed class PendingPacket
+	{
+		public int Total;
+		public int Received;
+		public string[] Parts;
+		public double LastSeen;
+	}
+
+	private static readonly Dictionary<string, PendingPacket> _pendingPackets = new();
 
 	public static PokemonTradeMenu Instance { get; private set; }
 
@@ -158,7 +177,68 @@ public class PokemonTradeMenu : IClickableMenu
 	public static void HandleNetworkTradePacket(long senderId, string payload)
 	{
 		if (senderId == Game1.player.UniqueMultiplayerID) return;
+		if (string.IsNullOrEmpty(payload)) return;
+
+		if (payload.StartsWith("PART|", StringComparison.Ordinal))
+		{
+			string assembled = AssembleChunk(senderId, payload);
+			if (assembled == null) return;
+			Instance?.ReceiveNetworkPacket(senderId, assembled);
+			return;
+		}
+
 		Instance?.ReceiveNetworkPacket(senderId, payload);
+	}
+
+	/// <summary>
+	/// Rebuilds a split packet. Returns null while chunks are still missing; a
+	/// malformed or stale packet is dropped instead of being half-applied.
+	/// </summary>
+	private static string AssembleChunk(long senderId, string payload)
+	{
+		string[] parts = payload.Split('|');
+		if (parts.Length < 6) return null;
+
+		string messageId = parts[1];
+		if (!int.TryParse(parts[2], out int index)) return null;
+		if (!int.TryParse(parts[3], out int total) || total <= 0 || total > 64) return null;
+		if (index < 0 || index >= total) return null;
+
+		string key = senderId + ":" + messageId;
+		double now = Game1.currentGameTime?.TotalGameTime.TotalSeconds ?? 0.0;
+
+		foreach (string stale in new List<string>(_pendingPackets.Keys))
+		{
+			if (now - _pendingPackets[stale].LastSeen > PacketTimeout)
+			{
+				_pendingPackets.Remove(stale);
+			}
+		}
+
+		if (!_pendingPackets.TryGetValue(key, out PendingPacket pending))
+		{
+			pending = new PendingPacket { Total = total, Parts = new string[total] };
+			_pendingPackets[key] = pending;
+		}
+
+		if (pending.Total != total) return null;
+		if (pending.Parts[index] == null)
+		{
+			pending.Parts[index] = string.Join('|', parts, 4, parts.Length - 4);
+			pending.Received++;
+		}
+		pending.LastSeen = now;
+
+		if (pending.Received < pending.Total) return null;
+
+		_pendingPackets.Remove(key);
+		var builder = new StringBuilder();
+		foreach (string part in pending.Parts)
+		{
+			if (part == null) return null;
+			builder.Append(part);
+		}
+		return builder.ToString();
 	}
 
 	public void ReceiveNetworkPacket(long senderId, string payload)
@@ -177,7 +257,7 @@ public class PokemonTradeMenu : IClickableMenu
 					_state = TradeState.Selecting;
 					_myConfirmed = false;
 					_partnerConfirmed = false;
-					BroadcastPacket($"CONNECT|{Game1.player.UniqueMultiplayerID}|{Game1.player.Name}");
+					SendPacket($"CONNECT|{Game1.player.UniqueMultiplayerID}|{Game1.player.Name}", senderId);
 					Game1.playSound("reward");
 					Game1.addHUDMessage(new HUDMessage($"Conectado com {_partnerName} no Terminal de Trocas!", 2));
 				}
@@ -191,7 +271,7 @@ public class PokemonTradeMenu : IClickableMenu
 					_state = TradeState.Selecting;
 					_myConfirmed = false;
 					_partnerConfirmed = false;
-					BroadcastPacket($"CONNECT_ACK|{Game1.player.UniqueMultiplayerID}|{Game1.player.Name}");
+					SendPacket($"CONNECT_ACK|{Game1.player.UniqueMultiplayerID}|{Game1.player.Name}", senderId);
 					Game1.playSound("reward");
 					Game1.addHUDMessage(new HUDMessage($"Conectado com {_partnerName} no Terminal de Trocas!", 2));
 				}
@@ -216,7 +296,8 @@ public class PokemonTradeMenu : IClickableMenu
 					{
 						if (parts.Length > 2)
 						{
-							string json = string.Join('|', parts, 2, parts.Length - 2);
+							string encoded = string.Join('|', parts, 2, parts.Length - 2);
+							string json = DecodePayload(encoded);
 							var dto = JsonSerializer.Deserialize<PokemonSaveDto>(json);
 							if (dto != null)
 							{
@@ -275,13 +356,80 @@ public class PokemonTradeMenu : IClickableMenu
 
 	private void BroadcastPacket(string packet)
 	{
-		if (Game1.IsMultiplayer && Game1.multiplayer != null)
+		SendPacket(packet, Multiplayer.AllPlayers);
+	}
+
+	/// <summary>
+	/// Sends a trade packet through the game chat channel. Chat payloads are capped
+	/// in practice, get filtered by the platform, and used to be visible to every
+	/// player, so the body is compressed, base64-encoded and split when needed.
+	/// </summary>
+	private void SendPacket(string packet, long recipient)
+	{
+		if (!Game1.IsMultiplayer || Game1.multiplayer == null) return;
+		if (string.IsNullOrEmpty(packet)) return;
+
+		try
 		{
-			try
+			LocalizedContentManager.LanguageCode language = LocalizedContentManager.CurrentLanguageCode;
+
+			if (packet.Length <= MaxPayloadPerMessage)
 			{
-				Game1.multiplayer.sendChatMessage(LocalizedContentManager.CurrentLanguageCode, "[POKE_TRADE]:" + packet, Multiplayer.AllPlayers);
+				Game1.multiplayer.sendChatMessage(language, PacketPrefix + packet, recipient);
+				return;
 			}
-			catch { }
+
+			string messageId = (Environment.TickCount & 0x7FFFFFF).ToString() + "." + Game1.random.Next(1000, 9999);
+			int total = (packet.Length + MaxPayloadPerMessage - 1) / MaxPayloadPerMessage;
+			if (total > 64)
+			{
+				// A single trade never comes close to this; refuse instead of sending a
+				// truncated packet that the partner could not deserialize.
+				Console.WriteLine("[PokemonTradeMenu] pacote grande demais para o canal de chat; envio cancelado.");
+				return;
+			}
+
+			for (int i = 0; i < total; i++)
+			{
+				int start = i * MaxPayloadPerMessage;
+				int length = Math.Min(MaxPayloadPerMessage, packet.Length - start);
+				if (length <= 0) break;
+				string chunk = packet.Substring(start, length);
+				Game1.multiplayer.sendChatMessage(
+					language,
+					$"{PacketPrefix}PART|{messageId}|{i}|{total}|{chunk}",
+					recipient);
+			}
+		}
+		catch { }
+	}
+
+	private static string EncodePayload(string json)
+	{
+		using var output = new MemoryStream();
+		using (var gzip = new GZipStream(output, CompressionLevel.Optimal, leaveOpen: true))
+		{
+			byte[] bytes = Encoding.UTF8.GetBytes(json ?? "");
+			gzip.Write(bytes, 0, bytes.Length);
+		}
+		return Convert.ToBase64String(output.ToArray());
+	}
+
+	private static string DecodePayload(string encoded)
+	{
+		try
+		{
+			byte[] raw = Convert.FromBase64String(encoded);
+			using var input = new MemoryStream(raw);
+			using var gzip = new GZipStream(input, CompressionMode.Decompress);
+			using var reader = new StreamReader(gzip, Encoding.UTF8);
+			return reader.ReadToEnd();
+		}
+		catch
+		{
+			// Older builds sent raw JSON; accept it so a mixed-version session
+			// still completes the trade instead of freezing the menu.
+			return encoded;
 		}
 	}
 
@@ -289,7 +437,7 @@ public class PokemonTradeMenu : IClickableMenu
 	{
 		if (_myConfirmed && _partnerConfirmed)
 		{
-			BroadcastPacket($"START_TRANSFER|{Game1.player.UniqueMultiplayerID}");
+			SendPacket($"START_TRANSFER|{Game1.player.UniqueMultiplayerID}", _partnerId);
 			_state = TradeState.Transferring;
 			_animTimer = 0f;
 			Game1.playSound("wand");
@@ -400,8 +548,8 @@ public class PokemonTradeMenu : IClickableMenu
 						if (!_isSoloNpcMode && _partnerId != 0)
 						{
 							string json = JsonSerializer.Serialize(PokemonToDto(party[i]));
-							BroadcastPacket($"OFFER|{Game1.player.UniqueMultiplayerID}|{json}");
-							BroadcastPacket($"UNCONFIRM|{Game1.player.UniqueMultiplayerID}");
+							SendPacket($"OFFER|{Game1.player.UniqueMultiplayerID}|{EncodePayload(json)}", _partnerId);
+							SendPacket($"UNCONFIRM|{Game1.player.UniqueMultiplayerID}", _partnerId);
 						}
 					}
 					return;
@@ -432,7 +580,7 @@ public class PokemonTradeMenu : IClickableMenu
 
 					if (!_isSoloNpcMode)
 					{
-						BroadcastPacket($"CONFIRM|{Game1.player.UniqueMultiplayerID}");
+						SendPacket($"CONFIRM|{Game1.player.UniqueMultiplayerID}", _partnerId);
 						CheckStartTransfer();
 					}
 					else
@@ -447,7 +595,7 @@ public class PokemonTradeMenu : IClickableMenu
 				{
 					// Toggle off confirmation
 					_myConfirmed = false;
-					BroadcastPacket($"UNCONFIRM|{Game1.player.UniqueMultiplayerID}");
+					SendPacket($"UNCONFIRM|{Game1.player.UniqueMultiplayerID}", _partnerId);
 					Game1.playSound("cancel");
 				}
 			}
@@ -497,7 +645,7 @@ public class PokemonTradeMenu : IClickableMenu
 	{
 		if (!_isSoloNpcMode && _partnerId != 0)
 		{
-			BroadcastPacket($"CANCEL|{Game1.player.UniqueMultiplayerID}");
+			SendPacket($"CANCEL|{Game1.player.UniqueMultiplayerID}", _partnerId);
 		}
 		Instance = null;
 		exitThisMenu();

@@ -262,7 +262,7 @@ public class PlayerParty
 				}
 			}
 			save.ActiveIndex = ActiveIndex;
-			PokemonSaveStore.Save();
+			PokemonSaveStore.Save(PokemonSaveSection.Party);
 		}
 		catch (Exception ex)
 		{

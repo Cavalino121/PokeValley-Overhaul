@@ -271,7 +271,7 @@ public class PokemonStorage
 			}
 
 			PokemonSaveStore.Data.Storage = root;
-			PokemonSaveStore.Save();
+			PokemonSaveStore.Save(PokemonSaveSection.Storage);
 		}
 		catch (Exception ex)
 		{

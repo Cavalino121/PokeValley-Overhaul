@@ -140,6 +140,12 @@ public class PokemonInstance
 	public int RampageTurns { get; set; } = 0;
 	public string RampageMoveName { get; set; } = null;
 
+	// Volatile battle-only flags (never persisted; cleared by PokemonDtoMapper)
+	/// <summary>Set by a damaging move's flinch effect and consumed before the target acts.</summary>
+	public bool Flinched { get; set; } = false;
+	/// <summary>Turns of Salt Cure damage remaining (0 = not affected).</summary>
+	public int SaltCureTurns { get; set; } = 0;
+
 	public bool IsFainted => CurrentHP <= 0;
 	public float HpRatio => MaxHP <= 0 ? 0f : Math.Clamp((float)CurrentHP / MaxHP, 0f, 1f);
 
@@ -457,6 +463,8 @@ public class PokemonInstance
 		ConfusionTurns = 0;
 		RampageTurns = 0;
 		RampageMoveName = null;
+		Flinched = false;
+		SaltCureTurns = 0;
 		bool changed = false;
 		if (DynamaxTurns > 0 || IsUsingGigantamax)
 		{

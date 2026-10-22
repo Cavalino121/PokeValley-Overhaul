@@ -7,33 +7,55 @@ using System.Text.Json.Serialization;
 
 namespace StardewValley.Pokemon;
 
+/// <summary>Which part of the document should be flushed.</summary>
+public enum PokemonSaveSection
+{
+	All,
+	Party,
+	Pokedex,
+	Storage
+}
+
 /// <summary>
 /// One versioned save document for every piece of PokeValley state
-/// (party, Pokédex and PC boxes), written atomically.
+/// (party, Pokédex and PC boxes).
 ///
-/// Replaces the three loose JSON files that used to sit outside the save:
-/// they were never written atomically, were shared between all save slots and,
-/// in the Pokédex case, lived in %AppData% as a single global file.
+/// Two carriers are written on every flush:
+/// 1. The player's <c>modData</c>, which the vanilla serializer stores inside the
+///    save file itself (<c>.sv</c>) and syncs through the vanilla netcode. This is
+///    the authoritative copy: a farmhand carries their own party, Pokédex and boxes
+///    in their own farmer record, so the host's save contains every player and a
+///    copy of the save folder is enough to keep the Pokémon.
+/// 2. A JSON mirror inside the save folder (or %AppData% when the folder is not
+///    writable), kept for inspection, backups and legacy migration.
 ///
-/// Storage rules:
-/// * The file lives inside the save folder whenever that folder already exists
-///   (so copying the save folder carries the Pokémon with it).
-/// * Farmhands (and read-only installs) fall back to
-///   %AppData%/StardewValley/PokeValley/&lt;save key&gt;/, never to a shared global file.
-/// * Writes go to a .tmp file and replace the target, keeping a .bak of the
-///   previous good version.
+/// The mirror is never required to play: if the embedded copy exists it wins.
 /// </summary>
 public static class PokemonSaveStore
 {
-	public const int SchemaVersion = 2;
+	public const int SchemaVersion = 3;
 	public const string FolderName = "pokevalley";
 	public const string FileNameHost = "pokemon_save.json";
+
+	/// <summary>Player modData key that holds the party section.</summary>
+	public const string ModDataPartyKey = "PokeValley.Pokemon.Party";
+	/// <summary>Player modData key that holds the Pokédex section.</summary>
+	public const string ModDataPokedexKey = "PokeValley.Pokemon.Pokedex";
+	/// <summary>Player modData key that holds the PC boxes section.</summary>
+	public const string ModDataStorageKey = "PokeValley.Pokemon.Storage";
+	/// <summary>Player modData key with the UTC ticks of the last flush.</summary>
+	public const string ModDataStampKey = "PokeValley.Pokemon.SavedAt";
 
 	private static readonly JsonSerializerOptions JsonOptions = new()
 	{
 		// Null entries inside the box slot lists are meaningful (they are empty slots),
 		// so no ignore condition here: the list must keep its positional alignment.
 		WriteIndented = true
+	};
+
+	private static readonly JsonSerializerOptions CompactOptions = new()
+	{
+		WriteIndented = false
 	};
 
 	private static PokemonSaveFile _data;
@@ -43,12 +65,17 @@ public static class PokemonSaveStore
 	private static string _lastError;
 	private static bool _missingPathLogged;
 	private static bool _readFailed;
+	private static bool _reportedEmbeddedRead;
+	private static int _lastEmbeddedProbeMs;
 
 	/// <summary>Last persistence problem, for the debug menu. Null when everything went fine.</summary>
 	public static string LastError => _lastError;
 
-	/// <summary>Path of the file currently in use, or null when no save is loaded.</summary>
+	/// <summary>Path of the mirror file currently in use, or null when no save is loaded.</summary>
 	public static string CurrentFilePath => _path;
+
+	/// <summary>True when the last load came from the copy embedded in the save file.</summary>
+	public static bool LoadedFromSaveFile { get; private set; }
 
 	/// <summary>Current save document. Never null once a save is loaded.</summary>
 	public static PokemonSaveFile Data
@@ -78,33 +105,20 @@ public static class PokemonSaveStore
 		_key = null;
 		_path = null;
 		_lastError = null;
+		LoadedFromSaveFile = false;
+		ClearPlayerModData();
 	}
 
-	/// <summary>Serialises the current document to disk. Safe to call often.</summary>
-	public static void Save()
+	/// <summary>
+	/// Copies the in-memory document into the player's modData (which is serialised
+	/// into the .sv) and refreshes the JSON mirror. Safe to call often.
+	/// </summary>
+	public static void Save(PokemonSaveSection section = PokemonSaveSection.All)
 	{
 		EnsureLoaded();
-		if (_path == null)
-		{
-			if (!_missingPathLogged && _key != null)
-			{
-				_missingPathLogged = true;
-				Log("no writable location found; progress will only live in memory this session");
-			}
-			return;
-		}
-
-		try
-		{
-			string json = JsonSerializer.Serialize(_data, JsonOptions);
-			string temp = _path + ".tmp";
-			File.WriteAllText(temp, json, new UTF8Encoding(false));
-			WriteReplacing(temp, _path);
-		}
-		catch (Exception ex)
-		{
-			Log($"failed to write {Path.GetFileName(_path)}: {ex.Message}");
-		}
+		_data.SavedAtUtc = DateTime.UtcNow.Ticks;
+		WritePlayerModData(section);
+		WriteMirror();
 	}
 
 	private static void EnsureLoaded()
@@ -112,13 +126,29 @@ public static class PokemonSaveStore
 		string key = CurrentSaveKey();
 		if (_loaded && string.Equals(_key, key, StringComparison.Ordinal))
 		{
-			return;
+			// A farmhand can finish loading the save before the host sends their
+			// farmer record. When the embedded document finally arrives, re-read it
+			// once so the player does not keep a stale mirror. Throttled because Data
+			// is read every frame by the HUD.
+			if (!LoadedFromSaveFile
+				&& _lastEmbeddedProbeMs > 0
+				&& Environment.TickCount - _lastEmbeddedProbeMs > 2000
+				&& HasEmbeddedData())
+			{
+				_lastEmbeddedProbeMs = Environment.TickCount;
+				_loaded = false;
+			}
+			else
+			{
+				return;
+			}
 		}
 
 		_key = key;
 		_loaded = true;
 		_path = null;
 		_data = null;
+		LoadedFromSaveFile = false;
 
 		if (key == null)
 		{
@@ -129,30 +159,96 @@ public static class PokemonSaveStore
 		}
 
 		_path = ResolvePath(key);
+
+		var file = new PokemonSaveFile();
+		bool haveData = false;
+
 		if (_path != null)
 		{
 			_readFailed = false;
-			_data = ReadFile(_path);
-			if (_data == null && _readFailed)
+			PokemonSaveFile mirror = ReadFile(_path);
+			if (mirror != null)
 			{
-				// The document exists but could not be read (locked by another process,
+				file = mirror;
+				haveData = true;
+			}
+			else if (_readFailed)
+			{
+				// The mirror exists but could not be read (locked by another process,
 				// permissions, antivirus). Keep it on disk untouched and work in memory.
 				_path = null;
-				_data = new PokemonSaveFile();
+			}
+		}
+
+		// The embedded copy is authoritative, so it is applied on top of the mirror.
+		// Exception: a crash between two saves leaves the mirror ahead of the .sv;
+		// in that case the newer mirror is recovered instead of rolling progress back.
+		long embeddedStamp = ReadEmbeddedStamp();
+		bool recoveredFromMirror = haveData && embeddedStamp > 0 && file.SavedAtUtc > embeddedStamp
+			&& Game1.player != null && Game1.player.IsMainPlayer;
+
+		if (!recoveredFromMirror && ReadPlayerModData(file))
+		{
+			haveData = true;
+			LoadedFromSaveFile = true;
+		}
+
+		if (!haveData)
+		{
+			PokemonSaveFile legacy = TryImportLegacyFiles();
+			if (legacy != null)
+			{
+				_data = legacy;
+				Log("migrated legacy pokemon_*.json files into the unified save");
+				Save();
+				LoadedFromSaveFile = true;
 				return;
 			}
 		}
 
-		if (_data == null)
+		_data = file;
+		if (!LoadedFromSaveFile)
 		{
-			_data = TryImportLegacyFiles();
-			if (_data != null)
-			{
-				Log("migrated legacy pokemon_*.json files into the unified save");
-				Save();
-				return;
-			}
-			_data = new PokemonSaveFile();
+			_lastEmbeddedProbeMs = Environment.TickCount;
+		}
+
+		if (recoveredFromMirror)
+		{
+			Log("recovered a newer pokemon mirror after the save file lagged behind");
+			Save();
+			LoadedFromSaveFile = true;
+		}
+	}
+
+	/// <summary>UTC ticks stamped on the embedded copy, or 0 when absent/unreadable.</summary>
+	private static long ReadEmbeddedStamp()
+	{
+		try
+		{
+			var modData = Game1.player?.modData;
+			if (modData == null || !modData.ContainsKey(ModDataStampKey)) return 0;
+			return long.TryParse(modData[ModDataStampKey], out long ticks) ? ticks : 0;
+		}
+		catch
+		{
+			return 0;
+		}
+	}
+
+	/// <summary>Cheap check used to notice a farmer record that arrived after the load.</summary>
+	private static bool HasEmbeddedData()
+	{
+		try
+		{
+			var modData = Game1.player?.modData;
+			if (modData == null) return false;
+			return (modData.ContainsKey(ModDataPartyKey) && !string.IsNullOrWhiteSpace(modData[ModDataPartyKey]))
+				|| (modData.ContainsKey(ModDataPokedexKey) && !string.IsNullOrWhiteSpace(modData[ModDataPokedexKey]))
+				|| (modData.ContainsKey(ModDataStorageKey) && !string.IsNullOrWhiteSpace(modData[ModDataStorageKey]));
+		}
+		catch
+		{
+			return false;
 		}
 	}
 
@@ -241,6 +337,172 @@ public static class PokemonSaveStore
 		{
 			Log($"cannot create {dir}: {ex.Message}");
 			return false;
+		}
+	}
+
+	// ---- Embedded copy (Farmer.modData -> .sv) ----------------------------
+
+	private static void WritePlayerModData(PokemonSaveSection section)
+	{
+		try
+		{
+			var player = Game1.player;
+			if (player?.modData == null) return;
+
+			if (section is PokemonSaveSection.All or PokemonSaveSection.Party)
+			{
+				var party = new PokemonPartySectionDto
+				{
+					Party = _data.Party ?? new List<PokemonSaveDto>(),
+					ActiveIndex = _data.ActiveIndex
+				};
+				player.modData[ModDataPartyKey] = JsonSerializer.Serialize(party, CompactOptions);
+			}
+
+			if (section is PokemonSaveSection.All or PokemonSaveSection.Pokedex)
+			{
+				player.modData[ModDataPokedexKey] = JsonSerializer.Serialize(
+					_data.Pokedex ?? new PokedexSaveData(), CompactOptions);
+			}
+
+			if (section is PokemonSaveSection.All or PokemonSaveSection.Storage)
+			{
+				player.modData[ModDataStorageKey] = JsonSerializer.Serialize(
+					_data.Storage ?? new PokemonStorageSaveDto(), CompactOptions);
+			}
+
+			player.modData[ModDataStampKey] = _data.SavedAtUtc.ToString();
+		}
+		catch (Exception ex)
+		{
+			Log($"could not embed the Pokémon document in the save file: {ex.Message}");
+		}
+	}
+
+	/// <summary>Overlays any embedded section on <paramref name="file"/>. Returns true when at least one section was read.</summary>
+	private static bool ReadPlayerModData(PokemonSaveFile file)
+	{
+		try
+		{
+			var player = Game1.player;
+			if (player?.modData == null) return false;
+
+			bool any = false;
+			any |= ReadPartySection(player.modData, file);
+			any |= ReadPokedexSection(player.modData, file);
+			any |= ReadStorageSection(player.modData, file);
+			return any;
+		}
+		catch (Exception ex)
+		{
+			if (!_reportedEmbeddedRead)
+			{
+				_reportedEmbeddedRead = true;
+				Log($"could not read the Pokémon document from the save file: {ex.Message}");
+			}
+			return false;
+		}
+	}
+
+	private static bool ReadPartySection(StardewValley.Mods.ModDataDictionary modData, PokemonSaveFile file)
+	{
+		if (!modData.ContainsKey(ModDataPartyKey)) return false;
+		string json = modData[ModDataPartyKey];
+		if (string.IsNullOrWhiteSpace(json)) return false;
+		try
+		{
+			var section = JsonSerializer.Deserialize<PokemonPartySectionDto>(json, CompactOptions);
+			if (section == null) return false;
+			file.Party = section.Party ?? new List<PokemonSaveDto>();
+			file.ActiveIndex = section.ActiveIndex;
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Log($"embedded party section ignored: {ex.Message}");
+			return false;
+		}
+	}
+
+	private static bool ReadPokedexSection(StardewValley.Mods.ModDataDictionary modData, PokemonSaveFile file)
+	{
+		if (!modData.ContainsKey(ModDataPokedexKey)) return false;
+		string json = modData[ModDataPokedexKey];
+		if (string.IsNullOrWhiteSpace(json)) return false;
+		try
+		{
+			var section = JsonSerializer.Deserialize<PokedexSaveData>(json, CompactOptions);
+			if (section == null) return false;
+			file.Pokedex = section;
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Log($"embedded pokedex section ignored: {ex.Message}");
+			return false;
+		}
+	}
+
+	private static bool ReadStorageSection(StardewValley.Mods.ModDataDictionary modData, PokemonSaveFile file)
+	{
+		if (!modData.ContainsKey(ModDataStorageKey)) return false;
+		string json = modData[ModDataStorageKey];
+		if (string.IsNullOrWhiteSpace(json)) return false;
+		try
+		{
+			var section = JsonSerializer.Deserialize<PokemonStorageSaveDto>(json, CompactOptions);
+			if (section == null) return false;
+			file.Storage = section;
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Log($"embedded storage section ignored: {ex.Message}");
+			return false;
+		}
+	}
+
+	private static void ClearPlayerModData()
+	{
+		try
+		{
+			var player = Game1.player;
+			if (player?.modData == null) return;
+			player.modData.Remove(ModDataPartyKey);
+			player.modData.Remove(ModDataPokedexKey);
+			player.modData.Remove(ModDataStorageKey);
+			player.modData.Remove(ModDataStampKey);
+		}
+		catch (Exception ex)
+		{
+			Log($"could not clear the embedded Pokémon document: {ex.Message}");
+		}
+	}
+
+	// ---- Mirror file ------------------------------------------------------
+
+	private static void WriteMirror()
+	{
+		if (_path == null)
+		{
+			if (!_missingPathLogged && _key != null)
+			{
+				_missingPathLogged = true;
+				Log("no writable mirror location found; progress lives in the save file only this session");
+			}
+			return;
+		}
+
+		try
+		{
+			string json = JsonSerializer.Serialize(_data, JsonOptions);
+			string temp = _path + ".tmp";
+			File.WriteAllText(temp, json, new UTF8Encoding(false));
+			WriteReplacing(temp, _path);
+		}
+		catch (Exception ex)
+		{
+			Log($"failed to write {Path.GetFileName(_path)}: {ex.Message}");
 		}
 	}
 
@@ -433,10 +695,19 @@ public static class PokemonSaveStore
 public class PokemonSaveFile
 {
 	public int Version { get; set; } = PokemonSaveStore.SchemaVersion;
+	/// <summary>UTC ticks of the last flush; used to decide between the .sv copy and a newer mirror.</summary>
+	public long SavedAtUtc { get; set; }
 	public List<PokemonSaveDto> Party { get; set; } = new();
 	public int ActiveIndex { get; set; }
 	public PokedexSaveData Pokedex { get; set; } = new();
 	public PokemonStorageSaveDto Storage { get; set; } = new();
+}
+
+/// <summary>Party slice stored under <see cref="PokemonSaveStore.ModDataPartyKey"/>.</summary>
+public class PokemonPartySectionDto
+{
+	public List<PokemonSaveDto> Party { get; set; } = new();
+	public int ActiveIndex { get; set; }
 }
 
 /// <summary>
@@ -573,6 +844,8 @@ public static class PokemonDtoMapper
 		inst.PreMegaSpecies = null;
 		inst.ConfusionTurns = 0;
 		inst.StatusTurns = 0;
+		inst.Flinched = false;
+		inst.SaltCureTurns = 0;
 
 		// Recalculate before applying HP so the clamp uses the real maximum.
 		inst.RecalculateStats();

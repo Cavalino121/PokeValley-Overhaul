@@ -22,6 +22,64 @@ public enum PokemonStatusCondition
 	Freeze
 }
 
+/// <summary>Stats that can be raised or lowered during a battle.</summary>
+/// <summary>How a damaging move's base power is calculated at runtime.</summary>
+public enum MovePowerScaling
+{
+	None,
+	/// <summary>Eruption, Water Spout, Dragon Energy: stronger while the user is healthy.</summary>
+	UserHp,
+	/// <summary>Wring Out, Crush Grip, Hard Press: stronger while the target is healthy.</summary>
+	TargetHp,
+	/// <summary>Gyro Ball: stronger the faster the target is compared to the user.</summary>
+	GyroBall,
+	/// <summary>Electro Ball: stronger the faster the user is compared to the target.</summary>
+	ElectroBall,
+	/// <summary>Stored Power, Power Trip: +20 power per positive stage on the user.</summary>
+	UserBoosts,
+	/// <summary>Punishment: +20 power per positive stage on the target.</summary>
+	TargetBoosts
+}
+
+/// <summary>Moves whose damage ignores the normal formula.</summary>
+public enum FixedDamageMode
+{
+	None,
+	/// <summary>Ruination, Nature's Madness, Super Fang: half of the target's current HP.</summary>
+	HalfCurrentHp,
+	/// <summary>Night Shade, Seismic Toss: damage equal to the user's level.</summary>
+	Level,
+	/// <summary>Dragon Rage, Sonic Boom: a flat amount.</summary>
+	Flat
+}
+
+/// <summary>Extra damage condition evaluated after the base power is known.</summary>
+public enum MoveBonusCondition
+{	None,
+	/// <summary>Brine: doubles against a target at or below half HP.</summary>
+	TargetBelowHalfHp,
+	/// <summary>Hex, Infernal Parade: doubles against any statused target.</summary>
+	TargetHasStatus,
+	VenoshockTargetPoisoned,
+	SmellingSaltsTargetParalyzed,
+	WakeUpSlapTargetAsleep
+}
+
+/// <summary>One stat change carried by a move.</summary>
+public readonly struct StatStageChange
+{
+	public readonly PokemonStat Stat;
+	public readonly int Stages;
+	public readonly int Chance;
+
+	public StatStageChange(PokemonStat stat, int stages, int chance = 100)
+	{
+		Stat = stat;
+		Stages = stages;
+		Chance = chance;
+	}
+}
+
 public class PokemonMove
 {
 	public string Name { get; set; }
@@ -39,6 +97,37 @@ public class PokemonMove
 	public int ConfusionChance { get; set; } = 0;
 	public float DrainRatio { get; set; } = 0f;
 	public float SelfHealRatio { get; set; } = 0f;
+
+	// ---- Advanced secondary effects -------------------------------------
+	/// <summary>Stages applied to the user (Shell Smash, Close Combat, Flame Charge...).</summary>
+	public List<StatStageChange> SelfStages { get; } = new();
+	/// <summary>Stages applied to the target (Acid Spray, Growl, Crunch...).</summary>
+	public List<StatStageChange> TargetStages { get; } = new();
+	public int FlinchChance { get; set; } = 0;
+	public int HitCountMin { get; set; } = 1;
+	public int HitCountMax { get; set; } = 1;
+	/// <summary>Fraction of the damage dealt that the user takes back.</summary>
+	public float RecoilRatio { get; set; } = 0f;
+	/// <summary>Fraction of the user's maximum HP paid to use the move (Belly Drum, Fillet Away...).</summary>
+	public float HpCostRatio { get; set; } = 0f;
+	public MovePowerScaling PowerScaling { get; set; } = MovePowerScaling.None;
+	public MoveBonusCondition BonusCondition { get; set; } = MoveBonusCondition.None;
+	public bool AlwaysCrit { get; set; } = false;
+	public bool HighCrit { get; set; } = false;
+	/// <summary>Clear Smog: wipes every stage the target had accumulated.</summary>
+	public bool ResetsTargetStages { get; set; } = false;
+	/// <summary>Salt Cure: keeps damaging the target at the end of each turn.</summary>
+	public bool AppliesSaltCure { get; set; } = false;
+	/// <summary>Topsy-Turvy: flips every stage the target had.</summary>
+	public bool InvertsTargetStages { get; set; } = false;
+	/// <summary>Acupressure: raises a random stat by two stages.</summary>
+	public bool RandomSelfBoost { get; set; } = false;
+	/// <summary>Fell Stinger: sharply raises Attack when the hit knocks the target out.</summary>
+	public bool KoAttackBoost { get; set; } = false;
+	/// <summary>Psyshock, Psystrike and Secret Sword use the physical stats despite being special.</summary>
+	public bool UsesPhysicalStats { get; set; } = false;
+	public FixedDamageMode FixedDamage { get; set; } = FixedDamageMode.None;
+	public int FixedDamageValue { get; set; } = 0;
 
 	public PokemonMove(string name, PokemonType type, int power, int accuracy, int pp, MoveCategory category)
 	{
@@ -158,11 +247,265 @@ public class PokemonMove
 			InflictsConfusion = true;
 			ConfusionChance = n is "dizzy punch" or "water pulse" ? 20 : 10;
 		}
+
+		ConfigureAdvancedEffects(n);
+	}
+
+	/// <summary>
+	/// Secondaries that the original table could not express: stat stages, flinch,
+	/// multi-hit, recoil, fixed and variable damage, Salt Cure and the drain/heal
+	/// moves added with the full National Dex.
+	/// </summary>
+	private void ConfigureAdvancedEffects(string n)
+	{
+		void Status(PokemonStatusCondition condition, int chance)
+		{
+			if (StatusEffect == PokemonStatusCondition.None)
+			{
+				StatusEffect = condition;
+				StatusChance = chance;
+			}
+		}
+
+		void Self(PokemonStat stat, int stages, int chance = 100) => SelfStages.Add(new StatStageChange(stat, stages, chance));
+		void Foe(PokemonStat stat, int stages, int chance = 100) => TargetStages.Add(new StatStageChange(stat, stages, chance));
+
+		// ---- Status conditions on newer moves ---------------------------
+		switch (n)
+		{
+			case "dire claw": Status(PokemonStatusCondition.Poison, 50); break;
+			case "barb barrage": Status(PokemonStatusCondition.Poison, 50); break;
+			case "mortal spin": Status(PokemonStatusCondition.Poison, 100); break;
+			case "sludge wave": Status(PokemonStatusCondition.Poison, 10); break;
+			case "inferno": Status(PokemonStatusCondition.Burn, 100); break;
+			case "searing shot": Status(PokemonStatusCondition.Burn, 30); break;
+			case "sandsear storm": Status(PokemonStatusCondition.Burn, 20); break;
+			case "wildbolt storm": Status(PokemonStatusCondition.Paralysis, 20); break;
+			case "toxic thread": Status(PokemonStatusCondition.Poison, 100); Foe(PokemonStat.Speed, -1); break;
+			case "freeze shock": Status(PokemonStatusCondition.Paralysis, 30); break;
+			case "ice burn": Status(PokemonStatusCondition.Burn, 30); break;
+		}
+
+		// ---- Self stat changes ------------------------------------------
+		switch (n)
+		{
+			// Pure setup moves
+			case "swords dance": Self(PokemonStat.Attack, 2); break;
+			case "nasty plot": Self(PokemonStat.SpAttack, 2); break;
+			case "calm mind": Self(PokemonStat.SpAttack, 1); Self(PokemonStat.SpDefense, 1); break;
+			case "dragon dance": Self(PokemonStat.Attack, 1); Self(PokemonStat.Speed, 1); break;
+			case "quiver dance": Self(PokemonStat.SpAttack, 1); Self(PokemonStat.SpDefense, 1); Self(PokemonStat.Speed, 1); break;
+			case "shell smash":
+				Self(PokemonStat.Attack, 2); Self(PokemonStat.SpAttack, 2); Self(PokemonStat.Speed, 2);
+				Self(PokemonStat.Defense, -1); Self(PokemonStat.SpDefense, -1);
+				break;
+			case "shift gear": Self(PokemonStat.Speed, 2); Self(PokemonStat.Attack, 1); break;
+			case "bulk up": Self(PokemonStat.Attack, 1); Self(PokemonStat.Defense, 1); break;
+			case "iron defense": case "acid armor": case "shelter": Self(PokemonStat.Defense, 2); break;
+			case "agility": case "rock polish": case "autotomize": Self(PokemonStat.Speed, 2); break;
+			case "amnesia": Self(PokemonStat.SpDefense, 2); break;
+			case "growth": case "work up": Self(PokemonStat.Attack, 1); Self(PokemonStat.SpAttack, 1); break;
+			case "coil": Self(PokemonStat.Attack, 1); Self(PokemonStat.Defense, 1); break;
+			case "hone claws": Self(PokemonStat.Attack, 1); break;
+			case "tail glow": Self(PokemonStat.SpAttack, 3); break;
+			case "belly drum": Self(PokemonStat.Attack, 6); HpCostRatio = 0.5f; break;
+			case "curse": Self(PokemonStat.Attack, 1); Self(PokemonStat.Defense, 1); Self(PokemonStat.Speed, -1); break;
+			case "clangorous soul":
+				Self(PokemonStat.Attack, 1); Self(PokemonStat.Defense, 1); Self(PokemonStat.SpAttack, 1);
+				Self(PokemonStat.SpDefense, 1); Self(PokemonStat.Speed, 1); HpCostRatio = 0.33f;
+				break;
+			case "victory dance": Self(PokemonStat.Attack, 1); Self(PokemonStat.Defense, 1); Self(PokemonStat.Speed, 1); break;
+			case "fillet away":
+				Self(PokemonStat.Attack, 2); Self(PokemonStat.SpAttack, 2); Self(PokemonStat.Speed, 2);
+				HpCostRatio = 0.5f;
+				break;
+			case "tidy up": Self(PokemonStat.Attack, 1); Self(PokemonStat.Speed, 1); break;
+			case "no retreat":
+				Self(PokemonStat.Attack, 1); Self(PokemonStat.Defense, 1); Self(PokemonStat.SpAttack, 1);
+				Self(PokemonStat.SpDefense, 1); Self(PokemonStat.Speed, 1);
+				break;
+			case "take heart": Self(PokemonStat.SpAttack, 1); Self(PokemonStat.SpDefense, 1); break;
+			case "cosmic power": case "stockpile": case "defend order": case "magnetic flux":
+				Self(PokemonStat.Defense, 1); Self(PokemonStat.SpDefense, 1);
+				break;
+			case "geomancy": Self(PokemonStat.SpAttack, 2); Self(PokemonStat.SpDefense, 2); Self(PokemonStat.Speed, 2); break;
+			case "cotton guard": Self(PokemonStat.Defense, 3); break;
+			case "decorate": Self(PokemonStat.Attack, 2); Self(PokemonStat.SpAttack, 2); break;
+			case "coaching": Self(PokemonStat.Attack, 1); Self(PokemonStat.Defense, 1); break;
+			case "gear up": Self(PokemonStat.Attack, 1); Self(PokemonStat.SpAttack, 1); break;
+			case "flower shield": Self(PokemonStat.Defense, 1); break;
+			case "aromatic mist": Self(PokemonStat.SpDefense, 1); break;
+			case "diamond storm": Self(PokemonStat.Defense, 2, 50); break;
+
+			// Damaging moves that raise the user
+			case "flame charge": Self(PokemonStat.Speed, 1); break;
+			case "power-up punch": Self(PokemonStat.Attack, 1); break;
+			case "charge beam": Self(PokemonStat.SpAttack, 1, 70); break;
+			case "fiery dance": Self(PokemonStat.SpAttack, 1, 50); break;
+			case "meteor beam": Self(PokemonStat.SpAttack, 1); break;
+			case "esper wing": Self(PokemonStat.Speed, 1); HighCrit = true; break;
+			case "mystical power": Self(PokemonStat.SpAttack, 1); break;
+			case "psyshield bash": Self(PokemonStat.Defense, 1); break;
+			case "ominous wind": Self(PokemonStat.Attack, 1, 10); Self(PokemonStat.Defense, 1, 10); Self(PokemonStat.SpAttack, 1, 10); Self(PokemonStat.SpDefense, 1, 10); Self(PokemonStat.Speed, 1, 10); break;
+
+			// Damaging moves that lower the user
+			case "close combat": Self(PokemonStat.Defense, -1); Self(PokemonStat.SpDefense, -1); break;
+			case "headlong rush": Self(PokemonStat.Defense, -1); Self(PokemonStat.SpDefense, -1); break;
+			case "dragon ascent": Self(PokemonStat.Defense, -1); Self(PokemonStat.SpDefense, -1); break;
+			case "superpower": Self(PokemonStat.Attack, -1); Self(PokemonStat.Defense, -1); break;
+			case "overheat": case "draco meteor": case "leaf storm": case "psycho boost": case "fleur cannon":
+				Self(PokemonStat.SpAttack, -2);
+				break;
+			case "clanging scales": Self(PokemonStat.Defense, -1); break;
+			case "hammer arm": case "ice hammer": case "spin out": Self(PokemonStat.Speed, -1); break;
+		}
+
+		// ---- Target stat changes ----------------------------------------
+		switch (n)
+		{
+			// Status moves
+			case "growl": Foe(PokemonStat.Attack, -1); break;
+			case "leer": case "tail whip": Foe(PokemonStat.Defense, -1); break;
+			case "screech": Foe(PokemonStat.Defense, -2); break;
+			case "metal sound": Foe(PokemonStat.SpDefense, -2); break;
+			case "scary face": case "string shot": Foe(PokemonStat.Speed, -2); break;
+			case "charm": case "feather dance": Foe(PokemonStat.Attack, -2); break;
+			case "fake tears": case "captivate": Foe(PokemonStat.SpDefense, -2); break;
+			case "baby-doll eyes": case "play nice": Foe(PokemonStat.Attack, -1); break;
+			case "noble roar": case "tearful look": Foe(PokemonStat.Attack, -1); Foe(PokemonStat.SpAttack, -1); break;
+			case "confide": Foe(PokemonStat.SpAttack, -1); break;
+			case "eerie impulse": Foe(PokemonStat.SpAttack, -2); break;
+			case "venom drench": Foe(PokemonStat.Attack, -1); Foe(PokemonStat.SpAttack, -1); Foe(PokemonStat.Speed, -1); break;
+			case "spicy extract": Foe(PokemonStat.Attack, 2); Foe(PokemonStat.Defense, -2); break;
+			case "strength sap": Foe(PokemonStat.Attack, -1); SelfHealRatio = 0.5f; break;
+			case "octolock": Foe(PokemonStat.Defense, -1); Foe(PokemonStat.SpDefense, -1); break;
+			case "parting shot": Foe(PokemonStat.Attack, -1); Foe(PokemonStat.SpAttack, -1); break;
+			case "topsy-turvy": InvertsTargetStages = true; break;
+			case "acupressure": RandomSelfBoost = true; break;
+			case "bitter malice": Foe(PokemonStat.Attack, -1); break;
+			case "bleakwind storm": Foe(PokemonStat.Speed, -1, 30); break;
+			case "springtide storm": Foe(PokemonStat.Attack, -1, 30); break;
+			case "shadow bone": Foe(PokemonStat.Defense, -1, 20); break;
+
+			// Damaging moves
+			case "acid spray": Foe(PokemonStat.SpDefense, -2); break;
+			case "apple acid": Foe(PokemonStat.SpDefense, -1); break;
+			case "lumina crash": Foe(PokemonStat.SpDefense, -2); break;
+			case "grav apple": Foe(PokemonStat.Defense, -1); break;
+			case "fire lash": Foe(PokemonStat.Defense, -1); break;
+			case "trop kick": Foe(PokemonStat.Attack, -1); break;
+			case "skitter smack": Foe(PokemonStat.SpAttack, -1); break;
+			case "lunge": Foe(PokemonStat.Attack, -1); break;
+			case "low sweep": case "electroweb": case "icy wind": case "bulldoze": case "mud shot": case "rock tomb":
+				Foe(PokemonStat.Speed, -1);
+				break;
+			case "thunderous kick": Foe(PokemonStat.Defense, -1); break;
+			case "triple arrows": Foe(PokemonStat.Defense, -1, 50); break;
+			case "crunch": case "iron tail": Foe(PokemonStat.Defense, -1, 20); break;
+			case "razor shell": Foe(PokemonStat.Defense, -1, 50); break;
+			case "struggle bug": Foe(PokemonStat.SpAttack, -1); break;
+			case "focus blast": Foe(PokemonStat.SpDefense, -1, 10); break;
+			case "syrup bomb": Foe(PokemonStat.Speed, -1); break;
+		}
+
+		// ---- Flinch ------------------------------------------------------
+		switch (n)
+		{
+			case "fake out": FlinchChance = 100; break;
+			case "double iron bash": FlinchChance = 30; break;
+			case "iron head": case "air slash": case "rock slide": case "icicle crash": case "heart stamp": case "headbutt": case "astonish": case "bite": case "stomp": case "zing zap": case "mountain gale": FlinchChance = 30; break;
+			case "zen headbutt": case "waterfall": case "dark pulse": case "dragon rush": case "twister": FlinchChance = 20; break;
+			case "fiery wrath": FlinchChance = 20; break;
+			case "steamroller": FlinchChance = 30; break;
+			case "triple arrows": FlinchChance = 30; break;
+			case "extrasensory": FlinchChance = 10; break;
+		}
+
+		// ---- Multi-hit ---------------------------------------------------
+		switch (n)
+		{
+			case "double hit": case "double iron bash": case "dragon darts": case "dual chop": case "gear grind": case "tachyon cutter": case "twin beam":
+				HitCountMin = 2; HitCountMax = 2;
+				break;
+			case "triple dive": HitCountMin = 3; HitCountMax = 3; break;
+			case "population bomb": HitCountMin = 10; HitCountMax = 10; break;
+			case "tail slap": case "bullet seed": case "icicle spear": case "rock blast": case "pin missile": case "water shuriken":
+				HitCountMin = 2; HitCountMax = 5;
+				break;
+		}
+
+		// ---- Recoil ------------------------------------------------------
+		switch (n)
+		{
+			case "head smash": case "light of ruin": case "chloroblast": case "steel beam": case "mind blown":
+				RecoilRatio = 0.5f;
+				break;
+			case "double-edge": case "brave bird": case "flare blitz": case "volt tackle": case "wood hammer": case "wave crash":
+				RecoilRatio = 1f / 3f;
+				break;
+			case "take down": case "submission": case "head charge": case "wild charge":
+				RecoilRatio = 0.25f;
+				break;
+		}
+
+		// ---- Fixed and variable damage ----------------------------------
+		switch (n)
+		{
+			case "ruination": case "nature's madness": case "super fang":
+				FixedDamage = FixedDamageMode.HalfCurrentHp;
+				break;
+			case "night shade": case "seismic toss":
+				FixedDamage = FixedDamageMode.Level;
+				break;
+			case "dragon rage": FixedDamage = FixedDamageMode.Flat; FixedDamageValue = 40; break;
+			case "sonic boom": FixedDamage = FixedDamageMode.Flat; FixedDamageValue = 20; break;
+			case "eruption": case "water spout": case "dragon energy":
+				PowerScaling = MovePowerScaling.UserHp;
+				break;
+			case "wring out": case "crush grip": case "hard press":
+				PowerScaling = MovePowerScaling.TargetHp;
+				break;
+			case "gyro ball": PowerScaling = MovePowerScaling.GyroBall; break;
+			case "electro ball": PowerScaling = MovePowerScaling.ElectroBall; break;
+			case "stored power": case "power trip": PowerScaling = MovePowerScaling.UserBoosts; break;
+			case "punishment": PowerScaling = MovePowerScaling.TargetBoosts; break;
+			case "brine": BonusCondition = MoveBonusCondition.TargetBelowHalfHp; break;
+			case "hex": case "infernal parade": BonusCondition = MoveBonusCondition.TargetHasStatus; break;
+			case "venoshock": BonusCondition = MoveBonusCondition.VenoshockTargetPoisoned; break;
+			case "smelling salts": BonusCondition = MoveBonusCondition.SmellingSaltsTargetParalyzed; break;
+			case "wake-up slap": BonusCondition = MoveBonusCondition.WakeUpSlapTargetAsleep; break;
+		}
+
+		// ---- Crit behaviour, stage reset and residual damage -------------
+		switch (n)
+		{
+			case "storm throw": case "frost breath": AlwaysCrit = true; break;
+			case "aqua cutter": case "stone axe": HighCrit = true; break;
+			case "clear smog": ResetsTargetStages = true; break;
+			case "salt cure": AppliesSaltCure = true; break;
+			case "fell stinger": KoAttackBoost = true; break;
+			case "psyshock": case "psystrike": case "secret sword": UsesPhysicalStats = true; break;
+			case "axe kick": InflictsConfusion = true; ConfusionChance = 30; break;
+		}
+
+		// ---- Healing and drain moves added with the full dex -------------
+		switch (n)
+		{
+			case "life dew": case "jungle healing": case "lunar blessing":
+				SelfHealRatio = 0.25f;
+				break;
+			case "floral healing": case "heal pulse":
+				SelfHealRatio = 0.5f;
+				break;
+			case "matcha gotcha": case "bitter blade": case "parabolic charge":
+				DrainRatio = 0.5f;
+				break;
+		}
 	}
 
 	public PokemonMove Clone()
 	{
-		return new PokemonMove(Name, Type, Power, Accuracy, MaxPP, Category)
+		var clone = new PokemonMove(Name, Type, Power, Accuracy, MaxPP, Category)
 		{
 			Priority = this.Priority,
 			CurrentPP = this.CurrentPP,
@@ -171,8 +514,30 @@ public class PokemonMove
 			InflictsConfusion = this.InflictsConfusion,
 			ConfusionChance = this.ConfusionChance,
 			DrainRatio = this.DrainRatio,
-			SelfHealRatio = this.SelfHealRatio
+			SelfHealRatio = this.SelfHealRatio,
+			FlinchChance = this.FlinchChance,
+			HitCountMin = this.HitCountMin,
+			HitCountMax = this.HitCountMax,
+			RecoilRatio = this.RecoilRatio,
+			HpCostRatio = this.HpCostRatio,
+			PowerScaling = this.PowerScaling,
+			BonusCondition = this.BonusCondition,
+			AlwaysCrit = this.AlwaysCrit,
+			HighCrit = this.HighCrit,
+			ResetsTargetStages = this.ResetsTargetStages,
+			AppliesSaltCure = this.AppliesSaltCure,
+			InvertsTargetStages = this.InvertsTargetStages,
+			RandomSelfBoost = this.RandomSelfBoost,
+			KoAttackBoost = this.KoAttackBoost,
+			UsesPhysicalStats = this.UsesPhysicalStats,
+			FixedDamage = this.FixedDamage,
+			FixedDamageValue = this.FixedDamageValue
 		};
+		clone.SelfStages.Clear();
+		clone.SelfStages.AddRange(this.SelfStages);
+		clone.TargetStages.Clear();
+		clone.TargetStages.AddRange(this.TargetStages);
+		return clone;
 	}
 
 	private static readonly Dictionary<string, PokemonMove> _database = new(StringComparer.OrdinalIgnoreCase);
@@ -982,7 +1347,7 @@ public class PokemonMove
 		Register("Sludge Wave", PokemonType.Poison, 95, 100, 10, MoveCategory.Special);
 		Register("Smack Down", PokemonType.Rock, 50, 100, 15, MoveCategory.Physical);
 		Register("Smelling Salts", PokemonType.Normal, 70, 100, 10, MoveCategory.Physical);
-		Register("Snap Trap", PokemonType., 35, 100, 15, MoveCategory.Physical);
+		Register("Snap Trap", PokemonType.Steel, 35, 100, 15, MoveCategory.Physical);
 		Register("Snowscape", PokemonType.Ice, 0, 100, 10, MoveCategory.Status);
 		Register("Soak", PokemonType.Water, 0, 100, 20, MoveCategory.Status);
 		Register("Solar Blade", PokemonType.Grass, 125, 100, 10, MoveCategory.Physical);

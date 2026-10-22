@@ -210,7 +210,7 @@ public class PokemonPokedex
 				LastPurchaseDayKey = _lastPurchaseDayKey,
 				DailyPurchasedKeys = new List<string>(_dailyPurchasedKeys)
 			};
-			PokemonSaveStore.Save();
+			PokemonSaveStore.Save(PokemonSaveSection.Pokedex);
 		}
 		catch (Exception ex)
 		{
