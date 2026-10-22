@@ -68,7 +68,19 @@ if (-not (Test-Path $stardewDll)) {
 
 Write-Host "[+] Jogo original validado: $stardewDll" -ForegroundColor Green
 
-# 4. Descompilar com ILSpy localmente
+# 4. Validar a versao do jogo. Os overrides foram escritos sobre o codigo
+#    descompilado do 1.6.15; em outra versao o build quebra de forma silenciosa.
+$expectedVersion = "1.6.15"
+$gameVersion = (Get-Item $stardewDll).VersionInfo.FileVersion
+if ([string]::IsNullOrWhiteSpace($gameVersion) -or -not $gameVersion.StartsWith($expectedVersion)) {
+    Write-Host "`n[X] Versao detectada: $gameVersion" -ForegroundColor Red
+    Write-Host "    Este projeto foi feito sobre o Stardew Valley $expectedVersion." -ForegroundColor Red
+    Write-Host "    Instale a versao $expectedVersion ou atualize os overrides antes de compilar." -ForegroundColor Yellow
+    exit 1
+}
+Write-Host "[+] Versao do jogo: $gameVersion (esperada: $expectedVersion)" -ForegroundColor Green
+
+# 5. Descompilar com ILSpy localmente
 Write-Host "`n[-] Descompilando localmente com ILSpy (apenas no seu computador)..." -ForegroundColor Cyan
 if (-not (Test-Path $OutputDir)) {
     New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
@@ -77,7 +89,7 @@ if (-not (Test-Path $OutputDir)) {
 Write-Host "    Executando: ilspycmd -p -o `"$OutputDir`" `"$stardewDll`"" -ForegroundColor Gray
 ilspycmd -p -o "$OutputDir" "$stardewDll"
 
-# 5. Integrar o código do PokeValley e os Overrides
+# 6. Integrar o código do PokeValley e os Overrides
 $repoRoot = (Get-Item $PSScriptRoot).Parent.FullName
 $pokemonSrc = Join-Path $repoRoot "src\Pokemon"
 if (-not (Test-Path $pokemonSrc)) { $pokemonSrc = Join-Path $repoRoot "StardewValley\Pokemon" }
@@ -96,7 +108,7 @@ if (Test-Path $overridesSrc) {
     Copy-Item -Path "$overridesSrc\*" -Destination $OutputDir -Recurse -Force
 }
 
-# Copiar dados do Content/Pokemon
+# 7. Copiar dados do Content/Pokemon
 $contentSrc = Join-Path $repoRoot "src\Content\Pokemon"
 if (-not (Test-Path $contentSrc)) { $contentSrc = Join-Path $repoRoot "Content\Pokemon" }
 $targetContent = Join-Path $OutputDir "Content\Pokemon"
@@ -106,21 +118,15 @@ if (Test-Path $contentSrc) {
     }
     Copy-Item -Path "$contentSrc\*" -Destination $targetContent -Recurse -Force
 }
-if (Test-Path $contentSrc) {
-    if (-not (Test-Path $targetContent)) {
-        New-Item -ItemType Directory -Force -Path $targetContent | Out-Null
-    }
-    Copy-Item -Path "$contentSrc\*" -Destination $targetContent -Recurse -Force
-}
 
-# 6. Baixar Sprites dos Decomps
+# 8. Baixar Sprites dos Decomps
 Write-Host "`n[-] Integrando sprites comunitários (pokeemerald / pokefirered)..." -ForegroundColor Cyan
 $assetsScript = Join-Path $PSScriptRoot "setup_assets.ps1"
 if (Test-Path $assetsScript) {
     & powershell -ExecutionPolicy Bypass -File "$assetsScript" -TargetDir "$OutputDir"
 }
 
-# 7. Compilar
+# 9. Compilar
 Write-Host "`n[-] Compilando mod com dotnet..." -ForegroundColor Cyan
 $csprojPath = Join-Path $OutputDir "Stardew Valley.csproj"
 if (Test-Path $csprojPath) {

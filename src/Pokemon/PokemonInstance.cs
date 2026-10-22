@@ -621,8 +621,7 @@ public class PokemonInstance
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".."),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", ".."),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", ".."),
-			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", ".."),
-			@"C:\Users\Cavalino\Downloads\Nova pasta"
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..")
 		};
 
 		foreach (var root in searchRoots)

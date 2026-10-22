@@ -2,11 +2,11 @@
 
 [![Discord](https://img.shields.io/discord/1234567890?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/VBHfbvQeE3)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20SteamDeck-blue)](https://dotnet.microsoft.com/)
-[![Target](https://img.shields.io/badge/Stardew%20Valley-1.6.15%2B-brightgreen)](https://www.stardewvalley.net/)
+[![Target](https://img.shields.io/badge/Stardew%20Valley-1.6.15%20(exato)-brightgreen)](https://www.stardewvalley.net/)
 [![Language](https://img.shields.io/badge/Language-C%23%2010%20%2F%20.NET%206.0-purple)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-Educational%20%2F%20Non--Commercial-orange)](#-aviso-legal--propriedade-intelectual)
 
-> **PokeValley Overhaul** é uma transformação total e nativa do *Stardew Valley 1.6+*, integrando um sistema completo de RPG Pokémon cobrindo todas as 9 Gerações (1 a 1025), combate clássico por turnos no estilo GBA/NDS, reprodução e incubação de ovos, mecânicas agrícolas de Berries e Apricorns, trocas multiplayer P2P e todas as gimmicks competitivas (Mega Evolução, Movimentos Z, Dynamax e Teracristalização).
+> **PokeValley Overhaul** é uma transformação total e nativa do *Stardew Valley 1.6.15*, integrando um sistema completo de RPG Pokémon cobrindo todas as 9 Gerações (1 a 1025), combate clássico por turnos no estilo GBA/NDS, reprodução e incubação de ovos, mecânicas agrícolas de Berries e Apricorns, trocas multiplayer P2P e todas as gimmicks competitivas (Mega Evolução, Movimentos Z, Dynamax e Teracristalização).
 
 ---
 
@@ -79,8 +79,20 @@ Este repositório contém **exclusivamente código-fonte aberto** desenvolvido c
 
 | Idioma | Interface | Golpes & Descrições | Diálogos |
 | :--- | :---: | :---: | :---: |
-| 🇧🇷 **Português (Brasil)** | 100% | 100% | 100% |
-| 🇺🇸 **Inglês (English)** | 100% | 100% | 100% |
+| 🇧🇷 **Português (Brasil)** | Sim | Sim | Sim |
+| 🇺🇸 Inglês (English) | Não | Não | Não |
+
+> A interface, os nomes de golpes e os diálogos de batalha estão em português do Brasil. O jogo base continua no idioma escolhido na instalação do Stardew Valley.
+
+### Estado desta build
+
+Este projeto é um fork do código descompilado do Stardew Valley **1.6.15** e **não** é um mod SMAPI. Os overrides foram escritos sobre essa versão exata: o script de build aborta se encontrar outra. Se o jogo for atualizado, os overrides precisam ser reaplicados sobre o novo código.
+
+### Limitações conhecidas
+
+* **Persistência:** equipe, Pokédex e caixas do PC ficam em `pokevalley/pokemon_save.json` dentro da pasta do save (com fallback para `%AppData%\StardewValley\PokeValley\<save>` quando a pasta não é gravável)). A escrita é atômica e mantém um `.bak`; o arquivo **não** é embutido no `.sv`, então copiar apenas o `.sv` não leva os Pokémon junto.
+* **Multiplayer:** a troca usa mensagens de chat (`[POKE_TRADE]:`) e funciona apenas entre dois jogadores com esta mesma build.
+* **Áudio:** os cries e as músicas de rota ainda são os do Stardew Valley; o roadmap 1.3 continua pendente.
 
 ---
 
@@ -89,7 +101,7 @@ Este repositório contém **exclusivamente código-fonte aberto** desenvolvido c
 ### Pré-requisitos
 1. **.NET SDK 6.0 ou 8.0** instalado ([Download .NET](https://dotnet.microsoft.com/download)).
 2. **Git** instalado no terminal (`git --version`).
-3. Uma cópia legalmente adquirida do **Stardew Valley 1.6.15+** instalada (Steam ou GOG).
+3. Uma cópia legalmente adquirida do **Stardew Valley 1.6.15** instalada (Steam ou GOG). Outras versões não são suportadas.
 
 ---
 
@@ -159,13 +171,22 @@ Copy-Item "bin/Release/netcoreapp6.0/Stardew Valley.dll" "C:\Program Files (x86)
 
 ```mermaid
 flowchart LR
-    A["v1.0 - Core Launch<br>1025 Mons + Batalha + Berries"] --> B["v1.1 - Breeding Polish<br>Passos de choco + Incubadora"]
+    A["v1.0 - Core Launch<br>1025 Mons + Batalha + Berries"] --> B["v1.1 - Estabilidade<br>Persistência + 356 golpes + prioridade"]
     B --> C["v1.2 - Double Battles<br>Líderes de Ginásio do Vale"]
     C --> D["v1.3 - Som & Cries<br>Cries originais + Músicas de Rota"]
     D --> E["v2.0 - Battle Frontier<br>Torre de Batalha no Deserto"]
 ```
 
-### 🔹 Versão 1.0 (Versão Atual)
+### 🔹 Versão 1.1 (Versão Atual)
+- [x] Persistência unificada e atômica de equipe, Pokédex e caixas (`pokemon_save.json` + `.bak`).
+- [x] Pokédex deixou de ser global e passou a ser por save.
+- [x] 356 golpes que faltavam na tabela (todos os 824 nomes usados nos learnsets agora resolvem).
+- [x] Nomes de golpes tolerantes a hífen/espaço (`Double-Edge`, `U-turn`, `Thunder Shock`).
+- [x] Prioridade de golpe no turno + desempate de velocidade por sorteio.
+- [x] PP, felicidade e Tera Type persistidos; estado de batalha não vaza para o save.
+- [x] Removidos o andaime de captura de tela/tour automático e os caminhos fixos do desenvolvedor.
+
+### 🔹 Versão 1.0 (Base)
 - [x] 1025 Pokémon com learnsets, naturezas, EVs/IVs e habilidades.
 - [x] Motor de batalha 1v1 com animações de ataque e retratos de NPCs.
 - [x] 10 Berries com ciclo em 4 estações e crafts de poções no Barril (Keg).
@@ -175,7 +196,7 @@ flowchart LR
 - [x] Gimmicks: Mega Evolução, Movimentos Z, Dynamax e Teracristalização.
 - [x] Efeito e som de dano no overworld por veneno/queimadura ao caminhar.
 
-### 🔹 Versão 1.1 (Próximo Update)
+### 🔹 Versão 1.2 (Próximo Update)
 - [ ] Ovos Pokémon compatíveis com a Incubadora padrão de aves do galinheiro.
 - [ ] Passos do jogador diminuindo ativamente o contador de passos do ovo no inventário.
 - [ ] Registro completo na Pokedex da fazenda com visualizador de habitats por estação.

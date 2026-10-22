@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace StardewValley.Pokemon;
 
@@ -30,6 +31,8 @@ public class PokemonMove
 	public int MaxPP { get; set; }
 	public int CurrentPP { get; set; }
 	public MoveCategory Category { get; set; }
+	/// <summary>Bracket used for turn order (-6..+5). Positive values move first.</summary>
+	public int Priority { get; set; } = 0;
 	public PokemonStatusCondition StatusEffect { get; set; } = PokemonStatusCondition.None;
 	public int StatusChance { get; set; } = 0;
 	public bool InflictsConfusion { get; set; } = false;
@@ -161,6 +164,7 @@ public class PokemonMove
 	{
 		return new PokemonMove(Name, Type, Power, Accuracy, MaxPP, Category)
 		{
+			Priority = this.Priority,
 			CurrentPP = this.CurrentPP,
 			StatusEffect = this.StatusEffect,
 			StatusChance = this.StatusChance,
@@ -172,6 +176,17 @@ public class PokemonMove
 	}
 
 	private static readonly Dictionary<string, PokemonMove> _database = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>Maps "thunder shock" / "Thunder-Shock" style spellings to the registered name.</summary>
+	private static readonly Dictionary<string, string> _normalizedIndex = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>Real spelling differences (not just punctuation) between sources.</summary>
+	private static readonly Dictionary<string, string> _aliases = new(StringComparer.OrdinalIgnoreCase)
+	{
+		["Vise Grip"] = "Vice Grip",
+		["Faint Attack"] = "Feint Attack",
+		["Hi Jump Kick"] = "High Jump Kick"
+	};
 
 	static PokemonMove()
 	{
@@ -359,7 +374,6 @@ public class PokemonMove
 		Register("Protect", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
 		Register("Mach Punch", PokemonType.Fighting, 40, 100, 30, MoveCategory.Physical);
 		Register("Scary Face", PokemonType.Normal, 0, 90, 10, MoveCategory.Status);
-		Register("Feint Attack", PokemonType.Dark, 60, 100, 20, MoveCategory.Special);
 		Register("Sweet Kiss", PokemonType.Normal, 0, 75, 10, MoveCategory.Status);
 		Register("Belly Drum", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
 		Register("Sludge Bomb", PokemonType.Poison, 90, 100, 10, MoveCategory.Physical);
@@ -685,11 +699,390 @@ public class PokemonMove
 		Register("Pollen Puff", PokemonType.Bug, 90, 100, 15, MoveCategory.Special);
 		Register("Hex", PokemonType.Ghost, 65, 100, 10, MoveCategory.Special);
 		Register("Phantom Force", PokemonType.Ghost, 90, 100, 10, MoveCategory.Physical);
+		Register("Accelerock", PokemonType.Rock, 40, 100, 20, MoveCategory.Physical, priority: 1);
+		Register("Acid Spray", PokemonType.Poison, 40, 100, 20, MoveCategory.Special);
+		Register("Acupressure", PokemonType.Normal, 0, 100, 30, MoveCategory.Status);
+		Register("After You", PokemonType.Normal, 0, 100, 15, MoveCategory.Status);
+		Register("Alluring Voice", PokemonType.Fairy, 80, 100, 10, MoveCategory.Special);
+		Register("Ally Switch", PokemonType.Psychic, 0, 100, 15, MoveCategory.Status, priority: 2);
+		Register("Anchor Shot", PokemonType.Steel, 80, 100, 20, MoveCategory.Physical);
+		Register("Apple Acid", PokemonType.Grass, 80, 100, 10, MoveCategory.Special);
+		Register("Aqua Cutter", PokemonType.Water, 70, 100, 20, MoveCategory.Physical);
+		Register("Aqua Jet", PokemonType.Water, 40, 100, 20, MoveCategory.Physical, priority: 1);
+		Register("Aqua Ring", PokemonType.Water, 0, 100, 20, MoveCategory.Status);
+		Register("Aromatic Mist", PokemonType.Fairy, 0, 100, 20, MoveCategory.Status);
+		Register("Assurance", PokemonType.Dark, 60, 100, 10, MoveCategory.Physical);
+		Register("Attack Order", PokemonType.Bug, 90, 100, 15, MoveCategory.Physical);
+		Register("Aura Wheel", PokemonType.Electric, 110, 100, 10, MoveCategory.Physical);
+		Register("Aurora Veil", PokemonType.Ice, 0, 100, 20, MoveCategory.Status);
+		Register("Autotomize", PokemonType.Steel, 0, 100, 15, MoveCategory.Status);
+		Register("Avalanche", PokemonType.Ice, 60, 100, 10, MoveCategory.Physical, priority: -4);
+		Register("Axe Kick", PokemonType.Fighting, 120, 90, 10, MoveCategory.Physical);
+		Register("Baby-Doll Eyes", PokemonType.Fairy, 0, 100, 30, MoveCategory.Status, priority: 1);
+		Register("Baneful Bunker", PokemonType.Poison, 0, 100, 10, MoveCategory.Status, priority: 4);
+		Register("Barb Barrage", PokemonType.Poison, 60, 100, 10, MoveCategory.Physical);
+		Register("Beak Blast", PokemonType.Flying, 100, 100, 15, MoveCategory.Physical, priority: -3);
+		Register("Belch", PokemonType.Poison, 120, 90, 10, MoveCategory.Special);
+		Register("Bestow", PokemonType.Normal, 0, 100, 15, MoveCategory.Status);
+		Register("Bitter Malice", PokemonType.Ghost, 75, 100, 15, MoveCategory.Special);
+		Register("Bleakwind Storm", PokemonType.Flying, 100, 80, 10, MoveCategory.Special);
+		Register("Bolt Beak", PokemonType.Electric, 85, 100, 10, MoveCategory.Physical);
+		Register("Boomburst", PokemonType.Normal, 140, 100, 10, MoveCategory.Special);
+		Register("Branch Poke", PokemonType.Grass, 40, 100, 40, MoveCategory.Physical);
+		Register("Brine", PokemonType.Water, 65, 100, 10, MoveCategory.Special);
+		Register("Brutal Swing", PokemonType.Dark, 60, 100, 20, MoveCategory.Physical);
+		Register("Bug Bite", PokemonType.Bug, 60, 100, 20, MoveCategory.Physical);
+		Register("Bullet Punch", PokemonType.Steel, 40, 100, 30, MoveCategory.Physical, priority: 1);
+		Register("Burn Up", PokemonType.Fire, 130, 100, 5, MoveCategory.Special);
+		Register("Burning Bulwark", PokemonType.Fire, 0, 100, 10, MoveCategory.Status, priority: 4);
+		Register("Burning Jealousy", PokemonType.Fire, 70, 100, 5, MoveCategory.Special);
+		Register("Captivate", PokemonType.Normal, 0, 100, 20, MoveCategory.Status);
+		Register("Ceaseless Edge", PokemonType.Dark, 65, 90, 15, MoveCategory.Physical);
+		Register("Charge Beam", PokemonType.Electric, 50, 90, 10, MoveCategory.Special);
+		Register("Chatter", PokemonType.Flying, 65, 100, 20, MoveCategory.Special);
+		Register("Chilly Reception", PokemonType.Ice, 0, 100, 10, MoveCategory.Status);
+		Register("Chip Away", PokemonType.Normal, 70, 100, 20, MoveCategory.Physical);
+		Register("Chloroblast", PokemonType.Grass, 150, 95, 5, MoveCategory.Special);
+		Register("Circle Throw", PokemonType.Fighting, 60, 90, 10, MoveCategory.Physical, priority: -6);
+		Register("Clanging Scales", PokemonType.Dragon, 110, 100, 5, MoveCategory.Special);
+		Register("Clangorous Soul", PokemonType.Dragon, 0, 100, 5, MoveCategory.Status);
+		Register("Clear Smog", PokemonType.Poison, 50, 100, 15, MoveCategory.Special);
+		Register("Coaching", PokemonType.Fighting, 0, 100, 10, MoveCategory.Status);
+		Register("Coil", PokemonType.Poison, 0, 100, 20, MoveCategory.Status);
+		Register("Comeuppance", PokemonType.Dark, 1, 100, 10, MoveCategory.Physical);
+		Register("Confide", PokemonType.Normal, 0, 100, 20, MoveCategory.Status);
+		Register("Copycat", PokemonType.Normal, 0, 100, 20, MoveCategory.Status);
+		Register("Core Enforcer", PokemonType.Dragon, 100, 100, 10, MoveCategory.Special);
+		Register("Corrosive Gas", PokemonType.Poison, 0, 100, 40, MoveCategory.Status);
+		Register("Cotton Guard", PokemonType.Grass, 0, 100, 10, MoveCategory.Status);
+		Register("Court Change", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
+		Register("Crafty Shield", PokemonType.Fairy, 0, 100, 10, MoveCategory.Status, priority: 3);
+		Register("Cross Poison", PokemonType.Poison, 70, 100, 20, MoveCategory.Physical);
+		Register("Crush Grip", PokemonType.Normal, 120, 100, 5, MoveCategory.Physical);
+		Register("Dark Void", PokemonType.Dark, 0, 50, 10, MoveCategory.Status);
+		Register("Decorate", PokemonType.Fairy, 0, 100, 15, MoveCategory.Status);
+		Register("Defend Order", PokemonType.Bug, 0, 100, 10, MoveCategory.Status);
+		Register("Diamond Storm", PokemonType.Rock, 100, 95, 5, MoveCategory.Physical);
+		Register("Dire Claw", PokemonType.Poison, 80, 100, 15, MoveCategory.Physical);
+		Register("Discharge", PokemonType.Electric, 80, 100, 15, MoveCategory.Special);
+		Register("Doodle", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
+		Register("Double Hit", PokemonType.Normal, 35, 90, 10, MoveCategory.Physical);
+		Register("Double Iron Bash", PokemonType.Steel, 60, 100, 5, MoveCategory.Physical);
+		Register("Double Shock", PokemonType.Electric, 120, 100, 5, MoveCategory.Physical);
+		Register("Dragon Ascent", PokemonType.Flying, 120, 100, 5, MoveCategory.Physical);
+		Register("Dragon Cheer", PokemonType.Dragon, 0, 100, 15, MoveCategory.Status);
+		Register("Dragon Darts", PokemonType.Dragon, 50, 100, 10, MoveCategory.Physical);
+		Register("Dragon Energy", PokemonType.Dragon, 150, 100, 5, MoveCategory.Special);
+		Register("Dragon Hammer", PokemonType.Dragon, 90, 100, 15, MoveCategory.Physical);
+		Register("Dragon Rush", PokemonType.Dragon, 100, 75, 10, MoveCategory.Physical);
+		Register("Dragon Tail", PokemonType.Dragon, 60, 90, 10, MoveCategory.Physical, priority: -6);
+		Register("Drain Punch", PokemonType.Fighting, 75, 100, 10, MoveCategory.Physical);
+		Register("Drill Run", PokemonType.Ground, 80, 95, 10, MoveCategory.Physical);
+		Register("Dual Chop", PokemonType.Dragon, 40, 90, 15, MoveCategory.Physical);
+		Register("Echoed Voice", PokemonType.Normal, 40, 100, 15, MoveCategory.Special);
+		Register("Eerie Impulse", PokemonType.Electric, 0, 100, 15, MoveCategory.Status);
+		Register("Eerie Spell", PokemonType.Psychic, 80, 100, 5, MoveCategory.Special);
+		Register("Electric Terrain", PokemonType.Electric, 0, 100, 10, MoveCategory.Status);
+		Register("Electrify", PokemonType.Electric, 0, 100, 20, MoveCategory.Status);
+		Register("Electro Ball", PokemonType.Electric, 1, 100, 10, MoveCategory.Special);
+		Register("Electro Shot", PokemonType.Electric, 130, 100, 10, MoveCategory.Special);
+		Register("Electroweb", PokemonType.Electric, 55, 95, 15, MoveCategory.Special);
+		Register("Embargo", PokemonType.Dark, 0, 100, 15, MoveCategory.Status);
+		Register("Entrainment", PokemonType.Normal, 0, 100, 15, MoveCategory.Status);
+		Register("Esper Wing", PokemonType.Psychic, 80, 100, 10, MoveCategory.Special);
+		Register("Eternabeam", PokemonType.Dragon, 160, 90, 5, MoveCategory.Special);
+		Register("Expanding Force", PokemonType.Psychic, 80, 100, 10, MoveCategory.Special);
+		Register("Fairy Lock", PokemonType.Fairy, 0, 100, 10, MoveCategory.Status);
+		Register("False Surrender", PokemonType.Dark, 80, 100, 10, MoveCategory.Physical);
+		Register("Feint", PokemonType.Normal, 30, 100, 10, MoveCategory.Physical, priority: 2);
+		Register("Fell Stinger", PokemonType.Bug, 50, 100, 25, MoveCategory.Physical);
+		Register("Fickle Beam", PokemonType.Dragon, 80, 100, 5, MoveCategory.Special);
+		Register("Fiery Dance", PokemonType.Fire, 80, 100, 10, MoveCategory.Special);
+		Register("Fiery Wrath", PokemonType.Dark, 90, 100, 10, MoveCategory.Special);
+		Register("Fillet Away", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
+		Register("Final Gambit", PokemonType.Fighting, 1, 100, 5, MoveCategory.Special);
+		Register("Fire Lash", PokemonType.Fire, 80, 100, 15, MoveCategory.Physical);
+		Register("Fire Pledge", PokemonType.Fire, 80, 100, 10, MoveCategory.Special);
+		Register("First Impression", PokemonType.Bug, 90, 100, 10, MoveCategory.Physical, priority: 2);
+		Register("Fishious Rend", PokemonType.Water, 85, 100, 10, MoveCategory.Physical);
+		Register("Flame Burst", PokemonType.Fire, 70, 100, 15, MoveCategory.Special);
+		Register("Flame Charge", PokemonType.Fire, 50, 100, 20, MoveCategory.Physical);
+		Register("Fleur Cannon", PokemonType.Fairy, 130, 90, 5, MoveCategory.Special);
+		Register("Fling", PokemonType.Dark, 1, 100, 10, MoveCategory.Physical);
+		Register("Floral Healing", PokemonType.Fairy, 0, 100, 10, MoveCategory.Status);
+		Register("Flower Shield", PokemonType.Fairy, 0, 100, 10, MoveCategory.Status);
+		Register("Flying Press", PokemonType.Fighting, 100, 95, 10, MoveCategory.Physical);
+		Register("Focus Blast", PokemonType.Fighting, 120, 70, 5, MoveCategory.Special);
+		Register("Force Palm", PokemonType.Fighting, 60, 100, 10, MoveCategory.Physical);
+		Register("Forest's Curse", PokemonType.Grass, 0, 100, 20, MoveCategory.Status);
+		Register("Foul Play", PokemonType.Dark, 95, 100, 15, MoveCategory.Physical);
+		Register("Freeze Shock", PokemonType.Ice, 140, 90, 5, MoveCategory.Physical);
+		Register("Freeze-Dry", PokemonType.Ice, 70, 100, 20, MoveCategory.Special);
+		Register("Freezing Glare", PokemonType.Psychic, 90, 100, 10, MoveCategory.Special);
+		Register("Fusion Bolt", PokemonType.Electric, 100, 100, 5, MoveCategory.Physical);
+		Register("Fusion Flare", PokemonType.Fire, 100, 100, 5, MoveCategory.Special);
+		Register("Gastro Acid", PokemonType.Poison, 0, 100, 10, MoveCategory.Status);
+		Register("Gear Grind", PokemonType.Steel, 50, 85, 15, MoveCategory.Physical);
+		Register("Gear Up", PokemonType.Steel, 0, 100, 20, MoveCategory.Status);
+		Register("Geomancy", PokemonType.Fairy, 0, 100, 10, MoveCategory.Status);
+		Register("Glaive Rush", PokemonType.Dragon, 120, 100, 5, MoveCategory.Physical);
+		Register("Grass Knot", PokemonType.Grass, 1, 100, 20, MoveCategory.Special);
+		Register("Grass Pledge", PokemonType.Grass, 80, 100, 10, MoveCategory.Special);
+		Register("Grassy Glide", PokemonType.Grass, 55, 100, 20, MoveCategory.Physical);
+		Register("Grassy Terrain", PokemonType.Grass, 0, 100, 10, MoveCategory.Status);
+		Register("Grav Apple", PokemonType.Grass, 80, 100, 10, MoveCategory.Physical);
+		Register("Gravity", PokemonType.Psychic, 0, 100, 5, MoveCategory.Status);
+		Register("Guard Split", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Guard Swap", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Gunk Shot", PokemonType.Poison, 120, 80, 5, MoveCategory.Physical);
+		Register("Gyro Ball", PokemonType.Steel, 1, 100, 5, MoveCategory.Physical);
+		Register("Hammer Arm", PokemonType.Fighting, 100, 90, 10, MoveCategory.Physical);
+		Register("Hard Press", PokemonType.Steel, 100, 100, 10, MoveCategory.Physical);
+		Register("Head Charge", PokemonType.Normal, 120, 100, 15, MoveCategory.Physical);
+		Register("Head Smash", PokemonType.Rock, 150, 80, 5, MoveCategory.Physical);
+		Register("Headlong Rush", PokemonType.Ground, 120, 100, 5, MoveCategory.Physical);
+		Register("Heal Block", PokemonType.Psychic, 0, 100, 15, MoveCategory.Status);
+		Register("Heal Order", PokemonType.Bug, 0, 100, 10, MoveCategory.Status);
+		Register("Heal Pulse", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Healing Wish", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Heart Stamp", PokemonType.Psychic, 60, 100, 25, MoveCategory.Physical);
+		Register("Heart Swap", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Hone Claws", PokemonType.Dark, 0, 100, 15, MoveCategory.Status);
+		Register("Horn Leech", PokemonType.Grass, 75, 100, 10, MoveCategory.Physical);
+		Register("Hydro Steam", PokemonType.Water, 80, 100, 15, MoveCategory.Special);
+		Register("Hyper Drill", PokemonType.Normal, 100, 100, 5, MoveCategory.Physical);
+		Register("Hyperspace Fury", PokemonType.Dark, 100, 100, 5, MoveCategory.Physical);
+		Register("Hyperspace Hole", PokemonType.Psychic, 80, 100, 5, MoveCategory.Special);
+		Register("Ice Burn", PokemonType.Ice, 140, 90, 5, MoveCategory.Special);
+		Register("Ice Hammer", PokemonType.Ice, 100, 90, 10, MoveCategory.Physical);
+		Register("Ice Spinner", PokemonType.Ice, 80, 100, 15, MoveCategory.Physical);
+		Register("Icicle Crash", PokemonType.Ice, 85, 90, 10, MoveCategory.Physical);
+		Register("Incinerate", PokemonType.Fire, 60, 100, 15, MoveCategory.Special);
+		Register("Infernal Parade", PokemonType.Ghost, 60, 100, 15, MoveCategory.Special);
+		Register("Inferno", PokemonType.Fire, 100, 50, 5, MoveCategory.Special);
+		Register("Infestation", PokemonType.Bug, 20, 100, 20, MoveCategory.Special);
+		Register("Instruct", PokemonType.Psychic, 0, 100, 15, MoveCategory.Status);
+		Register("Ion Deluge", PokemonType.Electric, 0, 100, 25, MoveCategory.Status, priority: 1);
+		Register("Jaw Lock", PokemonType.Dark, 80, 100, 10, MoveCategory.Physical);
+		Register("Jet Punch", PokemonType.Water, 60, 100, 15, MoveCategory.Physical, priority: 1);
+		Register("Jungle Healing", PokemonType.Grass, 0, 100, 10, MoveCategory.Status);
+		Register("King's Shield", PokemonType.Steel, 0, 100, 10, MoveCategory.Status, priority: 4);
+		Register("Land's Wrath", PokemonType.Ground, 90, 100, 10, MoveCategory.Physical);
+		Register("Laser Focus", PokemonType.Normal, 0, 100, 30, MoveCategory.Status);
+		Register("Lash Out", PokemonType.Dark, 75, 100, 5, MoveCategory.Physical);
+		Register("Last Resort", PokemonType.Normal, 140, 100, 5, MoveCategory.Physical);
+		Register("Last Respects", PokemonType.Ghost, 50, 100, 10, MoveCategory.Physical);
+		Register("Lava Plume", PokemonType.Fire, 80, 100, 15, MoveCategory.Special);
+		Register("Leaf Tornado", PokemonType.Grass, 65, 90, 10, MoveCategory.Special);
+		Register("Leafage", PokemonType.Grass, 40, 100, 40, MoveCategory.Physical);
+		Register("Life Dew", PokemonType.Water, 0, 100, 10, MoveCategory.Status);
+		Register("Light Of Ruin", PokemonType.Fairy, 140, 90, 5, MoveCategory.Special);
+		Register("Low Sweep", PokemonType.Fighting, 65, 100, 20, MoveCategory.Physical);
+		Register("Lucky Chant", PokemonType.Normal, 0, 100, 30, MoveCategory.Status);
+		Register("Lumina Crash", PokemonType.Psychic, 80, 100, 10, MoveCategory.Special);
+		Register("Lunar Blessing", PokemonType.Psychic, 0, 100, 5, MoveCategory.Status);
+		Register("Lunar Dance", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Lunge", PokemonType.Bug, 80, 100, 15, MoveCategory.Physical);
+		Register("Magic Powder", PokemonType.Psychic, 0, 100, 20, MoveCategory.Status);
+		Register("Magic Room", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Magma Storm", PokemonType.Fire, 100, 75, 5, MoveCategory.Special);
+		Register("Magnet Bomb", PokemonType.Steel, 60, 100, 20, MoveCategory.Physical);
+		Register("Magnet Rise", PokemonType.Electric, 0, 100, 10, MoveCategory.Status);
+		Register("Magnetic Flux", PokemonType.Electric, 0, 100, 20, MoveCategory.Status);
+		Register("Mat Block", PokemonType.Fighting, 0, 100, 15, MoveCategory.Status);
+		Register("Matcha Gotcha", PokemonType.Grass, 80, 90, 15, MoveCategory.Special);
+		Register("Me First", PokemonType.Normal, 0, 100, 20, MoveCategory.Status);
+		Register("Metal Burst", PokemonType.Steel, 1, 100, 10, MoveCategory.Physical);
+		Register("Meteor Assault", PokemonType.Fighting, 150, 100, 5, MoveCategory.Physical);
+		Register("Meteor Beam", PokemonType.Rock, 120, 90, 10, MoveCategory.Special);
+		Register("Mighty Cleave", PokemonType.Rock, 95, 100, 5, MoveCategory.Physical);
+		Register("Mind Blown", PokemonType.Fire, 150, 100, 5, MoveCategory.Special);
+		Register("Miracle Eye", PokemonType.Psychic, 0, 100, 40, MoveCategory.Status);
+		Register("Mirror Shot", PokemonType.Steel, 65, 85, 10, MoveCategory.Special);
+		Register("Misty Terrain", PokemonType.Fairy, 0, 100, 10, MoveCategory.Status);
+		Register("Mortal Spin", PokemonType.Poison, 30, 100, 15, MoveCategory.Physical);
+		Register("Mountain Gale", PokemonType.Ice, 100, 85, 10, MoveCategory.Physical);
+		Register("Mud Bomb", PokemonType.Ground, 65, 85, 10, MoveCategory.Special);
+		Register("Multi-Attack", PokemonType.Normal, 120, 100, 10, MoveCategory.Physical);
+		Register("Mystical Power", PokemonType.Psychic, 70, 90, 10, MoveCategory.Special);
+		Register("Natural Gift", PokemonType.Normal, 1, 100, 15, MoveCategory.Physical);
+		Register("Nature's Madness", PokemonType.Fairy, 1, 90, 10, MoveCategory.Special);
+		Register("Night Daze", PokemonType.Dark, 85, 95, 10, MoveCategory.Special);
+		Register("No Retreat", PokemonType.Fighting, 0, 100, 5, MoveCategory.Status);
+		Register("Noble Roar", PokemonType.Normal, 0, 100, 30, MoveCategory.Status);
+		Register("Nuzzle", PokemonType.Electric, 20, 100, 20, MoveCategory.Physical);
+		Register("Obstruct", PokemonType.Dark, 0, 100, 10, MoveCategory.Status, priority: 4);
+		Register("Octolock", PokemonType.Fighting, 0, 100, 15, MoveCategory.Status);
+		Register("Ominous Wind", PokemonType.Ghost, 60, 100, 5, MoveCategory.Special);
+		Register("Order Up", PokemonType.Dragon, 80, 100, 10, MoveCategory.Physical);
+		Register("Origin Pulse", PokemonType.Water, 110, 85, 10, MoveCategory.Special);
+		Register("Overdrive", PokemonType.Electric, 80, 100, 10, MoveCategory.Special);
+		Register("Parabolic Charge", PokemonType.Electric, 65, 100, 20, MoveCategory.Special);
+		Register("Parting Shot", PokemonType.Dark, 0, 100, 20, MoveCategory.Status);
+		Register("Payback", PokemonType.Dark, 50, 100, 10, MoveCategory.Physical);
+		Register("Petal Blizzard", PokemonType.Grass, 90, 100, 15, MoveCategory.Physical);
+		Register("Play Nice", PokemonType.Normal, 0, 100, 20, MoveCategory.Status);
+		Register("Pluck", PokemonType.Flying, 60, 100, 20, MoveCategory.Physical);
+		Register("Population Bomb", PokemonType.Normal, 20, 90, 10, MoveCategory.Physical);
+		Register("Powder", PokemonType.Bug, 0, 100, 20, MoveCategory.Status, priority: 1);
+		Register("Power Shift", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
+		Register("Power Split", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Power Swap", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Power Trick", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Power Trip", PokemonType.Dark, 20, 100, 10, MoveCategory.Physical);
+		Register("Power Whip", PokemonType.Grass, 120, 85, 10, MoveCategory.Physical);
+		Register("Power-Up Punch", PokemonType.Fighting, 40, 100, 20, MoveCategory.Physical);
+		Register("Precipice Blades", PokemonType.Ground, 120, 85, 10, MoveCategory.Physical);
+		Register("Prismatic Laser", PokemonType.Psychic, 160, 100, 10, MoveCategory.Special);
+		Register("Psyblade", PokemonType.Psychic, 80, 100, 15, MoveCategory.Physical);
+		Register("Psychic Noise", PokemonType.Psychic, 75, 100, 10, MoveCategory.Special);
+		Register("Psychic Terrain", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Psycho Shift", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Psyshield Bash", PokemonType.Psychic, 70, 90, 10, MoveCategory.Physical);
+		Register("Psyshock", PokemonType.Psychic, 80, 100, 10, MoveCategory.Special);
+		Register("Psystrike", PokemonType.Psychic, 100, 100, 10, MoveCategory.Special);
+		Register("Punishment", PokemonType.Dark, 60, 100, 5, MoveCategory.Physical);
+		Register("Purify", PokemonType.Poison, 0, 100, 20, MoveCategory.Status);
+		Register("Quash", PokemonType.Dark, 0, 100, 15, MoveCategory.Status);
+		Register("Quick Guard", PokemonType.Fighting, 0, 100, 15, MoveCategory.Status, priority: 3);
+		Register("Quiver Dance", PokemonType.Bug, 0, 100, 20, MoveCategory.Status);
+		Register("Rage Fist", PokemonType.Ghost, 50, 100, 10, MoveCategory.Physical);
+		Register("Rage Powder", PokemonType.Bug, 0, 100, 20, MoveCategory.Status, priority: 2);
+		Register("Raging Bull", PokemonType.Normal, 90, 100, 10, MoveCategory.Physical);
+		Register("Raging Fury", PokemonType.Fire, 120, 100, 10, MoveCategory.Physical);
+		Register("Razor Shell", PokemonType.Water, 75, 95, 10, MoveCategory.Physical);
+		Register("Reflect Type", PokemonType.Normal, 0, 100, 15, MoveCategory.Status);
+		Register("Relic Song", PokemonType.Normal, 75, 100, 10, MoveCategory.Special);
+		Register("Retaliate", PokemonType.Normal, 70, 100, 5, MoveCategory.Physical);
+		Register("Revelation Dance", PokemonType.Normal, 90, 100, 15, MoveCategory.Special);
+		Register("Revival Blessing", PokemonType.Normal, 0, 100, 1, MoveCategory.Status);
+		Register("Rising Voltage", PokemonType.Electric, 70, 100, 20, MoveCategory.Special);
+		Register("Rock Polish", PokemonType.Rock, 0, 100, 20, MoveCategory.Status);
+		Register("Rock Wrecker", PokemonType.Rock, 150, 90, 5, MoveCategory.Physical);
+		Register("Rototiller", PokemonType.Ground, 0, 100, 10, MoveCategory.Status);
+		Register("Round", PokemonType.Normal, 60, 100, 15, MoveCategory.Special);
+		Register("Ruination", PokemonType.Dark, 1, 90, 10, MoveCategory.Special);
+		Register("Salt Cure", PokemonType.Rock, 40, 100, 15, MoveCategory.Physical);
+		Register("Sandsear Storm", PokemonType.Ground, 100, 80, 10, MoveCategory.Special);
+		Register("Searing Shot", PokemonType.Fire, 100, 100, 5, MoveCategory.Special);
+		Register("Secret Sword", PokemonType.Fighting, 85, 100, 10, MoveCategory.Special);
+		Register("Seed Bomb", PokemonType.Grass, 80, 100, 15, MoveCategory.Physical);
+		Register("Shadow Bone", PokemonType.Ghost, 85, 100, 10, MoveCategory.Physical);
+		Register("Shed Tail", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
+		Register("Shell Side Arm", PokemonType.Poison, 90, 100, 10, MoveCategory.Special);
+		Register("Shell Smash", PokemonType.Normal, 0, 100, 15, MoveCategory.Status);
+		Register("Shell Trap", PokemonType.Fire, 150, 100, 5, MoveCategory.Special, priority: -3);
+		Register("Shelter", PokemonType.Steel, 0, 100, 10, MoveCategory.Status);
+		Register("Shift Gear", PokemonType.Steel, 0, 100, 10, MoveCategory.Status);
+		Register("Shore Up", PokemonType.Ground, 0, 100, 5, MoveCategory.Status);
+		Register("Silk Trap", PokemonType.Bug, 0, 100, 10, MoveCategory.Status, priority: 4);
+		Register("Simple Beam", PokemonType.Normal, 0, 100, 15, MoveCategory.Status);
+		Register("Skitter Smack", PokemonType.Bug, 70, 90, 10, MoveCategory.Physical);
+		Register("Sky Drop", PokemonType.Flying, 60, 100, 10, MoveCategory.Physical);
+		Register("Sludge Wave", PokemonType.Poison, 95, 100, 10, MoveCategory.Special);
+		Register("Smack Down", PokemonType.Rock, 50, 100, 15, MoveCategory.Physical);
+		Register("Smelling Salts", PokemonType.Normal, 70, 100, 10, MoveCategory.Physical);
+		Register("Snap Trap", PokemonType., 35, 100, 15, MoveCategory.Physical);
+		Register("Snowscape", PokemonType.Ice, 0, 100, 10, MoveCategory.Status);
+		Register("Soak", PokemonType.Water, 0, 100, 20, MoveCategory.Status);
+		Register("Solar Blade", PokemonType.Grass, 125, 100, 10, MoveCategory.Physical);
+		Register("Spectral Thief", PokemonType.Ghost, 90, 100, 10, MoveCategory.Physical);
+		Register("Speed Swap", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Spicy Extract", PokemonType.Grass, 0, 100, 15, MoveCategory.Status);
+		Register("Spiky Shield", PokemonType.Grass, 0, 100, 10, MoveCategory.Status, priority: 4);
+		Register("Spin Out", PokemonType.Steel, 100, 100, 5, MoveCategory.Physical);
+		Register("Spotlight", PokemonType.Normal, 0, 100, 15, MoveCategory.Status, priority: 3);
+		Register("Springtide Storm", PokemonType.Fairy, 100, 80, 5, MoveCategory.Special);
+		Register("Steam Eruption", PokemonType.Water, 110, 95, 5, MoveCategory.Special);
+		Register("Steamroller", PokemonType.Bug, 65, 100, 20, MoveCategory.Physical);
+		Register("Steel Beam", PokemonType.Steel, 140, 95, 5, MoveCategory.Special);
+		Register("Steel Roller", PokemonType.Steel, 130, 100, 5, MoveCategory.Physical);
+		Register("Sticky Web", PokemonType.Bug, 0, 100, 20, MoveCategory.Status);
+		Register("Stomping Tantrum", PokemonType.Ground, 75, 100, 10, MoveCategory.Physical);
+		Register("Stone Axe", PokemonType.Rock, 65, 90, 15, MoveCategory.Physical);
+		Register("Stored Power", PokemonType.Psychic, 20, 100, 10, MoveCategory.Special);
+		Register("Storm Throw", PokemonType.Fighting, 60, 100, 10, MoveCategory.Physical);
+		Register("Strange Steam", PokemonType.Fairy, 90, 95, 10, MoveCategory.Special);
+		Register("Strength Sap", PokemonType.Grass, 0, 100, 10, MoveCategory.Status);
+		Register("Struggle Bug", PokemonType.Bug, 50, 100, 20, MoveCategory.Special);
+		Register("Stuff Cheeks", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
+		Register("Sucker Punch", PokemonType.Dark, 70, 100, 5, MoveCategory.Physical, priority: 1);
+		Register("Supercell Slam", PokemonType.Electric, 100, 95, 15, MoveCategory.Physical);
+		Register("Switcheroo", PokemonType.Dark, 0, 100, 10, MoveCategory.Status);
+		Register("Synchronoise", PokemonType.Psychic, 120, 100, 10, MoveCategory.Special);
+		Register("Syrup Bomb", PokemonType.Grass, 60, 85, 10, MoveCategory.Special);
+		Register("Tachyon Cutter", PokemonType.Steel, 50, 100, 10, MoveCategory.Special);
+		Register("Tail Slap", PokemonType.Normal, 25, 85, 10, MoveCategory.Physical);
+		Register("Tailwind", PokemonType.Flying, 0, 100, 15, MoveCategory.Status);
+		Register("Take Heart", PokemonType.Psychic, 0, 100, 15, MoveCategory.Status);
+		Register("Tar Shot", PokemonType.Rock, 0, 100, 15, MoveCategory.Status);
+		Register("Tearful Look", PokemonType.Normal, 0, 100, 20, MoveCategory.Status);
+		Register("Teatime", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
+		Register("Techno Blast", PokemonType.Normal, 120, 100, 5, MoveCategory.Special);
+		Register("Telekinesis", PokemonType.Psychic, 0, 100, 15, MoveCategory.Status);
+		Register("Temper Flare", PokemonType.Fire, 75, 100, 10, MoveCategory.Physical);
+		Register("Tera Starstorm", PokemonType.Normal, 120, 100, 5, MoveCategory.Special);
+		Register("Terrain Pulse", PokemonType.Normal, 50, 100, 10, MoveCategory.Special);
+		Register("Thousand Waves", PokemonType.Ground, 90, 100, 10, MoveCategory.Physical);
+		Register("Throat Chop", PokemonType.Dark, 80, 100, 15, MoveCategory.Physical);
+		Register("Thunder Cage", PokemonType.Electric, 80, 90, 15, MoveCategory.Special);
+		Register("Thunderclap", PokemonType.Electric, 70, 100, 5, MoveCategory.Special, priority: 1);
+		Register("Thunderous Kick", PokemonType.Fighting, 90, 100, 10, MoveCategory.Physical);
+		Register("Tidy Up", PokemonType.Normal, 0, 100, 10, MoveCategory.Status);
+		Register("Topsy-Turvy", PokemonType.Dark, 0, 100, 20, MoveCategory.Status);
+		Register("Toxic Spikes", PokemonType.Poison, 0, 100, 20, MoveCategory.Status);
+		Register("Toxic Thread", PokemonType.Poison, 0, 100, 20, MoveCategory.Status);
+		Register("Trick-or-Treat", PokemonType.Ghost, 0, 100, 20, MoveCategory.Status);
+		Register("Triple Arrows", PokemonType.Fighting, 90, 100, 10, MoveCategory.Physical);
+		Register("Triple Dive", PokemonType.Water, 30, 95, 10, MoveCategory.Physical);
+		Register("Trop Kick", PokemonType.Grass, 70, 100, 15, MoveCategory.Physical);
+		Register("Trump Card", PokemonType.Normal, 1, 100, 5, MoveCategory.Special);
+		Register("Twin Beam", PokemonType.Psychic, 40, 100, 10, MoveCategory.Special);
+		Register("Upper Hand", PokemonType.Fighting, 65, 100, 15, MoveCategory.Physical, priority: 3);
+		Register("Vacuum Wave", PokemonType.Fighting, 40, 100, 30, MoveCategory.Special, priority: 1);
+		Register("Venom Drench", PokemonType.Poison, 0, 100, 20, MoveCategory.Status);
+		Register("Venoshock", PokemonType.Poison, 65, 100, 10, MoveCategory.Special);
+		Register("Victory Dance", PokemonType.Fighting, 0, 100, 20, MoveCategory.Status);
+		Register("Wake-Up Slap", PokemonType.Fighting, 70, 100, 10, MoveCategory.Physical);
+		Register("Water Pledge", PokemonType.Water, 80, 100, 10, MoveCategory.Special);
+		Register("Wave Crash", PokemonType.Water, 120, 100, 10, MoveCategory.Physical);
+		Register("Wide Guard", PokemonType.Rock, 0, 100, 10, MoveCategory.Status, priority: 3);
+		Register("Wildbolt Storm", PokemonType.Electric, 100, 80, 10, MoveCategory.Special);
+		Register("Wonder Room", PokemonType.Psychic, 0, 100, 10, MoveCategory.Status);
+		Register("Wood Hammer", PokemonType.Grass, 120, 100, 15, MoveCategory.Physical);
+		Register("Work Up", PokemonType.Normal, 0, 100, 30, MoveCategory.Status);
+		Register("Worry Seed", PokemonType.Grass, 0, 100, 10, MoveCategory.Status);
+		Register("Wring Out", PokemonType.Normal, 120, 100, 5, MoveCategory.Special);
+		Register("Zen Headbutt", PokemonType.Psychic, 80, 90, 15, MoveCategory.Physical);
+		Register("Zing Zap", PokemonType.Electric, 80, 100, 10, MoveCategory.Physical);
 	}
 
-	private static void Register(string name, PokemonType type, int power, int acc, int pp, MoveCategory cat)
+	private static void Register(string name, PokemonType type, int power, int acc, int pp, MoveCategory cat, int priority = 0)
 	{
-		_database[name] = new PokemonMove(name, type, power, acc, pp, cat);
+		var move = new PokemonMove(name, type, power, acc, pp, cat)
+		{
+			Priority = priority
+		};
+		_database[name] = move;
+		_normalizedIndex[NormalizeName(name)] = name;
+	}
+
+	/// <summary>Lower-cases a move name and drops spaces, hyphens and punctuation.</summary>
+	private static string NormalizeName(string name)
+	{
+		if (string.IsNullOrEmpty(name))
+		{
+			return "";
+		}
+		var sb = new StringBuilder(name.Length);
+		foreach (char c in name)
+		{
+			if (char.IsLetterOrDigit(c))
+			{
+				sb.Append(char.ToLowerInvariant(c));
+			}
+		}
+		return sb.ToString();
 	}
 
 	public string GetZMoveName()
@@ -815,7 +1208,19 @@ public class PokemonMove
 
 	public static PokemonMove Get(string name)
 	{
+		if (string.IsNullOrWhiteSpace(name))
+		{
+			name = "Struggle";
+		}
 		if (_database.TryGetValue(name, out var move))
+		{
+			return move.Clone();
+		}
+		if (_aliases.TryGetValue(name, out string canonical) && _database.TryGetValue(canonical, out move))
+		{
+			return move.Clone();
+		}
+		if (_normalizedIndex.TryGetValue(NormalizeName(name), out canonical) && _database.TryGetValue(canonical, out move))
 		{
 			return move.Clone();
 		}

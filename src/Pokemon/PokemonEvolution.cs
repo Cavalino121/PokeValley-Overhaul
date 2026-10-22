@@ -525,8 +525,7 @@ public static class PokemonEvolution
 		{
 			string[] searchPaths = new string[]
 			{
-				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeplatinum", "res", "pokemon"),
-				@"C:\Users\Cavalino\Downloads\Nova pasta\pokeplatinum\res\pokemon"
+				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeplatinum", "res", "pokemon")
 			};
 
 			foreach (var dir in searchPaths)

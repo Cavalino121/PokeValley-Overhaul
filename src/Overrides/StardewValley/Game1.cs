@@ -3329,6 +3329,7 @@ public class Game1 : InstanceGame
 			year = 1;
 			StardewValley.Pokemon.PlayerParty.Instance.ResetForNewGame();
 			StardewValley.Pokemon.PokemonStorage.Instance.ResetForNewGame();
+			StardewValley.Pokemon.PokemonPokedex.Instance.ResetForNewGame();
 		}
 		dayOfMonth = 0;
 		isQuestion = false;
@@ -3674,7 +3675,6 @@ public class Game1 : InstanceGame
 		DebugTools.BeforeGameUpdate(this, ref gameTime2);
 		input.UpdateStates();
 		StardewValley.FirstPerson.FirstPersonManager.Instance.Update(gameTime);
-		StardewValley.Pokemon.PokemonHUD.Instance.GlobalUpdate(gameTime);
 		if (input.GetGamePadState().IsButtonDown(Buttons.RightStick))
 		{
 			rightStickHoldTime += gameTime.ElapsedGameTime.Milliseconds;
@@ -13690,7 +13690,6 @@ public class Game1 : InstanceGame
 		isRenderingScreenBuffer = true;
 		renderScreenBuffer(renderTarget2D);
 		isRenderingScreenBuffer = false;
-		StardewValley.Pokemon.PokemonHUD.TryCaptureScreen();
 		if (uiModeCount != 0)
 		{
 			log.Warn("WARNING: Mismatched UI Mode Push/Pop counts. Correcting.");

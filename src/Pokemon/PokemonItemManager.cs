@@ -972,8 +972,7 @@ public static class PokemonItemManager
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".."),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", ".."),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", ".."),
-			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", ".."),
-			@"C:\Users\Cavalino\Downloads\Nova pasta"
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..")
 		};
 
 		foreach (var r in roots)
@@ -1246,12 +1245,8 @@ public static class PokemonItemManager
 		string[] searchFolders = new[]
 		{
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Pokemon"),
-			@"C:\Users\Cavalino\Downloads\Nova pasta\StardewValley-1.6.15-decompiled\Content\Pokemon",
-			@"C:\Users\Cavalino\Downloads\Nova pasta\pokeemerald-expansion\graphics\items\icons",
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald-expansion", "graphics", "items", "icons"),
-			@"C:\Users\Cavalino\Downloads\Nova pasta\pokeemerald\graphics\items\icons",
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "items", "icons"),
-			@"C:\Users\Cavalino\Downloads\Nova pasta\pokeplatinum\res\items\icons",
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeplatinum", "res", "items", "icons")
 		};
 
@@ -1369,8 +1364,7 @@ public static class PokemonItemManager
 		string[] candidates = new[]
 		{
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "object_events", "pics", "misc", "item_ball.png"),
-			@"C:\Users\Cavalino\Downloads\Nova pasta\pokeemerald\graphics\object_events\pics\misc\item_ball.png",
-			@"C:\Users\Cavalino\Downloads\Nova pasta\pokefirered\graphics\object_events\pics\misc\item_ball.png"
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokefirered", "graphics", "object_events", "pics", "misc", "item_ball.png")
 		};
 
 		foreach (var path in candidates)

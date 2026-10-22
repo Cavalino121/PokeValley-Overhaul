@@ -226,7 +226,6 @@ public class PokemonBattleMenu : IClickableMenu
 		};
 
 		string p = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "balls", file);
-		if (!File.Exists(p)) p = Path.Combine(@"C:\Users\Cavalino\Downloads\Nova pasta\pokeemerald\graphics\balls", file);
 		if (File.Exists(p))
 		{
 			var tex = PokemonUI.LoadColorKeyed(p);
@@ -431,7 +430,6 @@ public class PokemonBattleMenu : IClickableMenu
 			if (_ballTex == null)
 			{
 				string p1 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "balls", "poke.png");
-				if (!File.Exists(p1)) p1 = @"C:\Users\Cavalino\Downloads\Nova pasta\pokeemerald\graphics\balls\poke.png";
 				if (File.Exists(p1))
 				{
 					_ballTex = PokemonUI.LoadColorKeyed(p1);
@@ -440,7 +438,6 @@ public class PokemonBattleMenu : IClickableMenu
 			if (_ballOpenTex == null)
 			{
 				string p2 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "balls", "open.png");
-				if (!File.Exists(p2)) p2 = @"C:\Users\Cavalino\Downloads\Nova pasta\pokeemerald\graphics\balls\open.png";
 				if (File.Exists(p2))
 				{
 					_ballOpenTex = PokemonUI.LoadColorKeyed(p2);
@@ -495,8 +492,7 @@ public class PokemonBattleMenu : IClickableMenu
 					string[] enemyCandidates = new[]
 					{
 						Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "trainers", "front_pics", cleanName + ".png"),
-						$@"C:\Users\Cavalino\Downloads\Nova pasta\pokeemerald\graphics\trainers\front_pics\{cleanName}.png",
-						$@"C:\Users\Cavalino\Downloads\Nova pasta\pokefirered\graphics\trainers\front_pics\{cleanName}_front_pic.png"
+						Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokefirered", "graphics", "trainers", "front_pics", cleanName + "_front_pic.png")
 					};
 
 					foreach (var path in enemyCandidates)
@@ -615,7 +611,16 @@ public class PokemonBattleMenu : IClickableMenu
 			_currentMessage = "";
 			Action act = _afterMessagesAction;
 			_afterMessagesAction = null;
-			act?.Invoke();
+			try
+			{
+				act?.Invoke();
+			}
+			catch (Exception ex)
+			{
+				// A broken turn must never freeze the battle menu forever.
+				Console.WriteLine($"[PokemonBattle] Falha ao continuar o turno: {ex}");
+				Phase = BattlePhase.ActionSelect;
+			}
 		}
 	}
 
@@ -963,6 +968,27 @@ public class PokemonBattleMenu : IClickableMenu
 		}
 	}
 
+	/// <summary>
+	/// Priority bracket used for turn order. Z-Moves and Max Moves always resolve at +0,
+	/// and Prankster lifts status moves to +1 unless the target is Dark.
+	/// </summary>
+	private static int GetEffectivePriority(PokemonInstance attacker, PokemonInstance target, PokemonMove move, bool useZMove, bool useMaxMove)
+	{
+		if (move == null) return 0;
+		if (useZMove || useMaxMove) return 0;
+
+		int priority = move.Priority;
+		if (priority == 0
+			&& attacker != null
+			&& move.Category == MoveCategory.Status
+			&& string.Equals(attacker.Ability, "Prankster", StringComparison.OrdinalIgnoreCase)
+			&& (target == null || !target.HasType(PokemonType.Dark)))
+		{
+			priority = 1;
+		}
+		return priority;
+	}
+
 	private void ExecuteTurn(PokemonMove playerMove)
 	{
 		playerMove.CurrentPP--;
@@ -1019,7 +1045,24 @@ public class PokemonBattleMenu : IClickableMenu
 
 			int playerEffSpeed = (int)((PlayerPokemon.Status == PokemonStatusCondition.Paralysis ? PlayerPokemon.Speed / 2 : PlayerPokemon.Speed) * GetStageMultiplier(_playerSpeedStage));
 			int enemyEffSpeed = (int)((EnemyPokemon.Status == PokemonStatusCondition.Paralysis ? EnemyPokemon.Speed / 2 : EnemyPokemon.Speed) * GetStageMultiplier(_enemySpeedStage));
-			bool playerFirst = (playerEffSpeed >= enemyEffSpeed);
+
+			// Turn order: priority bracket first, then Speed, coin flip on a tie.
+			int playerPriority = GetEffectivePriority(PlayerPokemon, EnemyPokemon, playerMove, useZMove, useMaxMove);
+			int enemyPriority = GetEffectivePriority(EnemyPokemon, PlayerPokemon, enemyMove, false, EnemyPokemon.IsDynamaxed);
+
+			bool playerFirst;
+			if (playerPriority != enemyPriority)
+			{
+				playerFirst = playerPriority > enemyPriority;
+			}
+			else if (playerEffSpeed != enemyEffSpeed)
+			{
+				playerFirst = playerEffSpeed > enemyEffSpeed;
+			}
+			else
+			{
+				playerFirst = Game1.random.Next(2) == 0;
+			}
 
 			if (playerFirst)
 			{

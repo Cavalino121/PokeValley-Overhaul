@@ -34,7 +34,11 @@ public class PokemonSaveDto
 	public string UsedMegaStoneId { get; set; } = null;
 	public string HeldItem { get; set; } = null;
 	public string Ability { get; set; } = null;
+	public int Friendship { get; set; } = 70;
+	public string TeraType { get; set; } = null;
 	public List<string> Moves { get; set; } = new();
+	/// <summary>Remaining PP per move, parallel to <see cref="Moves"/>.</summary>
+	public List<int> MovePP { get; set; } = new();
 }
 
 public class PlayerParty
@@ -212,58 +216,34 @@ public class PlayerParty
 		return false;
 	}
 
+	/// <summary>Directory that holds the unified Pokémon save document, or null when no save is loaded.</summary>
 	public static string GetCurrentSaveDirectory()
 	{
 		try
 		{
-			if (Game1.uniqueIDForThisGame != 0UL)
-			{
-				string folderName = SaveGame.FilterFileName(Game1.GetSaveGameName()) + "_" + Game1.uniqueIDForThisGame;
-				string savesPath = Program.GetSavesFolder();
-				if (!string.IsNullOrEmpty(savesPath))
-				{
-					string dir = Path.Combine(savesPath, folderName);
-					if (!Directory.Exists(dir))
-					{
-						Directory.CreateDirectory(dir);
-					}
-					return dir;
-				}
-			}
+			string path = PokemonSaveStore.CurrentFilePath;
+			return string.IsNullOrEmpty(path) ? null : Path.GetDirectoryName(path);
 		}
-		catch { }
-		return null;
-	}
-
-	private static string GetSaveFilePath()
-	{
-		try
+		catch
 		{
-			string saveDir = GetCurrentSaveDirectory();
-			if (!string.IsNullOrEmpty(saveDir))
-			{
-				return Path.Combine(saveDir, "pokemon_party_data.json");
-			}
-			string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StardewValley");
-			if (Directory.Exists(appData))
-			{
-				return Path.Combine(appData, "pokemon_party_data.json");
-			}
+			return null;
 		}
-		catch { }
-		return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokemon_party_data.json");
 	}
 
+	/// <summary>Clears the team and starts a blank document for a new playthrough.</summary>
 	public void ResetForNewGame()
 	{
 		Team.Clear();
 		ActiveIndex = 0;
+		PokemonSaveStore.ResetForNewGame();
 	}
 
+	/// <summary>Re-reads the whole save document after a save slot is loaded.</summary>
 	public void Reload()
 	{
 		Team.Clear();
 		ActiveIndex = 0;
+		PokemonSaveStore.Reload();
 		LoadParty();
 	}
 
@@ -271,55 +251,23 @@ public class PlayerParty
 	{
 		try
 		{
-			var list = new List<PokemonSaveDto>();
-			foreach (var p in Team)
+			PokemonSaveFile save = PokemonSaveStore.Data;
+			save.Party = new List<PokemonSaveDto>(Team.Count);
+			foreach (var pokemon in Team)
 			{
-				string saveSpecies = p.Species.InternalName;
-				if (p.IsMegaEvolved && p.PreMegaSpecies != null)
+				PokemonSaveDto dto = PokemonDtoMapper.ToDto(pokemon);
+				if (dto != null)
 				{
-					saveSpecies = p.PreMegaSpecies.InternalName;
+					save.Party.Add(dto);
 				}
-				else if (p.Species.IsMega && !string.IsNullOrEmpty(p.Species.BaseSpeciesName))
-				{
-					saveSpecies = p.Species.BaseSpeciesName;
-				}
-
-				var dto = new PokemonSaveDto
-				{
-					Species = saveSpecies,
-					Nickname = p.Nickname,
-					Level = p.Level,
-					CurrentHP = p.CurrentHP,
-					CurrentExp = p.CurrentExp,
-					Nature = p.Nature.ToString(),
-					IV_HP = p.IV_HP,
-					IV_Attack = p.IV_Attack,
-					IV_Defense = p.IV_Defense,
-					IV_SpAttack = p.IV_SpAttack,
-					IV_SpDefense = p.IV_SpDefense,
-					IV_Speed = p.IV_Speed,
-					EV_HP = p.EV_HP,
-					EV_Attack = p.EV_Attack,
-					EV_Defense = p.EV_Defense,
-					EV_SpAttack = p.EV_SpAttack,
-					EV_SpDefense = p.EV_SpDefense,
-					EV_Speed = p.EV_Speed,
-					IsEgg = p.IsEgg,
-					EggSteps = p.EggSteps,
-					IsShiny = p.IsShiny,
-					Gender = p.Gender ?? "♂",
-					Status = p.Status.ToString(),
-					UsedMegaStoneId = p.UsedMegaStoneId,
-					HeldItem = p.HeldItem,
-					Ability = p.Ability
-				};
-				foreach (var m in p.Moves) dto.Moves.Add(m.Name);
-				list.Add(dto);
 			}
-			string json = JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true });
-			File.WriteAllText(GetSaveFilePath(), json);
+			save.ActiveIndex = ActiveIndex;
+			PokemonSaveStore.Save();
 		}
-		catch { }
+		catch (Exception ex)
+		{
+			Console.WriteLine($"[PlayerParty] Falha ao salvar a equipe: {ex.Message}");
+		}
 	}
 
 	public void MarkSeen(string speciesNameOrInternal)
@@ -334,59 +282,34 @@ public class PlayerParty
 	{
 		try
 		{
-			string path = GetSaveFilePath();
-			if (File.Exists(path))
+			PokemonSaveFile save = PokemonSaveStore.Data;
+			if (save.Party == null || save.Party.Count == 0)
 			{
-				string json = File.ReadAllText(path);
-				var list = JsonSerializer.Deserialize<List<PokemonSaveDto>>(json);
-				if (list != null && list.Count > 0)
+				return;
+			}
+
+			var loaded = new List<PokemonInstance>(save.Party.Count);
+			foreach (PokemonSaveDto dto in save.Party)
+			{
+				PokemonInstance pokemon = PokemonDtoMapper.FromDto(dto);
+				if (pokemon != null)
 				{
-					Team.Clear();
-					foreach (var dto in list)
-					{
-						var species = PokemonSpecies.Get(dto.Species);
-						if (species == null) continue;
-						if (species.IsMega && !string.IsNullOrEmpty(species.BaseSpeciesName))
-						{
-							var baseSpecies = PokemonSpecies.Get(species.BaseSpeciesName);
-							if (baseSpecies != null) species = baseSpecies;
-						}
-						var inst = new PokemonInstance(species, dto.Level, dto.Moves?.ToArray());
-						inst.Nickname = string.IsNullOrWhiteSpace(dto.Nickname) ? species.Name : dto.Nickname;
-						if (!string.IsNullOrEmpty(dto.Nature) && Enum.TryParse<PokemonNature>(dto.Nature, out var nat))
-						{
-							inst.Nature = nat;
-						}
-						inst.IV_HP = dto.IV_HP;
-						inst.IV_Attack = dto.IV_Attack;
-						inst.IV_Defense = dto.IV_Defense;
-						inst.IV_SpAttack = dto.IV_SpAttack;
-						inst.IV_SpDefense = dto.IV_SpDefense;
-						inst.IV_Speed = dto.IV_Speed;
-						inst.EV_HP = dto.EV_HP;
-						inst.EV_Attack = dto.EV_Attack;
-						inst.EV_Defense = dto.EV_Defense;
-						inst.EV_SpAttack = dto.EV_SpAttack;
-						inst.EV_SpDefense = dto.EV_SpDefense;
-						inst.EV_Speed = dto.EV_Speed;
-						inst.IsEgg = dto.IsEgg;
-						inst.EggSteps = dto.EggSteps;
-						inst.IsShiny = dto.IsShiny;
-						inst.UsedMegaStoneId = dto.UsedMegaStoneId;
-						inst.HeldItem = dto.HeldItem;
-						if (!string.IsNullOrEmpty(dto.Ability)) inst.Ability = dto.Ability;
-						if (!string.IsNullOrEmpty(dto.Gender)) inst.Gender = dto.Gender;
-						if (!string.IsNullOrEmpty(dto.Status) && Enum.TryParse<PokemonStatusCondition>(dto.Status, out var st))
-							inst.Status = st;
-						inst.RecalculateStats();
-						inst.CurrentHP = Math.Clamp(dto.CurrentHP, 0, inst.MaxHP);
-						inst.CurrentExp = dto.CurrentExp;
-						Team.Add(inst);
-					}
-					return;
+					loaded.Add(pokemon);
 				}
 			}
+
+			if (loaded.Count == 0)
+			{
+				return;
+			}
+
+			Team.Clear();
+			Team.AddRange(loaded);
+			ActiveIndex = Math.Clamp(save.ActiveIndex, 0, Team.Count - 1);
 		}
-		catch { }
+		catch (Exception ex)
+		{
+			Console.WriteLine($"[PlayerParty] Falha ao carregar a equipe: {ex.Message}");
+		}
 	}
 }

@@ -9,6 +9,12 @@ namespace StardewValley.Pokemon;
 /// <summary>Shared drawing helpers so every Pokémon UI uses the same fitted fonts and GBA-style bars.</summary>
 public static class PokemonUI
 {
+	/// <summary>
+	/// Folder that holds the optional community sprite sets (pokeemerald/, pokefirered/,
+	/// pokeplatinum/, Content/Pokemon/). They ship beside the game executable.
+	/// </summary>
+	public static string AssetRoot { get; } = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
 	/// <summary>Draws text that is always scaled down to fit inside <paramref name="area"/> (never leaks).</summary>
 	public static void Text(SpriteBatch b, SpriteFont font, string text, Rectangle area, Color color, bool center = false, float maxScale = 1f, bool shadow = true)
 	{
@@ -296,8 +302,7 @@ public static class PokemonUI
 			AppDomain.CurrentDomain.BaseDirectory,
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".."),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", ".."),
-			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", ".."),
-			@"C:\Users\Cavalino\Downloads\Nova pasta"
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..")
 		};
 		foreach (string root in roots)
 		{

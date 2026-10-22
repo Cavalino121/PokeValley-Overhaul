@@ -427,8 +427,7 @@ public class PokemonFollower
 			string[] searchDirs = new string[]
 			{
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "object_events", "pics", "pokemon"),
-				@"C:\Users\Cavalino\Downloads\Nova pasta\pokeemerald\graphics\object_events\pics\pokemon",
-				@"C:\Users\Cavalino\Downloads\Nova pasta\pokefirered\graphics\object_events\pics\pokemon"
+				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokefirered", "graphics", "object_events", "pics", "pokemon")
 			};
 
 			string palFolder = PokemonInstance.FindPokemonFolder(species);

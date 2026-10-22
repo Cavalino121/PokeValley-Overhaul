@@ -46,19 +46,6 @@ public class PokemonPokedex
 	public IReadOnlyCollection<string> SeenSpecies => _seen;
 	public IReadOnlyCollection<string> CaughtSpecies => _caught;
 
-	private static string GetSaveFilePath()
-	{
-		try
-		{
-			string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StardewValley");
-			Directory.CreateDirectory(appData);
-			return Path.Combine(appData, "pokemon_pokedex_data.json");
-		}
-		catch
-		{
-			return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokemon_pokedex_data.json");
-		}
-	}
 
 	private PokemonPokedex()
 	{
@@ -214,7 +201,8 @@ public class PokemonPokedex
 	{
 		try
 		{
-			var data = new PokedexSaveData
+			PokemonSaveFile save = PokemonSaveStore.Data;
+			save.Pokedex = new PokedexSaveData
 			{
 				Seen = new List<string>(_seen),
 				Caught = new List<string>(_caught),
@@ -222,8 +210,7 @@ public class PokemonPokedex
 				LastPurchaseDayKey = _lastPurchaseDayKey,
 				DailyPurchasedKeys = new List<string>(_dailyPurchasedKeys)
 			};
-			string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-			File.WriteAllText(GetSaveFilePath(), json);
+			PokemonSaveStore.Save();
 		}
 		catch (Exception ex)
 		{
@@ -235,10 +222,7 @@ public class PokemonPokedex
 	{
 		try
 		{
-			string path = GetSaveFilePath();
-			if (!File.Exists(path)) return;
-			string json = File.ReadAllText(path);
-			var data = JsonSerializer.Deserialize<PokedexSaveData>(json);
+			PokedexSaveData data = PokemonSaveStore.Data.Pokedex;
 			if (data == null) return;
 
 			if (data.Seen != null)
@@ -256,6 +240,29 @@ public class PokemonPokedex
 		{
 			Console.WriteLine($"[PokemonPokedex] Erro ao carregar Pokédex: {ex.Message}");
 		}
+	}
+
+	/// <summary>Drops in-memory progress and re-reads the Pokédex from the loaded save.</summary>
+	public void Reload()
+	{
+		_seen.Clear();
+		_caught.Clear();
+		_hintLevels.Clear();
+		_dailyPurchasedKeys.Clear();
+		_lastPurchaseDayKey = "";
+		PokemonSaveStore.Reload();
+		Load();
+		SyncWithParty();
+	}
+
+	/// <summary>Clears every piece of progress for a brand new playthrough.</summary>
+	public void ResetForNewGame()
+	{
+		_seen.Clear();
+		_caught.Clear();
+		_hintLevels.Clear();
+		_dailyPurchasedKeys.Clear();
+		_lastPurchaseDayKey = "";
 	}
 
 	public PokedexEntryInfo GetEntry(string speciesName)

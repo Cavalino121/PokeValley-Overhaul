@@ -452,6 +452,7 @@ public class SaveGame
 		string tempFarmerPath = finalFarmerPath + "_STARDEWVALLEYSAVETMP";
 		string tempDataPath = finalDataPath + "_STARDEWVALLEYSAVETMP";
 		ensureFolderStructureExists();
+		StardewValley.Pokemon.PokemonPokedex.Instance.Save();
 		StardewValley.Pokemon.PlayerParty.Instance.SaveParty();
 		StardewValley.Pokemon.PokemonStorage.Instance.SaveStorage();
 		Stream fstream = null;
@@ -1256,8 +1257,10 @@ public class SaveGame
 			trinketItem.reloadSprite();
 		}
 		Game1.gameMode = 3;
+		StardewValley.Pokemon.PokemonSaveStore.Reload();
 		StardewValley.Pokemon.PlayerParty.Instance.Reload();
 		StardewValley.Pokemon.PokemonStorage.Instance.Reload();
+		StardewValley.Pokemon.PokemonPokedex.Instance.Reload();
 		Game1.AddNPCs();
 		Game1.AddModNPCs();
 		Game1.RefreshQuestOfTheDay();

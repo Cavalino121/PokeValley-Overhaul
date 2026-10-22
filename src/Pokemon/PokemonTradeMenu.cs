@@ -99,7 +99,6 @@ public class PokemonTradeMenu : IClickableMenu
 		try
 		{
 			string p1 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "balls", "poke.png");
-			if (!File.Exists(p1)) p1 = @"C:\Users\Cavalino\Downloads\Nova pasta\pokeemerald\graphics\balls\poke.png";
 			if (File.Exists(p1)) _ballTex = PokemonUI.LoadColorKeyed(p1);
 		}
 		catch { }
@@ -764,86 +763,11 @@ public class PokemonTradeMenu : IClickableMenu
 
 	private static PokemonSaveDto PokemonToDto(PokemonInstance p)
 	{
-		if (p == null) return null;
-		string saveSpecies = p.Species.InternalName;
-		if (p.IsMegaEvolved && p.PreMegaSpecies != null)
-		{
-			saveSpecies = p.PreMegaSpecies.InternalName;
-		}
-		else if (p.Species.IsMega && !string.IsNullOrEmpty(p.Species.BaseSpeciesName))
-		{
-			saveSpecies = p.Species.BaseSpeciesName;
-		}
-
-		var dto = new PokemonSaveDto
-		{
-			Species = saveSpecies,
-			Nickname = p.Nickname,
-			Level = p.Level,
-			CurrentHP = p.CurrentHP,
-			CurrentExp = p.CurrentExp,
-			Nature = p.Nature.ToString(),
-			IV_HP = p.IV_HP,
-			IV_Attack = p.IV_Attack,
-			IV_Defense = p.IV_Defense,
-			IV_SpAttack = p.IV_SpAttack,
-			IV_SpDefense = p.IV_SpDefense,
-			IV_Speed = p.IV_Speed,
-			EV_HP = p.EV_HP,
-			EV_Attack = p.EV_Attack,
-			EV_Defense = p.EV_Defense,
-			EV_SpAttack = p.EV_SpAttack,
-			EV_SpDefense = p.EV_SpDefense,
-			EV_Speed = p.EV_Speed,
-			IsEgg = p.IsEgg,
-			EggSteps = p.EggSteps,
-			IsShiny = p.IsShiny,
-			Gender = p.Gender ?? "♂",
-			Status = p.Status.ToString(),
-			UsedMegaStoneId = p.UsedMegaStoneId,
-			HeldItem = p.HeldItem,
-			Ability = p.Ability
-		};
-		foreach (var m in p.Moves) dto.Moves.Add(m.Name);
-		return dto;
+		return PokemonDtoMapper.ToDto(p);
 	}
 
 	private static PokemonInstance PokemonFromDto(PokemonSaveDto dto)
 	{
-		if (dto == null) return null;
-		var species = PokemonSpecies.Get(dto.Species);
-		if (species == null) return null;
-
-		var inst = new PokemonInstance(species, dto.Level, dto.Moves?.ToArray());
-		inst.Nickname = string.IsNullOrWhiteSpace(dto.Nickname) ? species.Name : dto.Nickname;
-		if (!string.IsNullOrEmpty(dto.Nature) && Enum.TryParse<PokemonNature>(dto.Nature, out var nat))
-		{
-			inst.Nature = nat;
-		}
-		inst.IV_HP = dto.IV_HP;
-		inst.IV_Attack = dto.IV_Attack;
-		inst.IV_Defense = dto.IV_Defense;
-		inst.IV_SpAttack = dto.IV_SpAttack;
-		inst.IV_SpDefense = dto.IV_SpDefense;
-		inst.IV_Speed = dto.IV_Speed;
-		inst.EV_HP = dto.EV_HP;
-		inst.EV_Attack = dto.EV_Attack;
-		inst.EV_Defense = dto.EV_Defense;
-		inst.EV_SpAttack = dto.EV_SpAttack;
-		inst.EV_SpDefense = dto.EV_SpDefense;
-		inst.EV_Speed = dto.EV_Speed;
-		inst.IsEgg = dto.IsEgg;
-		inst.EggSteps = dto.EggSteps;
-		inst.IsShiny = dto.IsShiny;
-		inst.UsedMegaStoneId = dto.UsedMegaStoneId;
-		inst.HeldItem = dto.HeldItem;
-		if (!string.IsNullOrEmpty(dto.Ability)) inst.Ability = dto.Ability;
-		if (!string.IsNullOrEmpty(dto.Gender)) inst.Gender = dto.Gender;
-		if (!string.IsNullOrEmpty(dto.Status) && Enum.TryParse<PokemonStatusCondition>(dto.Status, out var st))
-			inst.Status = st;
-		inst.RecalculateStats();
-		inst.CurrentHP = Math.Clamp(dto.CurrentHP, 0, inst.MaxHP);
-		inst.CurrentExp = dto.CurrentExp;
-		return inst;
+		return PokemonDtoMapper.FromDto(dto);
 	}
 }

@@ -228,47 +228,6 @@ public class PokemonStorage
 		return true;
 	}
 
-	public static string GetCurrentSaveDirectory()
-	{
-		try
-		{
-			if (Game1.uniqueIDForThisGame != 0UL)
-			{
-				string folderName = SaveGame.FilterFileName(Game1.GetSaveGameName()) + "_" + Game1.uniqueIDForThisGame;
-				string savesPath = Program.GetSavesFolder();
-				if (!string.IsNullOrEmpty(savesPath))
-				{
-					string dir = Path.Combine(savesPath, folderName);
-					if (!Directory.Exists(dir))
-					{
-						Directory.CreateDirectory(dir);
-					}
-					return dir;
-				}
-			}
-		}
-		catch { }
-		return null;
-	}
-
-	private static string GetSaveFilePath()
-	{
-		try
-		{
-			string saveDir = GetCurrentSaveDirectory();
-			if (!string.IsNullOrEmpty(saveDir))
-			{
-				return Path.Combine(saveDir, "pokemon_storage_data.json");
-			}
-			string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StardewValley");
-			if (Directory.Exists(appData))
-			{
-				return Path.Combine(appData, "pokemon_storage_data.json");
-			}
-		}
-		catch { }
-		return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokemon_storage_data.json");
-	}
 
 	public void ResetForNewGame()
 	{
@@ -283,6 +242,7 @@ public class PokemonStorage
 	public void Reload()
 	{
 		ResetForNewGame();
+		PokemonSaveStore.Reload();
 		LoadStorage();
 	}
 
@@ -305,64 +265,25 @@ public class PokemonStorage
 
 				for (int s = 0; s < SlotsPerBox; s++)
 				{
-					var mon = Boxes[b].Slots[s];
-					if (mon == null)
-					{
-						boxDto.Slots.Add(null);
-					}
-					else
-					{
-						var dto = new PokemonSaveDto
-						{
-							Species = mon.Species.InternalName,
-							Nickname = mon.Nickname,
-							Level = mon.Level,
-							CurrentHP = mon.CurrentHP,
-							CurrentExp = mon.CurrentExp,
-							Nature = mon.Nature.ToString(),
-							IV_HP = mon.IV_HP,
-							IV_Attack = mon.IV_Attack,
-							IV_Defense = mon.IV_Defense,
-							IV_SpAttack = mon.IV_SpAttack,
-							IV_SpDefense = mon.IV_SpDefense,
-							IV_Speed = mon.IV_Speed,
-							EV_HP = mon.EV_HP,
-							EV_Attack = mon.EV_Attack,
-							EV_Defense = mon.EV_Defense,
-							EV_SpAttack = mon.EV_SpAttack,
-							EV_SpDefense = mon.EV_SpDefense,
-							EV_Speed = mon.EV_Speed,
-							IsEgg = mon.IsEgg,
-							EggSteps = mon.EggSteps,
-							IsShiny = mon.IsShiny,
-							Gender = mon.Gender ?? "♂",
-							Status = mon.Status.ToString(),
-							UsedMegaStoneId = mon.UsedMegaStoneId,
-							HeldItem = mon.HeldItem,
-							Ability = mon.Ability
-						};
-						foreach (var m in mon.Moves) dto.Moves.Add(m.Name);
-						boxDto.Slots.Add(dto);
-					}
+					boxDto.Slots.Add(PokemonDtoMapper.ToDto(Boxes[b].Slots[s]));
 				}
 				root.Boxes.Add(boxDto);
 			}
 
-			string json = JsonSerializer.Serialize(root, new JsonSerializerOptions { WriteIndented = true });
-			File.WriteAllText(GetSaveFilePath(), json);
+			PokemonSaveStore.Data.Storage = root;
+			PokemonSaveStore.Save();
 		}
-		catch { }
+		catch (Exception ex)
+		{
+			Console.WriteLine($"[PokemonStorage] Falha ao salvar as caixas: {ex.Message}");
+		}
 	}
 
 	public void LoadStorage()
 	{
 		try
 		{
-			string path = GetSaveFilePath();
-			if (!File.Exists(path)) return;
-
-			string json = File.ReadAllText(path);
-			var root = JsonSerializer.Deserialize<PokemonStorageSaveDto>(json);
+			PokemonStorageSaveDto root = PokemonSaveStore.Data.Storage;
 			if (root == null || root.Boxes == null) return;
 
 			CurrentBoxIndex = Math.Clamp(root.CurrentBoxIndex, 0, TotalBoxes - 1);
@@ -373,59 +294,16 @@ public class PokemonStorage
 				if (!string.IsNullOrWhiteSpace(boxDto.Name)) Boxes[b].Name = boxDto.Name;
 				Boxes[b].WallpaperIndex = boxDto.WallpaperIndex;
 
-				if (boxDto.Slots != null)
+				if (boxDto.Slots == null) continue;
+				for (int s = 0; s < Math.Min(boxDto.Slots.Count, SlotsPerBox); s++)
 				{
-					for (int s = 0; s < Math.Min(boxDto.Slots.Count, SlotsPerBox); s++)
-					{
-						var dto = boxDto.Slots[s];
-						if (dto == null)
-						{
-							Boxes[b].Slots[s] = null;
-						}
-						else
-						{
-							var species = PokemonSpecies.Get(dto.Species);
-							var inst = new PokemonInstance(species, dto.Level, dto.Moves?.ToArray());
-							inst.Nickname = string.IsNullOrWhiteSpace(dto.Nickname) ? species.Name : dto.Nickname;
-							if (!string.IsNullOrEmpty(dto.Nature) && Enum.TryParse<PokemonNature>(dto.Nature, out var nat))
-							{
-								inst.Nature = nat;
-							}
-							inst.IV_HP = dto.IV_HP;
-							inst.IV_Attack = dto.IV_Attack;
-							inst.IV_Defense = dto.IV_Defense;
-							inst.IV_SpAttack = dto.IV_SpAttack;
-							inst.IV_SpDefense = dto.IV_SpDefense;
-							inst.IV_Speed = dto.IV_Speed;
-							inst.EV_HP = dto.EV_HP;
-							inst.EV_Attack = dto.EV_Attack;
-							inst.EV_Defense = dto.EV_Defense;
-							inst.EV_SpAttack = dto.EV_SpAttack;
-							inst.EV_SpDefense = dto.EV_SpDefense;
-							inst.EV_Speed = dto.EV_Speed;
-							inst.IsEgg = dto.IsEgg;
-							inst.EggSteps = dto.EggSteps;
-							inst.IsShiny = dto.IsShiny;
-							inst.UsedMegaStoneId = dto.UsedMegaStoneId;
-							inst.HeldItem = dto.HeldItem;
-							if (!string.IsNullOrEmpty(dto.Ability)) inst.Ability = dto.Ability;
-							if (species.IsMega && !string.IsNullOrEmpty(species.BaseSpeciesName))
-							{
-								inst.IsMegaEvolved = true;
-								inst.PreMegaSpecies = PokemonSpecies.Get(species.BaseSpeciesName);
-							}
-							if (!string.IsNullOrEmpty(dto.Gender)) inst.Gender = dto.Gender;
-							if (!string.IsNullOrEmpty(dto.Status) && Enum.TryParse<PokemonStatusCondition>(dto.Status, out var st))
-								inst.Status = st;
-							inst.RecalculateStats();
-							inst.CurrentHP = Math.Clamp(dto.CurrentHP, 0, inst.MaxHP);
-							inst.CurrentExp = dto.CurrentExp;
-							Boxes[b].Slots[s] = inst;
-						}
-					}
+					Boxes[b].Slots[s] = PokemonDtoMapper.FromDto(boxDto.Slots[s]);
 				}
 			}
 		}
-		catch { }
+		catch (Exception ex)
+		{
+			Console.WriteLine($"[PokemonStorage] Falha ao carregar as caixas: {ex.Message}");
+		}
 	}
 }
