@@ -153,9 +153,15 @@ public class PokemonBattleMenu : IClickableMenu
 		if (target == null || target.IsFainted) return null;
 		if (change.Chance < 100 && Game1.random.Next(1, 101) > change.Chance) return null;
 
+		int delta = change.Stages;
+		if (string.Equals(target.Ability, "Contrary", StringComparison.OrdinalIgnoreCase))
+		{
+			delta = -delta;
+		}
+
 		ref int stage = ref StageRef(target, change.Stat);
 		int before = stage;
-		stage = Math.Clamp(stage + change.Stages, -6, 6);
+		stage = Math.Clamp(stage + delta, -6, 6);
 		if (stage == before) return null;
 
 		string label = StatLabel(change.Stat);
@@ -238,8 +244,21 @@ public class PokemonBattleMenu : IClickableMenu
 	private static int EffectiveSpeedOf(PokemonInstance mon)
 	{
 		if (mon == null) return 1;
-		int speed = mon.Status == PokemonStatusCondition.Paralysis ? mon.Speed / 2 : mon.Speed;
-		return Math.Max(1, speed);
+		float speed = mon.Status == PokemonStatusCondition.Paralysis ? mon.Speed * 0.5f : mon.Speed;
+
+		// Weather Abilities
+		bool isRain = Game1.isRaining || (Game1.currentLocation != null && Game1.currentLocation.IsRainingHere());
+		bool isSunny = !isRain && Game1.currentLocation != null && Game1.currentLocation.IsOutdoors;
+		if (isRain && string.Equals(mon.Ability, "SwiftSwim", StringComparison.OrdinalIgnoreCase)) speed *= 2f;
+		else if (isSunny && string.Equals(mon.Ability, "Chlorophyll", StringComparison.OrdinalIgnoreCase)) speed *= 2f;
+		else if (string.Equals(mon.Ability, "SandRush", StringComparison.OrdinalIgnoreCase) && Game1.currentLocation is StardewValley.Locations.MineShaft) speed *= 2f;
+		else if (string.Equals(mon.Ability, "SlushRush", StringComparison.OrdinalIgnoreCase) && Game1.IsWinter) speed *= 2f;
+		else if (string.Equals(mon.Ability, "SurgeSurfer", StringComparison.OrdinalIgnoreCase)) speed *= 1.5f;
+
+		// Choice Scarf (+50% Speed)
+		if (PokemonHeldItemManager.Matches(mon.HeldItem, "ChoiceScarf")) speed *= 1.5f;
+
+		return Math.Max(1, (int)speed);
 	}
 
 	/// <summary>Resolves power scaling and conditional doubling for the current board state.</summary>
@@ -1246,8 +1265,8 @@ public class PokemonBattleMenu : IClickableMenu
 					: PokemonMove.Get("Tackle");
 			}
 
-			int playerEffSpeed = (int)((PlayerPokemon.Status == PokemonStatusCondition.Paralysis ? PlayerPokemon.Speed / 2 : PlayerPokemon.Speed) * GetStageMultiplier(_playerSpeedStage));
-			int enemyEffSpeed = (int)((EnemyPokemon.Status == PokemonStatusCondition.Paralysis ? EnemyPokemon.Speed / 2 : EnemyPokemon.Speed) * GetStageMultiplier(_enemySpeedStage));
+			int playerEffSpeed = (int)(EffectiveSpeedOf(PlayerPokemon) * GetStageMultiplier(_playerSpeedStage));
+			int enemyEffSpeed = (int)(EffectiveSpeedOf(EnemyPokemon) * GetStageMultiplier(_enemySpeedStage));
 
 			// Turn order: priority bracket first, then Speed, coin flip on a tie.
 			int playerPriority = GetEffectivePriority(PlayerPokemon, EnemyPokemon, playerMove, useZMove, useMaxMove);
@@ -1487,7 +1506,7 @@ public class PokemonBattleMenu : IClickableMenu
 		{
 			if (PlayerPokemon != null && !PlayerPokemon.IsFainted)
 			{
-				if (string.Equals(PlayerPokemon.HeldItem, "Poke_Leftovers", StringComparison.OrdinalIgnoreCase) && PlayerPokemon.CurrentHP < PlayerPokemon.MaxHP)
+				if (PokemonHeldItemManager.Matches(PlayerPokemon.HeldItem, "Leftovers") && PlayerPokemon.CurrentHP < PlayerPokemon.MaxHP)
 				{
 					int heal = Math.Max(1, PlayerPokemon.MaxHP / 16);
 					PlayerPokemon.Heal(heal);
@@ -1496,7 +1515,7 @@ public class PokemonBattleMenu : IClickableMenu
 					QueueMessage($"Os Restos (Leftovers) restauraram {heal} de HP de {PlayerPokemon.Nickname}!", checkEnemyStatus);
 					return;
 				}
-				if (string.Equals(PlayerPokemon.HeldItem, "Poke_BlackSludge", StringComparison.OrdinalIgnoreCase))
+				if (PokemonHeldItemManager.Matches(PlayerPokemon.HeldItem, "BlackSludge"))
 				{
 					bool isPoisonType = PlayerPokemon.Species != null && (PlayerPokemon.Species.PrimaryType == PokemonType.Poison || PlayerPokemon.Species.SecondaryType == PokemonType.Poison);
 					if (isPoisonType && PlayerPokemon.CurrentHP < PlayerPokemon.MaxHP)
@@ -1524,7 +1543,7 @@ public class PokemonBattleMenu : IClickableMenu
 				}
 
 				string pHeld = PlayerPokemon.HeldItem ?? "";
-				if ((string.Equals(pHeld, "Poke_FlameOrb", StringComparison.OrdinalIgnoreCase) || string.Equals(pHeld, "FlameOrb", StringComparison.OrdinalIgnoreCase)) && PlayerPokemon.Status == PokemonStatusCondition.None)
+				if (PokemonHeldItemManager.Matches(pHeld, "FlameOrb") && PlayerPokemon.Status == PokemonStatusCondition.None)
 				{
 					if (CanAfflictStatus(PlayerPokemon, PokemonStatusCondition.Burn, null, out _))
 					{
@@ -1534,7 +1553,7 @@ public class PokemonBattleMenu : IClickableMenu
 						return;
 					}
 				}
-				if ((string.Equals(pHeld, "Poke_ToxicOrb", StringComparison.OrdinalIgnoreCase) || string.Equals(pHeld, "ToxicOrb", StringComparison.OrdinalIgnoreCase)) && PlayerPokemon.Status == PokemonStatusCondition.None)
+				if (PokemonHeldItemManager.Matches(pHeld, "ToxicOrb") && PlayerPokemon.Status == PokemonStatusCondition.None)
 				{
 					if (CanAfflictStatus(PlayerPokemon, PokemonStatusCondition.Toxic, null, out _))
 					{
@@ -1757,6 +1776,22 @@ public class PokemonBattleMenu : IClickableMenu
 				}
 			}
 
+			// Type conversion abilities (Pixilate, Aerilate, Refrigerate, Galvanize)
+			if (moveType == PokemonType.Normal && !useZMove && !useMaxMove)
+			{
+				if (string.Equals(attacker.Ability, "Pixilate", StringComparison.OrdinalIgnoreCase)) { moveType = PokemonType.Fairy; effectivePower = (int)(effectivePower * 1.2f); }
+				else if (string.Equals(attacker.Ability, "Aerilate", StringComparison.OrdinalIgnoreCase)) { moveType = PokemonType.Flying; effectivePower = (int)(effectivePower * 1.2f); }
+				else if (string.Equals(attacker.Ability, "Refrigerate", StringComparison.OrdinalIgnoreCase)) { moveType = PokemonType.Ice; effectivePower = (int)(effectivePower * 1.2f); }
+				else if (string.Equals(attacker.Ability, "Galvanize", StringComparison.OrdinalIgnoreCase)) { moveType = PokemonType.Electric; effectivePower = (int)(effectivePower * 1.2f); }
+			}
+
+			// Sheer Force (+30% power if move has secondary effect)
+			bool sheerForceActive = string.Equals(attacker.Ability, "SheerForce", StringComparison.OrdinalIgnoreCase);
+			if (sheerForceActive && (move.TargetStages.Count > 0 || move.StatusEffect != PokemonStatusCondition.None || move.FlinchChance > 0))
+			{
+				effectivePower = (int)(effectivePower * 1.3f);
+			}
+
 			// Terastallization: 60 Base Power Floor (Gen 9 mechanic)
 			if (attacker.IsTerastallized && moveType == attacker.TeraType && effectivePower > 0 && effectivePower < 60 && !useZMove && !useMaxMove)
 			{
@@ -1941,27 +1976,42 @@ public class PokemonBattleMenu : IClickableMenu
 					}
 				}
 
+				// Mold Breaker bypasses defender defensive abilities
+				bool moldBreaker = string.Equals(attacker.Ability, "MoldBreaker", StringComparison.OrdinalIgnoreCase);
+
 				// Ability Immunities & Absorb
-				if (string.Equals(defender.Ability, "Levitate", StringComparison.OrdinalIgnoreCase) && moveType == PokemonType.Ground)
+				if (!moldBreaker)
 				{
-					typeMult = 0f;
-				}
-				else if (string.Equals(defender.Ability, "FlashFire", StringComparison.OrdinalIgnoreCase) && moveType == PokemonType.Fire)
-				{
-					typeMult = 0f;
-				}
-				else if ((string.Equals(defender.Ability, "WaterAbsorb", StringComparison.OrdinalIgnoreCase) || string.Equals(defender.Ability, "DrySkin", StringComparison.OrdinalIgnoreCase)) && moveType == PokemonType.Water)
-				{
-					typeMult = 0f;
-					defender.Heal(Math.Max(1, defender.MaxHP / 4));
-				}
-				else if ((string.Equals(defender.Ability, "VoltAbsorb", StringComparison.OrdinalIgnoreCase) || string.Equals(defender.Ability, "LightningRod", StringComparison.OrdinalIgnoreCase)) && moveType == PokemonType.Electric)
-				{
-					typeMult = 0f;
-					defender.Heal(Math.Max(1, defender.MaxHP / 4));
+					if (string.Equals(defender.Ability, "Levitate", StringComparison.OrdinalIgnoreCase) && moveType == PokemonType.Ground)
+					{
+						typeMult = 0f;
+					}
+					else if (string.Equals(defender.Ability, "EarthEater", StringComparison.OrdinalIgnoreCase) && moveType == PokemonType.Ground)
+					{
+						typeMult = 0f;
+						defender.Heal(Math.Max(1, defender.MaxHP / 4));
+					}
+					else if (string.Equals(defender.Ability, "FlashFire", StringComparison.OrdinalIgnoreCase) && moveType == PokemonType.Fire)
+					{
+						typeMult = 0f;
+					}
+					else if ((string.Equals(defender.Ability, "WaterAbsorb", StringComparison.OrdinalIgnoreCase) || string.Equals(defender.Ability, "DrySkin", StringComparison.OrdinalIgnoreCase)) && moveType == PokemonType.Water)
+					{
+						typeMult = 0f;
+						defender.Heal(Math.Max(1, defender.MaxHP / 4));
+					}
+					else if ((string.Equals(defender.Ability, "VoltAbsorb", StringComparison.OrdinalIgnoreCase) || string.Equals(defender.Ability, "LightningRod", StringComparison.OrdinalIgnoreCase)) && moveType == PokemonType.Electric)
+					{
+						typeMult = 0f;
+						defender.Heal(Math.Max(1, defender.MaxHP / 4));
+					}
 				}
 
 				// Ability Attack & Stat Modifiers
+				if (physicalStats && (string.Equals(attacker.Ability, "HugePower", StringComparison.OrdinalIgnoreCase) || string.Equals(attacker.Ability, "PurePower", StringComparison.OrdinalIgnoreCase)))
+				{
+					attackStat *= 2.0f;
+				}
 				if (string.Equals(attacker.Ability, "Technician", StringComparison.OrdinalIgnoreCase) && effectivePower <= 60)
 				{
 					effectivePower = (int)(effectivePower * 1.5f);
@@ -2016,32 +2066,32 @@ public class PokemonBattleMenu : IClickableMenu
 				}
 
 				// Held Item Stat Modifiers
-				if (string.Equals(attacker.HeldItem, "Poke_ChoiceBand", StringComparison.OrdinalIgnoreCase) && moveCat == MoveCategory.Physical)
+				if (PokemonHeldItemManager.Matches(attacker.HeldItem, "ChoiceBand") && moveCat == MoveCategory.Physical)
 				{
 					attackStat *= 1.5f;
 				}
-				else if (string.Equals(attacker.HeldItem, "Poke_ChoiceSpecs", StringComparison.OrdinalIgnoreCase) && moveCat == MoveCategory.Special)
+				else if (PokemonHeldItemManager.Matches(attacker.HeldItem, "ChoiceSpecs") && moveCat == MoveCategory.Special)
 				{
 					attackStat *= 1.5f;
 				}
 
 				// Defender Held Item Modifiers
-				if (string.Equals(defender.HeldItem, "Poke_AssaultVest", StringComparison.OrdinalIgnoreCase) && moveCat == MoveCategory.Special)
+				if (PokemonHeldItemManager.Matches(defender.HeldItem, "AssaultVest") && moveCat == MoveCategory.Special)
 				{
 					defStat *= 1.5f;
 				}
-				else if (string.Equals(defender.HeldItem, "Poke_Eviolite", StringComparison.OrdinalIgnoreCase))
+				else if (PokemonHeldItemManager.Matches(defender.HeldItem, "Eviolite"))
 				{
 					defStat *= 1.5f;
 				}
 
 				// Held Item Direct Damage Modifiers
 				float itemDamageMult = 1.0f;
-				if (string.Equals(attacker.HeldItem, "Poke_LifeOrb", StringComparison.OrdinalIgnoreCase))
+				if (PokemonHeldItemManager.Matches(attacker.HeldItem, "LifeOrb"))
 				{
 					itemDamageMult *= 1.3f;
 				}
-				else if (string.Equals(attacker.HeldItem, "Poke_ExpertBelt", StringComparison.OrdinalIgnoreCase) && typeMult > 1.1f)
+				else if (PokemonHeldItemManager.Matches(attacker.HeldItem, "ExpertBelt") && typeMult > 1.1f)
 				{
 					itemDamageMult *= 1.2f;
 				}
@@ -2095,7 +2145,7 @@ public class PokemonBattleMenu : IClickableMenu
 				}
 
 				// Focus Sash check
-				if (finalDamage >= defender.CurrentHP && defender.CurrentHP == defender.MaxHP && string.Equals(defender.HeldItem, "Poke_FocusSash", StringComparison.OrdinalIgnoreCase))
+				if (finalDamage >= defender.CurrentHP && defender.CurrentHP == defender.MaxHP && PokemonHeldItemManager.Matches(defender.HeldItem, "FocusSash"))
 				{
 					finalDamage = Math.Max(0, defender.CurrentHP - 1);
 					defender.HeldItem = null;
@@ -3062,7 +3112,7 @@ public class PokemonBattleMenu : IClickableMenu
 			}
 
 			// Rocky Helmet check
-			if (string.Equals(fx.Defender.HeldItem, "Poke_RockyHelmet", StringComparison.OrdinalIgnoreCase) && fx.Move?.Category == MoveCategory.Physical && fx.Damage > 0 && !fx.Attacker.IsFainted)
+			if (PokemonHeldItemManager.Matches(fx.Defender.HeldItem, "RockyHelmet") && fx.Move?.Category == MoveCategory.Physical && fx.Damage > 0 && !fx.Attacker.IsFainted)
 			{
 				int helmDmg = Math.Max(1, fx.Attacker.MaxHP / 6);
 				fx.Attacker.TakeDamage(helmDmg);
@@ -3071,7 +3121,7 @@ public class PokemonBattleMenu : IClickableMenu
 			}
 
 			// Life Orb recoil check
-			if (string.Equals(fx.Attacker.HeldItem, "Poke_LifeOrb", StringComparison.OrdinalIgnoreCase) && fx.Damage > 0 && !fx.Attacker.IsFainted && !string.Equals(fx.Attacker.Ability, "MagicGuard", StringComparison.OrdinalIgnoreCase))
+			if (PokemonHeldItemManager.Matches(fx.Attacker.HeldItem, "LifeOrb") && fx.Damage > 0 && !fx.Attacker.IsFainted && !string.Equals(fx.Attacker.Ability, "MagicGuard", StringComparison.OrdinalIgnoreCase))
 			{
 				int recoil = Math.Max(1, fx.Attacker.MaxHP / 10);
 				fx.Attacker.TakeDamage(recoil);

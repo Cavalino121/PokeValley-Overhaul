@@ -704,6 +704,8 @@ public class PokemonInstance
 		}
 	}
 
+	private static readonly Dictionary<string, (Texture2D tex, int bottomY)> _sharedSpriteCache = new(StringComparer.OrdinalIgnoreCase);
+
 	public static Texture2D LoadSpriteWithColorKey(
 		GraphicsDevice device,
 		string path,
@@ -713,6 +715,12 @@ public class PokemonInstance
 		bool isSharedPaletteSprite = false,
 		bool isDynamax = false)
 	{
+		string cacheKey = $"{path}_{(isShiny ? "s" : "n")}_{(isDynamax ? "d" : "x")}";
+		if (_sharedSpriteCache.TryGetValue(cacheKey, out var cached) && cached.tex != null && !cached.tex.IsDisposed)
+		{
+			bottomOpaqueY = cached.bottomY;
+			return cached.tex;
+		}
 		using Stream stream = File.OpenRead(path);
 		Texture2D tex = Texture2D.FromStream(device, stream);
 		Color[] data = new Color[tex.Width * tex.Height];
@@ -937,6 +945,7 @@ public class PokemonInstance
 			}
 		}
 
+		_sharedSpriteCache[cacheKey] = (tex, bottomOpaqueY);
 		return tex;
 	}
 
