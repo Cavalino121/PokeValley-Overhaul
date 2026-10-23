@@ -241,6 +241,97 @@ public class PokemonBattleMenu : IClickableMenu
 		return total;
 	}
 
+private PokemonMove SelectEnemyMove()
+	{
+		if (EnemyPokemon == null || EnemyPokemon.Moves == null || EnemyPokemon.Moves.Count == 0)
+			return PokemonMove.Get("Tackle");
+
+		if (EnemyPokemon.Moves.Count == 1)
+			return EnemyPokemon.Moves[0];
+
+		if (EnemyPokemon.RampageTurns > 0 && !string.IsNullOrEmpty(EnemyPokemon.RampageMoveName))
+		{
+			var rampage = EnemyPokemon.Moves.Find(m => m.Name.Equals(EnemyPokemon.RampageMoveName, StringComparison.OrdinalIgnoreCase));
+			if (rampage != null) return rampage;
+		}
+
+		var player = PlayerPokemon;
+		if (player == null || player.Species == null)
+		{
+			return EnemyPokemon.Moves[Game1.random.Next(EnemyPokemon.Moves.Count)];
+		}
+
+		PokemonType pType1 = player.Species.PrimaryType;
+		PokemonType? pType2 = player.Species.SecondaryType;
+		if (player.IsTerastallized)
+		{
+			pType1 = player.TeraType;
+			pType2 = null;
+		}
+
+		bool playerLevitates = string.Equals(player.Ability, "Levitate", StringComparison.OrdinalIgnoreCase) ||
+		                       pType1 == PokemonType.Flying ||
+		                       pType2 == PokemonType.Flying;
+
+		var scored = new List<(PokemonMove Move, int Weight)>();
+		foreach (var move in EnemyPokemon.Moves)
+		{
+			int weight = 100;
+			float eff = TypeChart.GetEffectiveness(move.Type, pType1);
+			if (pType2.HasValue) eff *= TypeChart.GetEffectiveness(move.Type, pType2.Value);
+
+			if (eff == 0f || (move.Type == PokemonType.Ground && playerLevitates))
+			{
+				weight = 0;
+			}
+			else
+			{
+				if (eff >= 2.0f) weight += 80;
+				else if (eff < 1.0f) weight = Math.Max(10, weight - 40);
+
+				if (move.Power > 0 && (move.Type == EnemyPokemon.Species.PrimaryType || move.Type == EnemyPokemon.Species.SecondaryType))
+				{
+					weight += 30;
+				}
+
+				if (move.Power == 0 && move.StatusEffect != PokemonStatusCondition.None)
+				{
+					if (player.Status != PokemonStatusCondition.None)
+					{
+						weight = 0;
+					}
+				}
+
+				if (move.SelfHealRatio > 0f)
+				{
+					float hpRatio = (float)EnemyPokemon.CurrentHP / Math.Max(1, EnemyPokemon.MaxHP);
+					if (hpRatio > 0.85f) weight = 5;
+					else if (hpRatio < 0.45f) weight += 100;
+				}
+			}
+
+			scored.Add((move, weight));
+		}
+
+		int total = 0;
+		foreach (var s in scored) total += s.Weight;
+
+		if (total <= 0)
+		{
+			return EnemyPokemon.Moves[Game1.random.Next(EnemyPokemon.Moves.Count)];
+		}
+
+		int roll = Game1.random.Next(total);
+		int accum = 0;
+		foreach (var s in scored)
+		{
+			accum += s.Weight;
+			if (roll < accum) return s.Move;
+		}
+
+		return EnemyPokemon.Moves[0];
+	}
+
 	private static int EffectiveSpeedOf(PokemonInstance mon)
 	{
 		if (mon == null) return 1;
@@ -1253,17 +1344,7 @@ public class PokemonBattleMenu : IClickableMenu
 			bool useMaxMove = PlayerPokemon.IsDynamaxed;
 
 			// Pick Enemy Move (or continue Rampage if locked)
-			PokemonMove enemyMove;
-			if (EnemyPokemon != null && EnemyPokemon.RampageTurns > 0 && !string.IsNullOrEmpty(EnemyPokemon.RampageMoveName))
-			{
-				enemyMove = EnemyPokemon.Moves.Find(m => m.Name.Equals(EnemyPokemon.RampageMoveName, StringComparison.OrdinalIgnoreCase)) ?? PokemonMove.Get(EnemyPokemon.RampageMoveName);
-			}
-			else
-			{
-				enemyMove = (EnemyPokemon != null && EnemyPokemon.Moves.Count > 0)
-					? EnemyPokemon.Moves[Game1.random.Next(EnemyPokemon.Moves.Count)]
-					: PokemonMove.Get("Tackle");
-			}
+			PokemonMove enemyMove = SelectEnemyMove();
 
 			int playerEffSpeed = (int)(EffectiveSpeedOf(PlayerPokemon) * GetStageMultiplier(_playerSpeedStage));
 			int enemyEffSpeed = (int)(EffectiveSpeedOf(EnemyPokemon) * GetStageMultiplier(_enemySpeedStage));
@@ -2281,8 +2362,10 @@ public class PokemonBattleMenu : IClickableMenu
 			_enemyPokemonScale = 0f;
 			_isEnemyRetrieving = false;
 
-			// Give EXP + EVs
-			int exp = EnemyPokemon.Level * 18;
+			// Give EXP + EVs (Canonical Gen 3-8 Formula)
+			int baseExp = EnemyPokemon.Species.BaseExpYield > 0 ? EnemyPokemon.Species.BaseExpYield : 100;
+			float trainerMult = !IsWild ? 1.5f : 1.0f;
+			int exp = Math.Max(10, (int)((baseExp * EnemyPokemon.Level * trainerMult) / 7f));
 			PlayerPokemon.CurrentExp += exp;
 			PlayerPokemon.GainEffortValues(EnemyPokemon.Species);
 
@@ -2576,7 +2659,7 @@ public class PokemonBattleMenu : IClickableMenu
 					Game1.playSound("heal");
 					QueueMessage($"Você usou Revive! {target.Nickname} reanimou com metade do HP!", () =>
 					{
-						PokemonMove enemyMove = EnemyPokemon.Moves.Count > 0 ? EnemyPokemon.Moves[Game1.random.Next(EnemyPokemon.Moves.Count)] : PokemonMove.Get("Tackle");
+						PokemonMove enemyMove = SelectEnemyMove();
 						ExecuteAttack(EnemyPokemon, PlayerPokemon, enemyMove, () =>
 						{
 							if (PlayerPokemon.IsFainted) HandlePlayerFainted();
@@ -2593,7 +2676,7 @@ public class PokemonBattleMenu : IClickableMenu
 				Game1.playSound("heal");
 				QueueMessage($"Você usou {itemId}! {PlayerPokemon.Nickname} recuperou {healAmount} HP!", () =>
 				{
-					PokemonMove enemyMove = EnemyPokemon.Moves.Count > 0 ? EnemyPokemon.Moves[Game1.random.Next(EnemyPokemon.Moves.Count)] : PokemonMove.Get("Tackle");
+					PokemonMove enemyMove = SelectEnemyMove();
 					ExecuteAttack(EnemyPokemon, PlayerPokemon, enemyMove, () =>
 					{
 						if (PlayerPokemon.IsFainted) HandlePlayerFainted();
@@ -2637,7 +2720,7 @@ public class PokemonBattleMenu : IClickableMenu
 					_ => 1.0f
 				};
 
-				float catchRate = (EnemyPokemon.Species.BaseHP * 255f / 100f);
+				float catchRate = EnemyPokemon.Species.CatchRate > 0 ? (float)EnemyPokemon.Species.CatchRate : 45f;
 				float hpFactor = (3f * EnemyPokemon.MaxHP - 2f * EnemyPokemon.CurrentHP) / (3f * EnemyPokemon.MaxHP);
 				float statusMult = 1.0f;
 				if (EnemyPokemon.Status == PokemonStatusCondition.Sleep || EnemyPokemon.Status == PokemonStatusCondition.Freeze)
@@ -2648,7 +2731,9 @@ public class PokemonBattleMenu : IClickableMenu
 				{
 					statusMult = 1.5f;
 				}
-				float chance = Math.Clamp((catchRate * hpFactor * multiplier * statusMult) / 255f, 0.20f, 0.98f);
+				float chance = (itemId == "MasterBall")
+					? 1.0f
+					: Math.Clamp((catchRate * hpFactor * multiplier * statusMult) / 255f, 0.015f, 0.99f);
 
 				QueueMessage($"Você arremessou uma {itemId}!", () =>
 				{
@@ -2952,7 +3037,7 @@ public class PokemonBattleMenu : IClickableMenu
 
 				TriggerSwitchInAbility(PlayerPokemon, EnemyPokemon, () =>
 				{
-					PokemonMove enemyMove = EnemyPokemon.Moves.Count > 0 ? EnemyPokemon.Moves[Game1.random.Next(EnemyPokemon.Moves.Count)] : PokemonMove.Get("Tackle");
+					PokemonMove enemyMove = SelectEnemyMove();
 					ExecuteAttack(EnemyPokemon, PlayerPokemon, enemyMove, () =>
 					{
 						if (PlayerPokemon.IsFainted) HandlePlayerFainted();
@@ -3606,7 +3691,7 @@ public class PokemonBattleMenu : IClickableMenu
 					_enemyPokemonScale = 3.2f;
 					QueueMessage($"Oh não! O {EnemyPokemon.Species.Name} selvagem escapou da Poké Bola!", () =>
 					{
-						PokemonMove enemyMove = EnemyPokemon.Moves.Count > 0 ? EnemyPokemon.Moves[Game1.random.Next(EnemyPokemon.Moves.Count)] : PokemonMove.Get("Tackle");
+						PokemonMove enemyMove = SelectEnemyMove();
 						ExecuteAttack(EnemyPokemon, PlayerPokemon, enemyMove, () =>
 						{
 							if (PlayerPokemon.IsFainted) HandlePlayerFainted();

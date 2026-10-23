@@ -20,12 +20,19 @@ public class PokemonSpecies
 	public int BaseSpAttack { get; set; }
 	public int BaseSpDefense { get; set; }
 	public int BaseSpeed { get; set; }
+	public int CatchRate { get; set; } = 45;
+	public int BaseExpYield { get; set; } = 100;
 	public List<string> LearnableMoves { get; set; } = new();
 
 	private static readonly Dictionary<string, PokemonSpecies> _registry = new(StringComparer.OrdinalIgnoreCase);
 
 	public static void Register(PokemonSpecies species)
 	{
+		if (PokemonRates.Rates.TryGetValue(species.InternalName, out var rate) || PokemonRates.Rates.TryGetValue(species.Name, out rate))
+		{
+			species.CatchRate = rate.CatchRate;
+			species.BaseExpYield = rate.BaseExpYield;
+		}
 		_registry[species.Name] = species;
 		_registry[species.InternalName] = species;
 	}
@@ -95,7 +102,9 @@ public class PokemonSpecies
 			BaseDefense = 50,
 			BaseSpAttack = 50,
 			BaseSpDefense = 50,
-			BaseSpeed = 50
+			BaseSpeed = 50,
+			CatchRate = 45,
+			BaseExpYield = 100
 		};
 	}
 

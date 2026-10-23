@@ -12,7 +12,7 @@ public class PokemonInstance
 	public string Nickname { get; set; }
 	public int Level { get; set; }
 	public int CurrentExp { get; set; }
-	public int ExpToNextLevel => Level * Level * Level;
+	public int ExpToNextLevel => (Level >= 100) ? 0 : Math.Max(10, ((Level + 1) * (Level + 1) * (Level + 1)) - (Level * Level * Level));
 
 	public int MaxHP { get; set; }
 	public int CurrentHP { get; set; }
