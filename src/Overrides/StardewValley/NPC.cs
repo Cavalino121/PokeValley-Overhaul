@@ -3074,7 +3074,7 @@ public class NPC : Character, IComparable
 	}
 
 
-	private static string GetPokemonReactionDialogue(string npcName, StardewValley.Pokemon.PokemonInstance poke)
+	public static string GetPokemonReactionDialogue(string npcName, StardewValley.Pokemon.PokemonInstance poke)
 	{
 		if (poke == null || poke.Species == null) return null;
 

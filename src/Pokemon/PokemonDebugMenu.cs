@@ -18,7 +18,8 @@ public class PokemonDebugMenu : IClickableMenu
 		TMs,
 		Battle,
 		Cheats,
-		Mechanics
+		Mechanics,
+		UpdatesV2
 	}
 
 	private enum StyleFilter
@@ -58,6 +59,7 @@ public class PokemonDebugMenu : IClickableMenu
 	private readonly List<ClickableComponent> _battleButtons = new();
 	private readonly List<ClickableComponent> _cheatButtons = new();
 	private readonly List<ClickableComponent> _mechanicButtons = new();
+	private readonly List<ClickableComponent> _updateButtons = new();
 
 	private ClickableComponent _prevPageButton;
 	private ClickableComponent _nextPageButton;
@@ -102,7 +104,7 @@ public class PokemonDebugMenu : IClickableMenu
 
 	public void SetDebugState(int tabIndex, int page = 0, bool fieldMovesOnly = false)
 	{
-		_currentTab = (Tab)Math.Clamp(tabIndex, 0, 5);
+		_currentTab = (Tab)Math.Clamp(tabIndex, 0, 6);
 		_speciesPage = page;
 		_tmPage = page;
 		_filterFieldMovesOnly = fieldMovesOnly;
@@ -145,19 +147,21 @@ public class PokemonDebugMenu : IClickableMenu
 		_battleButtons.Clear();
 		_cheatButtons.Clear();
 		_mechanicButtons.Clear();
+		_updateButtons.Clear();
 
 		int startX = xPositionOnScreen + 30;
 		int startY = yPositionOnScreen + 44;
 
-		// 6 Tabs across 840px
-		int tabW = 136;
+		// 7 Tabs across 840px (116px width + 4px gap)
+		int tabW = 116;
 		int tabGap = 4;
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX, startY, tabW, 40), "Pokemon", "1. Pokémon"));
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap), startY, tabW, 40), "Items", "2. Itens"));
-		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 2, startY, tabW, 40), "TMs", "3. TMs / HMs"));
-		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 3, startY, tabW, 40), "Battle", "4. Batalhas"));
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 2, startY, tabW, 40), "TMs", "3. TMs"));
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 3, startY, tabW, 40), "Battle", "4. Batalha"));
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 4, startY, tabW, 40), "Cheats", "5. Extras"));
-		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 5, startY, tabW + 4, 40), "Mechanics", "6. 8 Funções"));
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 5, startY, tabW, 40), "Mechanics", "6. Mecânicas"));
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 6, startY, tabW + 4, 40), "UpdatesV2", "7. v2.0 Novos"));
 
 		int contentY = startY + 50;
 
@@ -328,6 +332,32 @@ public class PokemonDebugMenu : IClickableMenu
 		_mechanicButtons.Add(new ClickableComponent(new Rectangle(startX, mStartY + 308, btnW, 40), "mech_toggle_spirits_luck", "7. 🍀 Alternar Sorte dos Espíritos (Spawns)"));
 		_mechanicButtons.Add(new ClickableComponent(new Rectangle(col2X, mStartY + 308, btnW, 40), "mech_give_tera_pack", "8. 🔮 Orbe Tera + 50 de Todos Tera Shards"));
 		_mechanicButtons.Add(new ClickableComponent(new Rectangle(startX, mStartY + 352, btnW * 2 + 16, 42), "mech_cycle_tera_type", "8. 💎 Ciclar Tera Type do Pokémon Ativo da Equipe"));
+
+		// 8. UpdatesV2 Buttons (Tab 7: Novidades v2.0, v1.4 e v1.3)
+		int uStartY = contentY + 10;
+		int uRowStep = 44;
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY, btnW, 40), "v2_battle_red", "🏔️ Batalhar vs Campeão Red (Cume - Nv. 50)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY, btnW, 40), "v2_battle_steven", "💎 Batalhar vs Mestre Steven Stone (Cume - Nv. 40)"));
+
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep, btnW, 40), "v2_warp_summit", "🚀 Teleportar para o Cume da Montanha (Summit)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep, btnW, 40), "v2_test_npc_reactions", "🗣️ Testar Reatividade dos Aldeões (Companheiro)"));
+
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 2, btnW, 40), "v2_battle_rain", "🌧️ Batalha com Clima: Chuva (Rain - 5 Turnos)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 2, btnW, 40), "v2_battle_sun", "☀️ Batalha com Clima: Sol Forte (Harsh Sun - 5t)"));
+
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 3, btnW, 40), "v2_battle_sandstorm", "🏜️ Batalha: Tempestade de Areia (Sandstorm - 5t)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 3, btnW, 40), "v2_battle_snow", "❄️ Batalha com Clima: Nevasca (Snow - 5t)"));
+
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 4, btnW, 40), "v2_give_linking_cord", "🔗 +5 Cabos de Ligação & 9 Itens de Troca"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 4, btnW, 40), "v2_test_solo_evo", "⚡ Testar Evolução Solo do Pokémon Ativo"));
+
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 5, btnW, 40), "v2_hatch_1_step", "🔥 Acelerar Ovos da Equipe (Falta 1 Passo)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 5, btnW, 40), "v2_pc_full_restore", "🏥 Executar Rotina de Cura Total do PC Box"));
+
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 6, btnW, 40), "v2_inspect_rates", "📊 Inspecionar Catch Rate & EXP Canônico (Ativo)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 6, btnW, 40), "v2_test_catch_formula", "🎯 Simular Equação Canônica de Captura (Gen 3-8)"));
+
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 7, btnW * 2 + 16, 42), "v2_test_all_gimmick_revert", "🔄 Reverter Todas as Gimmicks Ativas (Mega / Tera / Dynamax)"));
 	}
 
 	public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -627,6 +657,19 @@ public class PokemonDebugMenu : IClickableMenu
 				if (mb.containsPoint(x, y))
 				{
 					HandleMechanicTest(mb.name);
+					return;
+				}
+			}
+		}
+
+		// Tab 7: UpdatesV2 (Novidades v2.0, v1.4, v1.3)
+		else if (_currentTab == Tab.UpdatesV2)
+		{
+			foreach (var ub in _updateButtons)
+			{
+				if (ub.containsPoint(x, y))
+				{
+					HandleUpdateV2Action(ub.name);
 					return;
 				}
 			}
@@ -1361,6 +1404,298 @@ public class PokemonDebugMenu : IClickableMenu
 		}
 	}
 
+	private void HandleUpdateV2Action(string action)
+	{
+		Game1.playSound("coin");
+
+		// 1. Batalhas do Cume
+		if (action == "v2_battle_red")
+		{
+			var team = NPCTeams.GetTeam("Red");
+			if (team != null && team.Count > 0)
+			{
+				Game1.activeClickableMenu = new PokemonBattleMenu("Red", team);
+			}
+			else
+			{
+				Game1.showRedMessage("Time do Campeão Red não encontrado!");
+			}
+			return;
+		}
+
+		if (action == "v2_battle_steven")
+		{
+			var team = NPCTeams.GetTeam("Steven");
+			if (team != null && team.Count > 0)
+			{
+				Game1.activeClickableMenu = new PokemonBattleMenu("Steven", team);
+			}
+			else
+			{
+				Game1.showRedMessage("Time do Mestre Steven Stone não encontrado!");
+			}
+			return;
+		}
+
+		// 2. Teleporte ao Cume
+		if (action == "v2_warp_summit")
+		{
+			Game1.playSound("wand");
+			Game1.warpFarmer("Summit", 21, 15, 2);
+			Game1.exitActiveMenu();
+			Game1.addHUDMessage(new HUDMessage("Teleportado para o Cume da Montanha!", 2));
+			return;
+		}
+
+		// 3. Testar Reatividade dos Aldeões
+		if (action == "v2_test_npc_reactions")
+		{
+			var lead = PlayerParty.Instance.ActivePokemon ?? (PlayerParty.Instance.Team.Count > 0 ? PlayerParty.Instance.Team[0] : null);
+			if (lead == null)
+			{
+				Game1.showRedMessage("Adicione um Pokémon à sua equipe primeiro!");
+				return;
+			}
+
+			string[] testNpcs = new[] { "Clint", "Abigail", "Willy", "Maru", "Linus", "Wizard", "Krobus", "Haley" };
+			var sb = new System.Text.StringBuilder();
+			sb.AppendLine($"[Reações a {lead.Nickname} ({lead.Species.PrimaryType})]:");
+			int count = 0;
+			foreach (var npc in testNpcs)
+			{
+				string r = StardewValley.NPC.GetPokemonReactionDialogue(npc, lead);
+				if (!string.IsNullOrEmpty(r))
+				{
+					sb.AppendLine($"• {npc}: \"{r}\"");
+					count++;
+					if (count >= 3) break;
+				}
+			}
+			if (count == 0)
+			{
+				sb.AppendLine($"• Os aldeões observam {lead.Nickname} com curiosidade amigável!");
+			}
+			Game1.drawObjectDialogue(sb.ToString().TrimEnd());
+			return;
+		}
+
+		// 4. Climas em Batalha
+		if (action == "v2_battle_rain")
+		{
+			var wildMon = new PokemonInstance(PokemonSpecies.Get("Pikachu"), 25);
+			var battle = new PokemonBattleMenu(wildMon, isWild: true);
+			battle.CurrentWeather = PokemonBattleMenu.BattleWeather.Rain;
+			battle.WeatherTurns = 5;
+			Game1.activeClickableMenu = battle;
+			return;
+		}
+
+		if (action == "v2_battle_sun")
+		{
+			var wildMon = new PokemonInstance(PokemonSpecies.Get("Charizard"), 36);
+			var battle = new PokemonBattleMenu(wildMon, isWild: true);
+			battle.CurrentWeather = PokemonBattleMenu.BattleWeather.HarshSun;
+			battle.WeatherTurns = 5;
+			Game1.activeClickableMenu = battle;
+			return;
+		}
+
+		if (action == "v2_battle_sandstorm")
+		{
+			var wildMon = new PokemonInstance(PokemonSpecies.Get("Tyranitar"), 55);
+			var battle = new PokemonBattleMenu(wildMon, isWild: true);
+			battle.CurrentWeather = PokemonBattleMenu.BattleWeather.Sandstorm;
+			battle.WeatherTurns = 5;
+			Game1.activeClickableMenu = battle;
+			return;
+		}
+
+		if (action == "v2_battle_snow")
+		{
+			var wildMon = new PokemonInstance(PokemonSpecies.Get("Abomasnow"), 40);
+			var battle = new PokemonBattleMenu(wildMon, isWild: true);
+			battle.CurrentWeather = PokemonBattleMenu.BattleWeather.Snow;
+			battle.WeatherTurns = 5;
+			Game1.activeClickableMenu = battle;
+			return;
+		}
+
+		// 5. Itens de Troca e Linking Cord
+		if (action == "v2_give_linking_cord")
+		{
+			string[] items = new[]
+			{
+				"PokemonLinkingCord", "PokemonMetalCoat", "PokemonProtector",
+				"PokemonElectirizer", "PokemonMagmarizer", "PokemonUpGrade",
+				"PokemonDubiousDisc", "PokemonDragonScale", "PokemonKingsRock", "PokemonReaperCloth"
+			};
+			foreach (var it in items)
+			{
+				Item obj = ItemRegistry.Create("(O)" + it, 5, 0, allowNull: true) ?? new StardewValley.Object(it, 5);
+				if (obj != null) Game1.player.addItemToInventory(obj);
+			}
+			Game1.playSound("coin");
+			Game1.addHUDMessage(new HUDMessage("+5 Cabos de Ligação & Itens de Troca adicionados!", 1));
+			return;
+		}
+
+		if (action == "v2_test_solo_evo")
+		{
+			var lead = PlayerParty.Instance.ActivePokemon ?? (PlayerParty.Instance.Team.Count > 0 ? PlayerParty.Instance.Team[0] : null);
+			if (lead == null)
+			{
+				lead = new PokemonInstance(PokemonSpecies.Get("Kadabra"), 30);
+				PlayerParty.Instance.AddPokemon(lead);
+				Game1.addHUDMessage(new HUDMessage("Kadabra Nv. 30 adicionado para teste!", 2));
+			}
+
+			var evo = PokemonEvolution.CheckEvolution(lead, EvolutionTrigger.UseItem, "LinkingCord");
+			if (evo != null)
+			{
+				var targetSpec = PokemonSpecies.Get(evo.TargetSpecies);
+				if (targetSpec != null)
+				{
+					Game1.activeClickableMenu = new PokemonEvolutionMenu(lead, targetSpec, () =>
+					{
+						PlayerParty.Instance.SaveParty();
+					});
+					return;
+				}
+			}
+
+			Game1.showRedMessage($"{lead.Nickname} não possui evolução por Cabo de Ligação. (Dica: Use Kadabra, Haunter, Machoke, Graveler, etc.)");
+			return;
+		}
+
+		// 6. Acelerar Ovos da Equipe
+		if (action == "v2_hatch_1_step")
+		{
+			var party = PlayerParty.Instance.GetParty();
+			int eggsAdjusted = 0;
+			foreach (var mon in party)
+			{
+				if (mon.IsEgg)
+				{
+					mon.EggSteps = 1;
+					eggsAdjusted++;
+				}
+			}
+			if (eggsAdjusted > 0)
+			{
+				Game1.playSound("reward");
+				Game1.addHUDMessage(new HUDMessage($"{eggsAdjusted} ovo(s) ajustado(s) para chocar no próximo passo!", 1));
+			}
+			else
+			{
+				var egg = new PokemonInstance(PokemonSpecies.Get("Eevee"), 1)
+				{
+					IsEgg = true,
+					EggSteps = 1,
+					Nickname = "Ovo Pokémon"
+				};
+				PlayerParty.Instance.AddPokemon(egg);
+				Game1.playSound("reward");
+				Game1.addHUDMessage(new HUDMessage("Ovo de Eevee gerado com 1 passo restante para chocar!", 1));
+			}
+			return;
+		}
+
+		// 7. Cura Total do PC Box
+		if (action == "v2_pc_full_restore")
+		{
+			var party = PlayerParty.Instance.GetParty();
+			foreach (var mon in party)
+			{
+				mon.FullRestore();
+				mon.EndBattleGimmicks(revertMega: true);
+			}
+			int pcHealed = 0;
+			for (int b = 0; b < PokemonStorage.TotalBoxes; b++)
+			{
+				var box = PokemonStorage.Instance.Boxes[b];
+				if (box != null)
+				{
+					for (int s = 0; s < PokemonStorage.SlotsPerBox; s++)
+					{
+						var mon = box.Slots[s];
+						if (mon != null)
+						{
+							mon.FullRestore();
+							mon.EndBattleGimmicks(revertMega: true);
+							pcHealed++;
+						}
+					}
+				}
+			}
+			PlayerParty.Instance.SaveParty();
+			Game1.playSound("reward");
+			Game1.addHUDMessage(new HUDMessage($"Cura Total: {party.Count} na Equipe + {pcHealed} no PC restaurados!", 1));
+			return;
+		}
+
+		// 8. Inspecionar Catch Rate & EXP Canônico
+		if (action == "v2_inspect_rates")
+		{
+			var lead = PlayerParty.Instance.ActivePokemon ?? (PlayerParty.Instance.Team.Count > 0 ? PlayerParty.Instance.Team[0] : null);
+			if (lead == null)
+			{
+				Game1.showRedMessage("Adicione um Pokémon à sua equipe primeiro!");
+				return;
+			}
+			int catchRate = lead.Species.CatchRate;
+			int baseExp = lead.Species.BaseExpYield;
+			int nextExp = lead.ExpToNextLevel;
+			string msg = $"[DADOS CANÔNICOS: {lead.Nickname} (#{lead.Species.DexNumber})]\n" +
+						 $"• Tipagem: {lead.Species.PrimaryType}{(lead.Species.SecondaryType.HasValue ? "/" + lead.Species.SecondaryType.Value : "")}\n" +
+						 $"• Catch Rate Canônico: {catchRate}/255\n" +
+						 $"• Base EXP Yield: {baseExp}\n" +
+						 $"• Nível: {lead.Level} | Delta XP p/ Próx Nv: {nextExp} XP\n" +
+						 $"• Natureza: {lead.Nature} | Tera Type: {lead.TeraType}\n" +
+						 $"• Habilidade: {lead.Ability ?? "Nenhuma"}";
+			Game1.drawObjectDialogue(msg);
+			return;
+		}
+
+		// 9. Simular Equação Canônica de Captura
+		if (action == "v2_test_catch_formula")
+		{
+			var lead = PlayerParty.Instance.ActivePokemon ?? (PlayerParty.Instance.Team.Count > 0 ? PlayerParty.Instance.Team[0] : null);
+			int rate = lead?.Species.CatchRate ?? 45;
+			string spName = lead?.Nickname ?? "Mewtwo";
+			int maxHp = 100;
+
+			double a1 = ((3.0 * maxHp - 2.0 * maxHp) * rate * 1.0 * 1.0) / (3.0 * maxHp);
+			double p1 = Math.Min(100.0, (a1 / 255.0) * 100.0);
+
+			double curHpLow = 15;
+			double a2 = ((3.0 * maxHp - 2.0 * curHpLow) * rate * 2.0 * 2.5) / (3.0 * maxHp);
+			double p2 = Math.Min(100.0, (a2 / 255.0) * 100.0);
+
+			string report = $"[FÓRMULA CANÔNICA GENS 3-8: {spName}]\n" +
+							$"Taxa Base (Catch Rate): {rate}/255\n" +
+							$"1. Pokébola Comum @ 100% HP (Sem Status):\n" +
+							$"   Chance Calculada: {p1:F1}%\n" +
+							$"2. Ultra Ball @ 15% HP + Sono (2.5x):\n" +
+							$"   Chance Calculada: {p2:F1}%";
+			Game1.drawObjectDialogue(report);
+			return;
+		}
+
+		// 10. Reverter Gimmicks
+		if (action == "v2_test_all_gimmick_revert")
+		{
+			var party = PlayerParty.Instance.GetParty();
+			foreach (var mon in party)
+			{
+				mon.EndBattleGimmicks(revertMega: true);
+			}
+			PlayerParty.Instance.SaveParty();
+			Game1.playSound("wand");
+			Game1.addHUDMessage(new HUDMessage("Todas as transformações (Mega, Tera, Dynamax) foram revertidas!", 1));
+			return;
+		}
+	}
+
 	public override void receiveKeyPress(Keys key)
 	{
 		if (key == Keys.Escape || key == Keys.F8 || key == Keys.F10)
@@ -1684,6 +2019,17 @@ public class PokemonDebugMenu : IClickableMenu
 				bool hov = mb.containsPoint(mouseX, mouseY);
 				IClickableMenu.drawTextureBox(b, mb.bounds.X, mb.bounds.Y, mb.bounds.Width, mb.bounds.Height, hov ? Color.PaleGoldenrod : Color.White);
 				PokemonUI.Text(b, Game1.smallFont, mb.label, new Rectangle(mb.bounds.X + 8, mb.bounds.Y + 4, mb.bounds.Width - 16, mb.bounds.Height - 8), hov ? Color.DarkRed : Game1.textColor, center: true, maxScale: 0.78f, shadow: false);
+			}
+		}
+
+		// Tab 7: UpdatesV2 (Novidades v2.0, v1.4, v1.3)
+		else if (_currentTab == Tab.UpdatesV2)
+		{
+			foreach (var ub in _updateButtons)
+			{
+				bool hov = ub.containsPoint(mouseX, mouseY);
+				IClickableMenu.drawTextureBox(b, ub.bounds.X, ub.bounds.Y, ub.bounds.Width, ub.bounds.Height, hov ? Color.PaleGoldenrod : Color.White);
+				PokemonUI.Text(b, Game1.smallFont, ub.label, new Rectangle(ub.bounds.X + 8, ub.bounds.Y + 4, ub.bounds.Width - 16, ub.bounds.Height - 8), hov ? Color.DarkBlue : Game1.textColor, center: true, maxScale: 0.78f, shadow: false);
 			}
 		}
 
