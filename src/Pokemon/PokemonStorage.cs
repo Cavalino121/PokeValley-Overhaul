@@ -102,6 +102,12 @@ public class PokemonStorage
 	{
 		if (mon == null) return false;
 
+		if (!mon.IsEgg)
+		{
+			mon.EndBattleGimmicks(revertMega: true);
+			mon.FullRestore();
+		}
+
 		// 1. Try specified box or current box
 		int startBox = (targetBox >= 0 && targetBox < TotalBoxes) ? targetBox : CurrentBoxIndex;
 		int slot = Boxes[startBox].FirstEmptySlot();
@@ -179,6 +185,11 @@ public class PokemonStorage
 		if (boxMon == null)
 		{
 			// Deposit only
+			if (!partyMon.IsEgg)
+			{
+				partyMon.EndBattleGimmicks(revertMega: true);
+				partyMon.FullRestore();
+			}
 			Boxes[boxIndex].Slots[slotIndex] = partyMon;
 			party.RemoveAt(partyIndex);
 			if (PlayerParty.Instance.ActiveIndex >= party.Count)
@@ -187,6 +198,11 @@ public class PokemonStorage
 		else
 		{
 			// Swap
+			if (!partyMon.IsEgg)
+			{
+				partyMon.EndBattleGimmicks(revertMega: true);
+				partyMon.FullRestore();
+			}
 			Boxes[boxIndex].Slots[slotIndex] = partyMon;
 			party[partyIndex] = boxMon;
 		}

@@ -3672,6 +3672,11 @@ private PokemonMove SelectEnemyMove()
 					_isCapturing = false;
 					_captureStage = CaptureStage.None;
 					if (_capturingBallId == "HealBall") EnemyPokemon.FullRestore();
+					EnemyPokemon.EndBattleGimmicks(revertMega: true);
+					if (EnemyPokemon.Species != null)
+					{
+						Game1.player?.mailReceived?.Add("Poke_Caught_" + EnemyPokemon.Species.InternalName.ToLowerInvariant());
+					}
 					Game1.playSound("reward");
 					PokemonMusicManager.PlayVictoryMusic();
 					QueueMessage($"Gotcha! O {EnemyPokemon.Species.Name} selvagem foi capturado com sucesso!", () =>

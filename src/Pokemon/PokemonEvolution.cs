@@ -121,11 +121,32 @@ public static class PokemonEvolution
 				string cleanItem = itemOrArg ?? "";
 				if (cleanItem.StartsWith("(O)")) cleanItem = cleanItem.Substring(3);
 				if (cleanItem.StartsWith("Poke_")) cleanItem = cleanItem.Substring(5);
-				if (string.Equals(cleanItem, "PokemonLinkCable", StringComparison.OrdinalIgnoreCase) ||
-				    string.Equals(cleanItem, "LinkCable", StringComparison.OrdinalIgnoreCase))
+				string normItem = cleanItem.Replace("_", "").Replace("-", "").Replace(" ", "");
+
+				if (string.Equals(normItem, "PokemonLinkCable", StringComparison.OrdinalIgnoreCase) ||
+				    string.Equals(normItem, "LinkCable", StringComparison.OrdinalIgnoreCase) ||
+				    string.Equals(normItem, "LinkingCord", StringComparison.OrdinalIgnoreCase) ||
+				    string.Equals(normItem, "PokemonLinkingCord", StringComparison.OrdinalIgnoreCase) ||
+				    string.Equals(normItem, "LinkCord", StringComparison.OrdinalIgnoreCase) ||
+				    string.Equals(normItem, "CaboDeLigacao", StringComparison.OrdinalIgnoreCase))
 				{
 					if (evo.Trigger == EvolutionTrigger.Trade)
 						return evo;
+				}
+
+				// Direct trade item use (single-player support for item-holding trade evolutions)
+				if (evo.Trigger == EvolutionTrigger.Trade)
+				{
+					string src = evo.SourceSpecies?.ToLowerInvariant() ?? "";
+					if ((src == "onix" || src == "scyther") && string.Equals(normItem, "MetalCoat", StringComparison.OrdinalIgnoreCase)) return evo;
+					if (src == "rhydon" && string.Equals(normItem, "Protector", StringComparison.OrdinalIgnoreCase)) return evo;
+					if (src == "electabuzz" && string.Equals(normItem, "Electirizer", StringComparison.OrdinalIgnoreCase)) return evo;
+					if (src == "magmar" && string.Equals(normItem, "Magmarizer", StringComparison.OrdinalIgnoreCase)) return evo;
+					if (src == "porygon" && string.Equals(normItem, "UpGrade", StringComparison.OrdinalIgnoreCase)) return evo;
+					if (src == "porygon2" && string.Equals(normItem, "DubiousDisc", StringComparison.OrdinalIgnoreCase)) return evo;
+					if (src == "seadra" && string.Equals(normItem, "DragonScale", StringComparison.OrdinalIgnoreCase)) return evo;
+					if ((src == "slowpoke" || src == "poliwhirl") && string.Equals(normItem, "KingsRock", StringComparison.OrdinalIgnoreCase)) return evo;
+					if (src == "dusclops" && string.Equals(normItem, "ReaperCloth", StringComparison.OrdinalIgnoreCase)) return evo;
 				}
 			}
 			else if (trigger == EvolutionTrigger.Trade && evo.Trigger == EvolutionTrigger.Trade)

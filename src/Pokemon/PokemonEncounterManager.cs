@@ -311,39 +311,39 @@ public static class PokemonEncounterManager
 	{
 		string locName = location?.Name ?? "";
 
-		// Static Legendary Item Summoning Encounters
+		// Static Legendary Item Summoning Encounters (Unique per save)
 		Farmer player = Game1.player;
 		if (player?.Items != null)
 		{
-			if (player.Items.ContainsId("(O)Poke_FreezingFeather") && (location is MineShaft msFreeze && msFreeze.mineLevel >= 60 && msFreeze.mineLevel <= 79))
+			if (!player.mailReceived.Contains("Poke_Caught_articuno") && player.Items.ContainsId("(O)Poke_FreezingFeather") && (location is MineShaft msFreeze && msFreeze.mineLevel >= 60 && msFreeze.mineLevel <= 79))
 				return "articuno";
-			if (player.Items.ContainsId("(O)Poke_ElectricFeather") && (isRain || locName.Contains("Mountain")))
+			if (!player.mailReceived.Contains("Poke_Caught_zapdos") && player.Items.ContainsId("(O)Poke_ElectricFeather") && (isRain || locName.Contains("Mountain")))
 				return "zapdos";
-			if (player.Items.ContainsId("(O)Poke_FlameFeather") && (locName.Contains("Volcano") || locName.Contains("Caldera") || (location is MineShaft msFire && msFire.mineLevel >= 100)))
+			if (!player.mailReceived.Contains("Poke_Caught_moltres") && player.Items.ContainsId("(O)Poke_FlameFeather") && (locName.Contains("Volcano") || locName.Contains("Caldera") || (location is MineShaft msFire && msFire.mineLevel >= 100)))
 				return "moltres";
-			if (player.Items.ContainsId("(O)Poke_BerserkGene") && (location is MineShaft msMewtwo && msMewtwo.mineLevel >= 121))
+			if (!player.mailReceived.Contains("Poke_Caught_mewtwo") && player.Items.ContainsId("(O)Poke_BerserkGene") && (location is MineShaft msMewtwo && msMewtwo.mineLevel >= 121))
 				return "mewtwo";
-			if (player.Items.ContainsId("(O)Poke_OldSeaMap") && (locName.Contains("Beach") || locName.Contains("Island")))
+			if (!player.mailReceived.Contains("Poke_Caught_mew") && player.Items.ContainsId("(O)Poke_OldSeaMap") && (locName.Contains("Beach") || locName.Contains("Island")))
 				return "mew";
-			if (player.Items.ContainsId("(O)Poke_ClearBell") && (locName.Contains("Forest") || locName.Contains("Woods")))
+			if (!player.mailReceived.Contains("Poke_Caught_raikou") && !player.mailReceived.Contains("Poke_Caught_entei") && !player.mailReceived.Contains("Poke_Caught_suicune") && player.Items.ContainsId("(O)Poke_ClearBell") && (locName.Contains("Forest") || locName.Contains("Woods")))
 				return Choose(new[] { "raikou", "entei", "suicune" });
-			if (player.Items.ContainsId("(O)Poke_SilverWing") && (locName.Contains("Beach") || locName.Contains("IslandSouth")))
+			if (!player.mailReceived.Contains("Poke_Caught_lugia") && player.Items.ContainsId("(O)Poke_SilverWing") && (locName.Contains("Beach") || locName.Contains("IslandSouth")))
 				return "lugia";
-			if (player.Items.ContainsId("(O)Poke_RainbowWing") && (locName.Contains("Mountain") || locName.Contains("Summit")))
+			if (!player.mailReceived.Contains("Poke_Caught_ho_oh") && player.Items.ContainsId("(O)Poke_RainbowWing") && (locName.Contains("Mountain") || locName.Contains("Summit")))
 				return "ho_oh";
-			if (player.Items.ContainsId("(O)Poke_BlueOrb") && (locName.Contains("Beach") || locName.Contains("IslandSouth")) && isRain)
+			if (!player.mailReceived.Contains("Poke_Caught_kyogre") && player.Items.ContainsId("(O)Poke_BlueOrb") && (locName.Contains("Beach") || locName.Contains("IslandSouth")) && isRain)
 				return "kyogre";
-			if (player.Items.ContainsId("(O)Poke_RedOrb") && (locName.Contains("Volcano") || locName.Contains("Caldera")))
+			if (!player.mailReceived.Contains("Poke_Caught_groudon") && player.Items.ContainsId("(O)Poke_RedOrb") && (locName.Contains("Volcano") || locName.Contains("Caldera")))
 				return "groudon";
-			if (player.Items.ContainsId("(O)Poke_JadeOrb") && (locName.Contains("Mountain") || locName.Contains("Summit")))
+			if (!player.mailReceived.Contains("Poke_Caught_rayquaza") && player.Items.ContainsId("(O)Poke_JadeOrb") && (locName.Contains("Mountain") || locName.Contains("Summit")))
 				return "rayquaza";
-			if (player.Items.ContainsId("(O)Poke_AdamantOrb") && (location is MineShaft msTime && msTime.mineLevel >= 100))
+			if (!player.mailReceived.Contains("Poke_Caught_dialga") && player.Items.ContainsId("(O)Poke_AdamantOrb") && (location is MineShaft msTime && msTime.mineLevel >= 100))
 				return "dialga";
-			if (player.Items.ContainsId("(O)Poke_LustrousOrb") && (locName.Contains("Beach") || locName.Contains("Island")))
+			if (!player.mailReceived.Contains("Poke_Caught_palkia") && player.Items.ContainsId("(O)Poke_LustrousOrb") && (locName.Contains("Beach") || locName.Contains("Island")))
 				return "palkia";
-			if (player.Items.ContainsId("(O)Poke_GriseousCore") && (location is Sewer || locName.Contains("BugLand")))
+			if (!player.mailReceived.Contains("Poke_Caught_giratina") && player.Items.ContainsId("(O)Poke_GriseousCore") && (location is Sewer || locName.Contains("BugLand")))
 				return "giratina";
-			if (player.Items.ContainsId("(O)Poke_IndigoDisk") && (locName.Contains("Volcano") || locName.Contains("Caldera")))
+			if (!player.mailReceived.Contains("Poke_Caught_terapagos") && player.Items.ContainsId("(O)Poke_IndigoDisk") && (locName.Contains("Volcano") || locName.Contains("Caldera")))
 				return "terapagos";
 		}
 

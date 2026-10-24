@@ -859,16 +859,34 @@ public static class PokemonBreeding
 
 	public static void OnStepTaken()
 	{
-		// Decrease egg steps for all eggs in player party
+		// Decrease egg steps for all eggs in player party (Canonical Flame Body / Magma Armor 2x speed)
 		if (PlayerParty.Instance?.Team == null) return;
 		if (Game1.activeClickableMenu is PokemonHatchMenu) return;
+
+		bool hasHatchBooster = false;
+		for (int i = 0; i < PlayerParty.Instance.Team.Count; i++)
+		{
+			var mon = PlayerParty.Instance.Team[i];
+			if (mon != null && !mon.IsEgg && (string.Equals(mon.Ability, "FlameBody", StringComparison.OrdinalIgnoreCase) ||
+			                                  string.Equals(mon.Ability, "Flame Body", StringComparison.OrdinalIgnoreCase) ||
+			                                  string.Equals(mon.Ability, "MagmaArmor", StringComparison.OrdinalIgnoreCase) ||
+			                                  string.Equals(mon.Ability, "Magma Armor", StringComparison.OrdinalIgnoreCase) ||
+			                                  string.Equals(mon.Ability, "SteamEngine", StringComparison.OrdinalIgnoreCase) ||
+			                                  string.Equals(mon.Ability, "Steam Engine", StringComparison.OrdinalIgnoreCase)))
+			{
+				hasHatchBooster = true;
+				break;
+			}
+		}
+
+		int stepDecrement = hasHatchBooster ? 2 : 1;
 
 		for (int i = 0; i < PlayerParty.Instance.Team.Count; i++)
 		{
 			var p = PlayerParty.Instance.Team[i];
 			if (p != null && p.IsEgg)
 			{
-				p.EggSteps--;
+				p.EggSteps -= stepDecrement;
 				if (p.EggSteps <= 0)
 				{
 					// Sentinel to prevent multiple triggers
