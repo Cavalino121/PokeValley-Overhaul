@@ -182,13 +182,14 @@ public static class PokemonSaveStore
 		}
 
 		Farmer farmer = Game1.getFarmerMaybeOffline(farmerId) ?? (Game1.player?.UniqueMultiplayerID == farmerId ? Game1.player : null);
-		string fileName = (farmer == null || farmer.IsMainPlayer) ? FileNameHost : $"pokemon_save_{farmerId}.json";
+		bool isHost = IsHostFarmer(farmerId, farmer);
+		string fileName = isHost ? FileNameHost : $"pokemon_save_{(farmerId != 0L ? farmerId.ToString() : "farmhand_" + (Game1.game1?.instanceIndex ?? 1))}.json";
 		entry.Path = ResolvePathForFile(key, fileName);
 
 		var file = new PokemonSaveFile();
 		bool haveData = false;
 
-		if (entry.Path != null)
+		if (entry.Path != null && (isHost || farmerId != 0L))
 		{
 			_readFailed = false;
 			PokemonSaveFile mirror = ReadFile(entry.Path);
@@ -205,7 +206,7 @@ public static class PokemonSaveStore
 
 		long embeddedStamp = ReadEmbeddedStampForFarmer(farmer);
 		bool recoveredFromMirror = haveData && embeddedStamp > 0 && file.SavedAtUtc > embeddedStamp
-			&& farmer != null && farmer.IsMainPlayer;
+			&& isHost;
 
 		if (!recoveredFromMirror && ReadFarmerModData(farmer, file))
 		{
@@ -213,7 +214,7 @@ public static class PokemonSaveStore
 			entry.LoadedFromSaveFile = true;
 		}
 
-		if (!haveData && (farmer == null || farmer.IsMainPlayer))
+		if (!haveData && isHost)
 		{
 			PokemonSaveFile legacy = TryImportLegacyFiles(key);
 			if (legacy != null)
@@ -238,6 +239,27 @@ public static class PokemonSaveStore
 			SaveForFarmer(farmerId);
 			entry.LoadedFromSaveFile = true;
 		}
+	}
+
+	private static bool IsHostFarmer(long farmerId, Farmer farmer)
+	{
+		if (Game1.game1 != null && !Game1.game1.IsMainInstance && farmerId == (Game1.player?.UniqueMultiplayerID ?? 0L))
+		{
+			return false;
+		}
+		if (Game1.MasterPlayer != null && Game1.MasterPlayer.UniqueMultiplayerID != 0L)
+		{
+			return farmerId != 0L && farmerId == Game1.MasterPlayer.UniqueMultiplayerID;
+		}
+		if (Game1.serverHost?.Value != null && Game1.serverHost.Value.UniqueMultiplayerID != 0L)
+		{
+			return farmerId != 0L && farmerId == Game1.serverHost.Value.UniqueMultiplayerID;
+		}
+		if (Game1.game1 != null && !Game1.game1.IsMainInstance)
+		{
+			return false;
+		}
+		return Game1.IsMasterGame && (farmer == null || farmer == Game1.player);
 	}
 
 	/// <summary>UTC ticks stamped on the embedded copy, or 0 when absent/unreadable.</summary>

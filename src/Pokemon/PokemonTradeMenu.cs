@@ -612,6 +612,8 @@ public class PokemonTradeMenu : IClickableMenu
 		base.receiveKeyPress(key);
 	}
 
+	public override bool areGamePadControlsImplemented() => true;
+
 	public override void receiveGamePadButton(Buttons button)
 	{
 		base.receiveGamePadButton(button);
@@ -901,7 +903,7 @@ public class PokemonTradeMenu : IClickableMenu
 		DrawTradeButton(b);
 
 		// Draw Gamepad Cursor Outline
-		if (Game1.options.gamepadControls || GamePad.GetState(PlayerIndex.One).IsConnected)
+		if (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected)
 		{
 			float pulse = 0.85f + (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6.0) * 0.15f;
 			if (_gamepadFocusOnConfirm)

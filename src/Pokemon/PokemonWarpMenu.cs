@@ -201,6 +201,43 @@ public class PokemonWarpMenu : IClickableMenu
 		}
 	}
 
+	private int _gamepadIndex = 0;
+
+	public override bool areGamePadControlsImplemented() => true;
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (button == Buttons.B || button == Buttons.Back)
+		{
+			Game1.playSound("bigDeSelect");
+			exitThisMenu();
+			return;
+		}
+		if (_destinations.Count == 0) return;
+
+		if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+		{
+			_gamepadIndex = (_gamepadIndex - 1 + _destinations.Count) % _destinations.Count;
+			_hoveredDest = _destinations[_gamepadIndex];
+			Game1.playSound("shiny");
+			return;
+		}
+		if (button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+		{
+			_gamepadIndex = (_gamepadIndex + 1) % _destinations.Count;
+			_hoveredDest = _destinations[_gamepadIndex];
+			Game1.playSound("shiny");
+			return;
+		}
+		if (button == Buttons.A || button == Buttons.Start)
+		{
+			if (_gamepadIndex >= 0 && _gamepadIndex < _destinations.Count)
+			{
+				ExecuteWarp(_destinations[_gamepadIndex]);
+			}
+		}
+	}
+
 	public override void receiveKeyPress(Keys key)
 	{
 		if (key == Keys.Escape || key == Keys.B)
@@ -245,15 +282,16 @@ public class PokemonWarpMenu : IClickableMenu
 		}
 
 		// Draw Destination List (Left Column)
+		bool isGamepad = Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected;
 		for (int i = 0; i < _destinations.Count; i++)
 		{
 			var d = _destinations[i];
-			bool isHov = (_hoveredDest == d);
+			bool isHov = (_hoveredDest == d) || (isGamepad && _gamepadIndex == i);
 
 			Color cardBg = isHov ? new Color(255, 250, 215) : Color.White;
-			Color borderCol = isHov ? new Color(220, 60, 40) : new Color(160, 185, 180);
+			Color borderCol = (isGamepad && _gamepadIndex == i) ? Color.Gold : (isHov ? new Color(220, 60, 40) : new Color(160, 185, 180));
 			b.Draw(Game1.staminaRect, d.Bounds, cardBg);
-			PokemonUI.Border(b, d.Bounds, isHov ? 2 : 1, borderCol);
+			PokemonUI.Border(b, d.Bounds, isHov ? 3 : 1, borderCol);
 
 			// Indicator icon on left of card
 			string icon = _isFly ? "✈" : "✦";

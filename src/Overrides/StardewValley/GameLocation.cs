@@ -16177,7 +16177,7 @@ public class GameLocation : INetObject<NetFields>, IEquatable<GameLocation>, IAn
 		drawFarmers(b);
 		if (Game1.player != null && Game1.player.currentLocation == this)
 		{
-			StardewValley.Pokemon.PokemonFollower.Instance.Draw(b);
+			StardewValley.Pokemon.PokemonFollower.DrawAllInLocation(b, this);
 		}
 		if (critters != null && Game1.farmEvent == null)
 		{

@@ -10,8 +10,8 @@ public static class PokemonEncounterManager
 {
 	public const float WildRate = 0.04f; // 4% step encounter rate
 
-	private static int _lastEncounterTick = 0;
-	private static Vector2 _lastEncounterTile = Vector2.Zero;
+	private static readonly Dictionary<long, int> _lastEncounterTickByFarmer = new();
+	private static readonly Dictionary<long, Vector2> _lastEncounterTileByFarmer = new();
 
 	private class OverworldWildSpawn
 	{
@@ -24,24 +24,33 @@ public static class PokemonEncounterManager
 		public float WalkAnimTimer;
 	}
 
-	private static readonly List<OverworldWildSpawn> _overworldSpawns = new();
-	private static string _lastSpawnLocation = null;
-	private static float _spawnRefreshTimer = 0f;
+	private class LocationSpawnState
+	{
+		public readonly List<OverworldWildSpawn> Spawns = new();
+		public float RefreshTimer = 0.5f;
+		public int LastUpdateTick = -1;
+	}
+
+	private static readonly Dictionary<string, LocationSpawnState> _spawnsByLocation = new(StringComparer.OrdinalIgnoreCase);
 
 	public static bool CheckStepEncounter(GameLocation location, Farmer farmer)
 	{
-		if (farmer == null || !farmer.IsLocalPlayer || Game1.activeClickableMenu != null || !PlayerParty.Instance.HasChosenStarter)
+		if (farmer == null || !farmer.IsLocalPlayer || Game1.activeClickableMenu != null || !PlayerParty.GetForFarmer(farmer).HasChosenStarter)
 		{
 			return false;
 		}
 
+		long fid = farmer.UniqueMultiplayerID;
 		Vector2 currentTile = farmer.Tile;
-		if (currentTile == _lastEncounterTile || (Game1.ticks - _lastEncounterTick < 180))
+		_lastEncounterTileByFarmer.TryGetValue(fid, out Vector2 lastTile);
+		_lastEncounterTickByFarmer.TryGetValue(fid, out int lastTick);
+
+		if (currentTile == lastTile || (Game1.ticks - lastTick < 180))
 		{
 			return false;
 		}
 
-		_lastEncounterTile = currentTile;
+		_lastEncounterTileByFarmer[fid] = currentTile;
 
 		if (PokemonItemUse.RepelSteps > 0)
 		{
@@ -58,7 +67,7 @@ public static class PokemonEncounterManager
 			return false;
 		}
 
-		_lastEncounterTick = Game1.ticks;
+		_lastEncounterTickByFarmer[fid] = Game1.ticks;
 		TriggerWildBattle(location);
 		return true;
 	}
@@ -67,7 +76,7 @@ public static class PokemonEncounterManager
 	{
 		var loc = Game1.currentLocation;
 		var player = Game1.player;
-		if (loc == null || player == null || !PlayerParty.Instance.HasChosenStarter)
+		if (loc == null || player == null || !PlayerParty.GetForFarmer(player).HasChosenStarter)
 			return;
 
 		float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -77,87 +86,98 @@ public static class PokemonEncounterManager
 		bool validMap = loc.IsOutdoors || loc is MineShaft || loc is Sewer || loc is VolcanoDungeon || locKey.Contains("Cave") || locKey.Contains("Mine");
 		if (!validMap)
 		{
-			_overworldSpawns.Clear();
-			_lastSpawnLocation = locKey;
+			_spawnsByLocation.Remove(locKey);
 			return;
 		}
 
-		if (_lastSpawnLocation != locKey)
+		if (!_spawnsByLocation.TryGetValue(locKey, out var state))
 		{
-			_lastSpawnLocation = locKey;
-			_overworldSpawns.Clear();
-			_spawnRefreshTimer = 0.5f;
+			state = new LocationSpawnState();
+			_spawnsByLocation[locKey] = state;
 		}
 
-		_spawnRefreshTimer -= dt;
-		if (_spawnRefreshTimer <= 0f)
+		long fid = player.UniqueMultiplayerID;
+		_lastEncounterTickByFarmer.TryGetValue(fid, out int lastTick);
+
+		// Avoid double-stepping AI movement if two split-screen players are in the same location on the same tick
+		bool stepPhysics = (state.LastUpdateTick != Game1.ticks);
+		state.LastUpdateTick = Game1.ticks;
+
+		if (stepPhysics)
 		{
-			_spawnRefreshTimer = 8.0f;
-			if (_overworldSpawns.Count < 3)
+			state.RefreshTimer -= dt;
+			if (state.RefreshTimer <= 0f)
 			{
-				TrySpawnOverworldPokemon(loc, player);
+				state.RefreshTimer = 8.0f;
+				if (state.Spawns.Count < 3)
+				{
+					TrySpawnOverworldPokemon(loc, player, state.Spawns);
+				}
 			}
 		}
 
-		for (int i = _overworldSpawns.Count - 1; i >= 0; i--)
+		for (int i = state.Spawns.Count - 1; i >= 0; i--)
 		{
-			var s = _overworldSpawns[i];
-			s.WalkAnimTimer += dt * 6f;
-			s.MoveTimer -= dt;
-
-			if (s.MoveTimer <= 0f)
+			var s = state.Spawns[i];
+			if (stepPhysics)
 			{
-				if (Game1.random.NextDouble() < 0.55)
+				s.WalkAnimTimer += dt * 6f;
+				s.MoveTimer -= dt;
+
+				if (s.MoveTimer <= 0f)
 				{
-					s.IsMoving = true;
-					int dir = Game1.random.Next(4);
-					s.FacingDir = dir;
-					s.Velocity = dir switch
+					if (Game1.random.NextDouble() < 0.55)
 					{
-						0 => new Vector2(0, -58f),
-						1 => new Vector2(58f, 0),
-						2 => new Vector2(0, 58f),
-						_ => new Vector2(-58f, 0)
-					};
-					s.MoveTimer = 0.8f + (float)Game1.random.NextDouble() * 1.2f;
+						s.IsMoving = true;
+						int dir = Game1.random.Next(4);
+						s.FacingDir = dir;
+						s.Velocity = dir switch
+						{
+							0 => new Vector2(0, -58f),
+							1 => new Vector2(58f, 0),
+							2 => new Vector2(0, 58f),
+							_ => new Vector2(-58f, 0)
+						};
+						s.MoveTimer = 0.8f + (float)Game1.random.NextDouble() * 1.2f;
+					}
+					else
+					{
+						s.IsMoving = false;
+						s.Velocity = Vector2.Zero;
+						s.MoveTimer = 1.0f + (float)Game1.random.NextDouble() * 1.5f;
+					}
 				}
-				else
-				{
-					s.IsMoving = false;
-					s.Velocity = Vector2.Zero;
-					s.MoveTimer = 1.0f + (float)Game1.random.NextDouble() * 1.5f;
-				}
-			}
 
-			if (s.IsMoving)
-			{
-				Vector2 nextPos = s.Position + s.Velocity * dt;
-				Rectangle box = new Rectangle((int)nextPos.X - 14, (int)nextPos.Y - 14, 28, 28);
-				Point tilePt = new Point((int)(nextPos.X / 64f), (int)(nextPos.Y / 64f));
-				if (loc.isTileOnMap(new Vector2(tilePt.X, tilePt.Y)) &&
-				    loc.isTilePassable(new xTile.Dimensions.Location(tilePt.X, tilePt.Y), Game1.viewport) &&
-				    !loc.Objects.ContainsKey(new Vector2(tilePt.X, tilePt.Y)) &&
-				    !loc.isCollidingPosition(box, Game1.viewport, isFarmer: false, damagesFarmer: 0, glider: false, character: null, pathfinding: false, projectile: false, ignoreCharacterRequirement: true, skipCollisionEffects: true))
+				if (s.IsMoving)
 				{
-					s.Position = nextPos;
-				}
-				else
-				{
-					s.IsMoving = false;
-					s.Velocity = Vector2.Zero;
+					Vector2 nextPos = s.Position + s.Velocity * dt;
+					Rectangle box = new Rectangle((int)nextPos.X - 14, (int)nextPos.Y - 14, 28, 28);
+					Point tilePt = new Point((int)(nextPos.X / 64f), (int)(nextPos.Y / 64f));
+					if (loc.isTileOnMap(new Vector2(tilePt.X, tilePt.Y)) &&
+					    loc.isTilePassable(new xTile.Dimensions.Location(tilePt.X, tilePt.Y), Game1.viewport) &&
+					    !loc.Objects.ContainsKey(new Vector2(tilePt.X, tilePt.Y)) &&
+					    !loc.isCollidingPosition(box, Game1.viewport, isFarmer: false, damagesFarmer: 0, glider: false, character: null, pathfinding: false, projectile: false, ignoreCharacterRequirement: true, skipCollisionEffects: true))
+					{
+						s.Position = nextPos;
+					}
+					else
+					{
+						s.IsMoving = false;
+						s.Velocity = Vector2.Zero;
+					}
 				}
 			}
 
 			// Trigger wild encounter on player contact
-			if (Game1.activeClickableMenu == null && (Game1.ticks - _lastEncounterTick >= 150) && PokemonItemUse.RepelSteps <= 0)
+			if (Game1.activeClickableMenu == null && (Game1.ticks - lastTick >= 150) && PokemonItemUse.RepelSteps <= 0)
 			{
 				Rectangle pBox = player.GetBoundingBox();
 				float dist = Vector2.Distance(new Vector2(pBox.Center.X, pBox.Center.Y), s.Position);
 				if (dist <= 48f)
 				{
 					var wildInst = s.Instance;
-					_overworldSpawns.RemoveAt(i);
-					_lastEncounterTick = Game1.ticks;
+					state.Spawns.RemoveAt(i);
+					_lastEncounterTickByFarmer[fid] = Game1.ticks;
 					Game1.playSound("dwoop");
 					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
 					return;
@@ -189,7 +209,7 @@ public static class PokemonEncounterManager
 		return (Game1.random.NextDouble() * 100.0) <= effectivePercent;
 	}
 
-	private static void TrySpawnOverworldPokemon(GameLocation loc, Farmer player)
+	private static void TrySpawnOverworldPokemon(GameLocation loc, Farmer player, List<OverworldWildSpawn> targetList)
 	{
 		Point pTile = player.TilePoint;
 		for (int attempt = 0; attempt < 15; attempt++)
@@ -219,7 +239,7 @@ public static class PokemonEncounterManager
 
 			int level = GetScaledWildLevel();
 			var inst = new PokemonInstance(species, level, isShiny: RollWildShiny());
-			_overworldSpawns.Add(new OverworldWildSpawn
+			targetList.Add(new OverworldWildSpawn
 			{
 				Instance = inst,
 				Position = worldPos,
@@ -232,7 +252,9 @@ public static class PokemonEncounterManager
 
 	public static void DrawOverworldSpawns(SpriteBatch b)
 	{
-		if (Game1.currentLocation == null || _overworldSpawns.Count == 0) return;
+		if (Game1.currentLocation == null) return;
+		if (!_spawnsByLocation.TryGetValue(Game1.currentLocation.NameOrUniqueName, out var state) || state.Spawns.Count == 0)
+			return;
 
 		Color drawTint = Color.White;
 		if (Game1.isRaining || Game1.currentLocation.IsRainingHere())
@@ -244,7 +266,7 @@ public static class PokemonEncounterManager
 			drawTint = new Color(235, 238, 250);
 		}
 
-		foreach (var s in _overworldSpawns)
+		foreach (var s in state.Spawns)
 		{
 			if (s.Instance == null) continue;
 			Vector2 screenPos = s.Position - new Vector2(Game1.viewport.X, Game1.viewport.Y);
@@ -279,9 +301,10 @@ public static class PokemonEncounterManager
 	private static int GetScaledWildLevel()
 	{
 		int partyMax = 5;
-		if (PlayerParty.Instance?.Team != null && PlayerParty.Instance.Team.Count > 0)
+		var party = PlayerParty.GetForFarmer(Game1.player);
+		if (party?.Team != null && party.Team.Count > 0)
 		{
-			foreach (var p in PlayerParty.Instance.Team)
+			foreach (var p in party.Team)
 			{
 				if (p != null && p.Level > partyMax) partyMax = p.Level;
 			}

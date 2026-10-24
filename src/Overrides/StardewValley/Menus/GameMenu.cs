@@ -53,7 +53,7 @@ public class GameMenu : IClickableMenu
 
 	public const int region_pokemonTab = 12350;
 
-	public static readonly int numberOfTabs = 9;
+	public static readonly int numberOfTabs = 10;
 
 	public int currentTab;
 
@@ -185,6 +185,7 @@ public class GameMenu : IClickableMenu
 		{
 			myID = 12349,
 			downNeighborID = 9,
+			rightNeighborID = 12350,
 			leftNeighborID = 12348,
 			tryDefaultIfNoDownNeighborExists = true,
 			fullyImmutable = true
@@ -596,6 +597,10 @@ public class GameMenu : IClickableMenu
 
 	public override bool areGamePadControlsImplemented()
 	{
+		if (currentTab >= 0 && currentTab < pages.Count && pages[currentTab].areGamePadControlsImplemented())
+		{
+			return true;
+		}
 		return false;
 	}
 

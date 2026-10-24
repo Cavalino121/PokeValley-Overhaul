@@ -400,9 +400,29 @@ public class PokemonStorageMenu : IClickableMenu
 		}
 	}
 
+	private bool _usingGamepad = false;
+	private int _lastMouseX = -1;
+	private int _lastMouseY = -1;
+
+	public override bool areGamePadControlsImplemented() => true;
+
 	public override void performHoverAction(int x, int y)
 	{
 		base.performHoverAction(x, y);
+
+		if (x != _lastMouseX || y != _lastMouseY)
+		{
+			_lastMouseX = x;
+			_lastMouseY = y;
+			_usingGamepad = false;
+		}
+
+		if (_usingGamepad)
+		{
+			_hoverPartyIndex = -1;
+			_hoverBoxIndex = -1;
+			return;
+		}
 
 		_hoverPartyIndex = -1;
 		_hoverBoxIndex = -1;
@@ -451,6 +471,7 @@ public class PokemonStorageMenu : IClickableMenu
 
 	public override void receiveGamePadButton(Buttons button)
 	{
+		_usingGamepad = true;
 		if (_showActionMenu)
 		{
 			if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)

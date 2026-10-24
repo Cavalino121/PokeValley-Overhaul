@@ -222,6 +222,61 @@ public class PokemonDwarfHintMenu : IClickableMenu
 		return anyInTier.Count > 0 ? anyInTier[Game1.random.Next(anyInTier.Count)] : null;
 	}
 
+	private int _gamepadIndex = 0;
+
+	public override bool areGamePadControlsImplemented() => true;
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (button == Buttons.B || button == Buttons.Back)
+		{
+			Game1.playSound("bigDeSelect");
+			Game1.exitActiveMenu();
+			return;
+		}
+		if (button == Buttons.Y)
+		{
+			Game1.playSound("bigSelect");
+			Game1.activeClickableMenu = new PokemonPokedexMenu(_lastRevealedSpecies);
+			return;
+		}
+		if (_offers.Count == 0) return;
+
+		int col = _gamepadIndex / 3;
+		int row = _gamepadIndex % 3;
+		if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+		{
+			row = (row + 2) % 3;
+			_gamepadIndex = col * 3 + row;
+			Game1.playSound("shiny");
+		}
+		else if (button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+		{
+			row = (row + 1) % 3;
+			_gamepadIndex = col * 3 + row;
+			Game1.playSound("shiny");
+		}
+		else if (button == Buttons.DPadLeft || button == Buttons.LeftThumbstickLeft)
+		{
+			col = (col + 3) % 4;
+			_gamepadIndex = col * 3 + row;
+			Game1.playSound("shiny");
+		}
+		else if (button == Buttons.DPadRight || button == Buttons.LeftThumbstickRight)
+		{
+			col = (col + 1) % 4;
+			_gamepadIndex = col * 3 + row;
+			Game1.playSound("shiny");
+		}
+		else if (button == Buttons.A || button == Buttons.Start)
+		{
+			if (_gamepadIndex >= 0 && _gamepadIndex < _offers.Count)
+			{
+				TryPurchaseOffer(_offers[_gamepadIndex]);
+			}
+		}
+	}
+
 	public override void receiveKeyPress(Keys key)
 	{
 		if (key == Keys.Escape || key == Keys.E)
@@ -268,11 +323,13 @@ public class PokemonDwarfHintMenu : IClickableMenu
 		int mouseY = Game1.getMouseY();
 
 		// Offer Cards
-		foreach (var offer in _offers)
+		bool isGamepad = Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected;
+		for (int idx = 0; idx < _offers.Count; idx++)
 		{
+			var offer = _offers[idx];
 			bool boughtToday = PokemonPokedex.Instance.HasBoughtHintToday(offer.TierKey, offer.HintLevel);
 			bool canAfford = money >= offer.Price;
-			bool hov = offer.BuyButton.containsPoint(mouseX, mouseY);
+			bool hov = offer.BuyButton.containsPoint(mouseX, mouseY) || (isGamepad && _gamepadIndex == idx);
 
 			Color boxTint = boughtToday
 				? new Color(195, 195, 195)

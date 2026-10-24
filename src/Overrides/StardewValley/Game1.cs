@@ -5034,25 +5034,29 @@ public class Game1 : InstanceGame
 			{
 				directionKeyPolling[3] = 250;
 			}
-			if (directionKeyPolling[0] <= 0 && childMenu != null && childMenu.IsActive())
+			bool isPokemonGamepadMenu = childMenu != null && childMenu.areGamePadControlsImplemented() && (childMenu.GetType().Namespace == "StardewValley.Pokemon" || (childMenu is StardewValley.Menus.GameMenu gmPoke && gmPoke.currentTab == StardewValley.Menus.GameMenu.pokemonTab));
+			if (!isPokemonGamepadMenu)
 			{
-				childMenu.receiveKeyPress(options.getFirstKeyboardKeyFromInputButtonList(options.moveUpButton));
-				directionKeyPolling[0] = 70;
-			}
-			if (directionKeyPolling[1] <= 0 && childMenu != null && childMenu.IsActive())
-			{
-				childMenu.receiveKeyPress(options.getFirstKeyboardKeyFromInputButtonList(options.moveRightButton));
-				directionKeyPolling[1] = 70;
-			}
-			if (directionKeyPolling[2] <= 0 && childMenu != null && childMenu.IsActive())
-			{
-				childMenu.receiveKeyPress(options.getFirstKeyboardKeyFromInputButtonList(options.moveDownButton));
-				directionKeyPolling[2] = 70;
-			}
-			if (directionKeyPolling[3] <= 0 && childMenu != null && childMenu.IsActive())
-			{
-				childMenu.receiveKeyPress(options.getFirstKeyboardKeyFromInputButtonList(options.moveLeftButton));
-				directionKeyPolling[3] = 70;
+				if (directionKeyPolling[0] <= 0 && childMenu != null && childMenu.IsActive())
+				{
+					childMenu.receiveKeyPress(options.getFirstKeyboardKeyFromInputButtonList(options.moveUpButton));
+					directionKeyPolling[0] = 70;
+				}
+				if (directionKeyPolling[1] <= 0 && childMenu != null && childMenu.IsActive())
+				{
+					childMenu.receiveKeyPress(options.getFirstKeyboardKeyFromInputButtonList(options.moveRightButton));
+					directionKeyPolling[1] = 70;
+				}
+				if (directionKeyPolling[2] <= 0 && childMenu != null && childMenu.IsActive())
+				{
+					childMenu.receiveKeyPress(options.getFirstKeyboardKeyFromInputButtonList(options.moveDownButton));
+					directionKeyPolling[2] = 70;
+				}
+				if (directionKeyPolling[3] <= 0 && childMenu != null && childMenu.IsActive())
+				{
+					childMenu.receiveKeyPress(options.getFirstKeyboardKeyFromInputButtonList(options.moveLeftButton));
+					directionKeyPolling[3] = 70;
+				}
 			}
 			if (options.gamepadControls && childMenu != null && childMenu.IsActive())
 			{
@@ -5076,18 +5080,32 @@ public class Game1 : InstanceGame
 						gamePadXButtonPolling = 600;
 					}
 				}
-				ButtonCollection.ButtonEnumerator enumerator = Utility.getPressedButtons(gamePadState, oldPadState).GetEnumerator();
-				while (enumerator.MoveNext())
+				if (!isPokemonGamepadMenu)
 				{
-					Buttons current3 = enumerator.Current;
-					if (childMenu == null || !childMenu.IsActive())
+					ButtonCollection.ButtonEnumerator enumerator = Utility.getPressedButtons(gamePadState, oldPadState).GetEnumerator();
+					while (enumerator.MoveNext())
 					{
-						break;
+						Buttons current3 = enumerator.Current;
+						if (childMenu == null || !childMenu.IsActive())
+						{
+							break;
+						}
+						Keys key = Utility.mapGamePadButtonToKey(current3);
+						if (!(childMenu is FarmhandMenu) || game1.IsMainInstance || !options.doesInputListContain(options.menuButton, key))
+						{
+							childMenu.receiveKeyPress(key);
+						}
 					}
-					Keys key = Utility.mapGamePadButtonToKey(current3);
-					if (!(childMenu is FarmhandMenu) || game1.IsMainInstance || !options.doesInputListContain(options.menuButton, key))
+				}
+				else if (childMenu is StardewValley.Menus.GameMenu gmClose && gmClose.currentTab == StardewValley.Menus.GameMenu.pokemonTab)
+				{
+					if ((gamePadState.IsButtonDown(Buttons.B) && !oldPadState.IsButtonDown(Buttons.B)) || (gamePadState.IsButtonDown(Buttons.Start) && !oldPadState.IsButtonDown(Buttons.Start)))
 					{
-						childMenu.receiveKeyPress(key);
+						if (gmClose.readyToClose())
+						{
+							exitActiveMenu();
+							playSound("bigDeSelect");
+						}
 					}
 				}
 				if (childMenu != null && childMenu.IsActive() && !childMenu.areGamePadControlsImplemented() && gamePadState.IsButtonDown(Buttons.A) && oldPadState.IsButtonDown(Buttons.A))

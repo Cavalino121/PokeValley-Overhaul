@@ -40,6 +40,8 @@ public class PokemonEvolutionMenu : IClickableMenu
 	private Texture2D _oldFrontTex;
 	private Texture2D _newFrontTex;
 
+	public override bool areGamePadControlsImplemented() => true;
+
 	public override bool readyToClose() => _state == EvoState.Finished;
 
 	public PokemonEvolutionMenu(PokemonInstance mon, PokemonSpecies targetSpecies, Action onComplete = null)
@@ -89,6 +91,22 @@ public class PokemonEvolutionMenu : IClickableMenu
 			}
 		}
 		base.receiveKeyPress(key);
+	}
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (_state == EvoState.Morphing && button == Buttons.B)
+		{
+			CancelEvolution();
+			return;
+		}
+		if ((_state == EvoState.Revealed || _state == EvoState.Cancelled) && (button == Buttons.A || button == Buttons.B || button == Buttons.Start))
+		{
+			_state = EvoState.Finished;
+			Game1.playSound("bigDeSelect");
+			exitThisMenu();
+			_onComplete?.Invoke();
+		}
 	}
 
 	private void CancelEvolution()

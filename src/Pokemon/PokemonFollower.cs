@@ -201,7 +201,22 @@ public class PokemonFollower
 	{
 		PokemonEncounterManager.UpdateOverworldSpawns(gameTime);
 		Farmer farmer = CurrentFarmer;
-		if (!Enabled || farmer == null || Game1.currentLocation == null) return;
+		UpdateForFarmer(gameTime, farmer, Game1.currentLocation, isLocalOwner: true);
+	}
+
+	private int _lastUpdatedTick = -1;
+
+	public void UpdateForFarmer(GameTime gameTime, Farmer farmer, GameLocation location, bool isLocalOwner)
+	{
+		if (!Enabled || farmer == null || location == null) return;
+		if (_lastUpdatedTick == Game1.ticks) return;
+		_lastUpdatedTick = Game1.ticks;
+
+		if (!isLocalOwner)
+		{
+			PlayerParty.GetForFarmer(FarmerId).SyncFromModDataIfChanged(farmer);
+		}
+
 		var active = PlayerParty.GetForFarmer(FarmerId).ActivePokemon;
 		if (active == null || active.IsFainted)
 		{
@@ -228,13 +243,13 @@ public class PokemonFollower
 
 		Rectangle playerBox = farmer.GetBoundingBox();
 		Vector2 playerCenter = new Vector2(playerBox.Center.X, playerBox.Center.Y);
-		string curLocName = Game1.currentLocation.NameOrUniqueName;
+		string curLocName = location.NameOrUniqueName;
 
 		// Initialize position on first spawn, map transition, or extreme warp using safe tile search
 		if (_position == Vector2.Zero || _lastLocationName != curLocName || Vector2.Distance(_position, playerCenter) > 580f)
 		{
 			_lastLocationName = curLocName;
-			_position = FindSafeSpawnPosition(Game1.currentLocation, playerCenter, farmer.FacingDirection);
+			_position = FindSafeSpawnPosition(location, playerCenter, farmer.FacingDirection);
 			_lastFramePos = _position;
 			_stuckTimer = 0f;
 			_pathHistory.Clear();
@@ -260,7 +275,7 @@ public class PokemonFollower
 			pushVec.Normalize();
 			float pushAmount = (46f - distToPlayer) * Math.Min(1f, dt * 10f);
 			Vector2 testPos = _position + pushVec * pushAmount;
-			if (IsPositionFree(Game1.currentLocation, testPos))
+			if (IsPositionFree(location, testPos))
 			{
 				_position = testPos;
 			}
@@ -269,9 +284,9 @@ public class PokemonFollower
 				// Try perpendicular slide so follower never gets pinned under the player
 				Vector2 perp1 = new Vector2(-pushVec.Y, pushVec.X);
 				Vector2 perp2 = new Vector2(pushVec.Y, -pushVec.X);
-				if (IsPositionFree(Game1.currentLocation, _position + perp1 * pushAmount))
+				if (IsPositionFree(location, _position + perp1 * pushAmount))
 					_position += perp1 * pushAmount;
-				else if (IsPositionFree(Game1.currentLocation, _position + perp2 * pushAmount))
+				else if (IsPositionFree(location, _position + perp2 * pushAmount))
 					_position += perp2 * pushAmount;
 			}
 		}
@@ -305,7 +320,7 @@ public class PokemonFollower
 			float speed = MathHelper.Lerp(165f, 360f, Math.Clamp((distToPlayer - 62f) / 140f, 0f, 1f));
 			Vector2 nextPos = _position + moveDir * speed * dt;
 
-			if (IsPositionFree(Game1.currentLocation, nextPos))
+			if (IsPositionFree(location, nextPos))
 			{
 				_position = nextPos;
 			}
@@ -314,11 +329,11 @@ public class PokemonFollower
 				// Slide along unblocked axis
 				Vector2 nextX = new Vector2(nextPos.X, _position.Y);
 				Vector2 nextY = new Vector2(_position.X, nextPos.Y);
-				if (IsPositionFree(Game1.currentLocation, nextX))
+				if (IsPositionFree(location, nextX))
 				{
 					_position.X = nextPos.X;
 				}
-				else if (IsPositionFree(Game1.currentLocation, nextY))
+				else if (IsPositionFree(location, nextY))
 				{
 					_position.Y = nextPos.Y;
 				}
@@ -334,7 +349,7 @@ public class PokemonFollower
 				_stuckTimer += dt;
 				if (_stuckTimer >= 2.2f)
 				{
-					_position = FindSafeSpawnPosition(Game1.currentLocation, playerCenter, farmer.FacingDirection);
+					_position = FindSafeSpawnPosition(location, playerCenter, farmer.FacingDirection);
 					_pathHistory.Clear();
 					_stuckTimer = 0f;
 				}
@@ -357,15 +372,18 @@ public class PokemonFollower
 			_walkTimer += dt * 5.2f; // Smoother walking animation cadence
 			_walkFrame = (int)_walkTimer % 4;
 
-			_walkDistanceCounter += speed * dt;
-			if (_walkDistanceCounter >= 128f * 16f)
+			if (isLocalOwner)
 			{
-				_walkDistanceCounter = 0f;
-				var activeMon = PlayerParty.GetForFarmer(FarmerId).ActivePokemon;
-				if (activeMon != null)
+				_walkDistanceCounter += speed * dt;
+				if (_walkDistanceCounter >= 128f * 16f)
 				{
-					int gain = (string.Equals(activeMon.HeldItem, "Poke_SootheBell", StringComparison.OrdinalIgnoreCase) || string.Equals(activeMon.HeldItem, "SootheBell", StringComparison.OrdinalIgnoreCase)) ? 2 : 1;
-					activeMon.AdjustFriendship(gain);
+					_walkDistanceCounter = 0f;
+					var activeMon = PlayerParty.GetForFarmer(FarmerId).ActivePokemon;
+					if (activeMon != null)
+					{
+						int gain = (string.Equals(activeMon.HeldItem, "Poke_SootheBell", StringComparison.OrdinalIgnoreCase) || string.Equals(activeMon.HeldItem, "SootheBell", StringComparison.OrdinalIgnoreCase)) ? 2 : 1;
+						activeMon.AdjustFriendship(gain);
+					}
 				}
 			}
 		}
@@ -381,7 +399,10 @@ public class PokemonFollower
 		_lastFramePos = _position;
 
 		// Check player interaction (click on follower sprite in world space)
-		CheckInteraction();
+		if (isLocalOwner)
+		{
+			CheckInteraction();
+		}
 	}
 
 	private Vector2 _lastQueuedPos = Vector2.Zero;
@@ -491,14 +512,59 @@ public class PokemonFollower
 		catch { }
 	}
 
-	public void Draw(SpriteBatch b)
+	public static void DrawAllInLocation(SpriteBatch b, GameLocation location)
 	{
 		PokemonEncounterManager.DrawOverworldSpawns(b);
-		Farmer farmer = CurrentFarmer;
-		if (!Enabled || farmer == null || Game1.currentLocation == null) return;
+		if (location == null) return;
+
+		bool drewLocal = false;
+		if (location.farmers != null)
+		{
+			foreach (Farmer f in location.farmers)
+			{
+				if (f == null) continue;
+				if (f == Game1.player) drewLocal = true;
+				var follower = GetForFarmer(f.UniqueMultiplayerID);
+				if (f != Game1.player && Game1.currentGameTime != null)
+				{
+					follower.UpdateForFarmer(Game1.currentGameTime, f, location, isLocalOwner: false);
+				}
+				follower.DrawFollowerForFarmer(b, f, location);
+			}
+		}
+
+		if (!drewLocal && Game1.player != null && Game1.player.currentLocation == location)
+		{
+			Instance.DrawFollowerForFarmer(b, Game1.player, location);
+		}
+	}
+
+	public void Draw(SpriteBatch b)
+	{
+		DrawAllInLocation(b, Game1.currentLocation);
+	}
+
+	public void DrawFollowerForFarmer(SpriteBatch b, Farmer farmer, GameLocation location)
+	{
+		if (!Enabled || farmer == null || location == null) return;
 		if (Game1.activeClickableMenu is PokemonHatchMenu) return;
 		var active = PlayerParty.GetForFarmer(FarmerId).ActivePokemon;
 		if (active == null || active.IsFainted) return;
+
+		// Ensure texture is loaded if drawing on another screen in split-screen
+		if (_lastSpecies != active.Species.InternalName || _lastShiny != active.IsShiny)
+		{
+			_lastSpecies = active.Species.InternalName;
+			_lastShiny = active.IsShiny;
+			LoadFollowerSprite(_lastSpecies, _lastShiny);
+		}
+
+		if (_position == Vector2.Zero)
+		{
+			Rectangle playerBox = farmer.GetBoundingBox();
+			Vector2 playerCenter = new Vector2(playerBox.Center.X, playerBox.Center.Y);
+			_position = FindSafeSpawnPosition(location, playerCenter, farmer.FacingDirection);
+		}
 
 		// Convert world coordinates to screen viewport (in World space, matching GameLocation.draw)
 		Vector2 screenPos = _position - new Vector2(Game1.viewport.X, Game1.viewport.Y);

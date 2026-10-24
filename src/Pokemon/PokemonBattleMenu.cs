@@ -1358,6 +1358,8 @@ private PokemonMove SelectEnemyMove()
 		}
 	}
 
+	public override bool areGamePadControlsImplemented() => true;
+
 	public override void receiveGamePadButton(Buttons button)
 	{
 		base.receiveGamePadButton(button);

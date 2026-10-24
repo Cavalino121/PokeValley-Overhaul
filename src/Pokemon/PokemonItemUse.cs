@@ -12,8 +12,22 @@ public static class PokemonItemUse
 {
 	public const string TmPrefix = "PokemonTM_";
 
-	// ---- Repel state ----
-	public static int RepelSteps { get; set; }
+	// ---- Repel state (per farmer) ----
+	private static readonly Dictionary<long, int> _repelStepsByFarmer = new();
+
+	public static int RepelSteps
+	{
+		get
+		{
+			long id = Game1.player?.UniqueMultiplayerID ?? 0L;
+			return _repelStepsByFarmer.TryGetValue(id, out int steps) ? steps : 0;
+		}
+		set
+		{
+			long id = Game1.player?.UniqueMultiplayerID ?? 0L;
+			_repelStepsByFarmer[id] = Math.Max(0, value);
+		}
+	}
 
 	public static string LocalId(string qualifiedId)
 	{
@@ -586,6 +600,43 @@ public class PokemonTargetMenu : IClickableMenu
 
 	private readonly List<ClickableComponent> _rows = new();
 	private ClickableComponent _cancel;
+	private int _gamepadIndex = 0;
+
+	public override bool areGamePadControlsImplemented() => true;
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (button == Buttons.B || button == Buttons.Back)
+		{
+			Cancel();
+			return;
+		}
+		int totalItems = _rows.Count + 1; // rows + cancel button
+		if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+		{
+			_gamepadIndex = (_gamepadIndex - 1 + totalItems) % totalItems;
+			Game1.playSound("shiny");
+			return;
+		}
+		if (button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+		{
+			_gamepadIndex = (_gamepadIndex + 1) % totalItems;
+			Game1.playSound("shiny");
+			return;
+		}
+		if (button == Buttons.A || button == Buttons.Start)
+		{
+			if (_gamepadIndex == _rows.Count)
+			{
+				Cancel();
+			}
+			else if (_gamepadIndex >= 0 && _gamepadIndex < _rows.Count)
+			{
+				var r = _rows[_gamepadIndex].bounds;
+				receiveLeftClick(r.Center.X, r.Center.Y);
+			}
+		}
+	}
 
 	public PokemonTargetMenu(string title, Func<PokemonInstance, bool> canTarget, Action<int> onPick)
 		: base(0, 0, 560, 100 + 6 * 58 + 60)
@@ -686,11 +737,12 @@ public class PokemonTargetMenu : IClickableMenu
 
 		int mx = Game1.getMouseX(true);
 		int my = Game1.getMouseY(true);
+		bool isGamepad = Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected;
 
 		for (int i = 0; i < _rows.Count; i++)
 		{
 			Rectangle r = _rows[i].bounds;
-			bool hov = r.Contains(mx, my);
+			bool hov = r.Contains(mx, my) || (isGamepad && _gamepadIndex == i);
 
 			if (_moveMode)
 			{
@@ -734,7 +786,7 @@ public class PokemonTargetMenu : IClickableMenu
 			}
 		}
 
-		bool ch = _cancel.containsPoint(mx, my);
+		bool ch = _cancel.containsPoint(mx, my) || (isGamepad && _gamepadIndex == _rows.Count);
 		IClickableMenu.drawTextureBox(b, _cancel.bounds.X, _cancel.bounds.Y, _cancel.bounds.Width, _cancel.bounds.Height, ch ? Color.Wheat : Color.White);
 		PokemonUI.Text(b, Game1.smallFont, _cancel.label, new Rectangle(_cancel.bounds.X + 10, _cancel.bounds.Y + 6, _cancel.bounds.Width - 20, _cancel.bounds.Height - 12), Game1.textColor, center: true, maxScale: 0.85f);
 

@@ -151,25 +151,31 @@ public class PokemonHUD
 	}
 
 
+	private bool _leftStickComboUsed = false;
+
 	public void Update(GameTime gameTime)
 	{
-		KeyboardState currentKb = Keyboard.GetState();
+		KeyboardState currentKb = Game1.input.GetKeyboardState();
+		GamePadState gp = Game1.input.GetGamePadState();
 
-		// F8 Debug Menu - accessible only if unlocked via chat command /debugPoke
-		if (IsKeyPressed(currentKb, Keys.F8))
+		// F8 Debug Menu (Keyboard) or L3 + Select/Back (Controller)
+		if (IsKeyPressed(currentKb, Keys.F8) || (gp.IsConnected && gp.IsButtonDown(Buttons.LeftStick) && gp.IsButtonDown(Buttons.Back) && !_previousGamePadState.IsButtonDown(Buttons.Back)))
 		{
 			if (PokemonDebugMenu.IsDebugUnlocked)
 			{
+				_leftStickComboUsed = true;
 				Game1.playSound("select");
 				Game1.activeClickableMenu = new PokemonDebugMenu();
 				_previousKeyboardState = currentKb;
+				_previousGamePadState = gp;
 				return;
 			}
 		}
 
 		if (Game1.activeClickableMenu != null || Game1.currentLocation == null)
 		{
-			_previousKeyboardState = GamePad.GetState(PlayerIndex.One).IsConnected ? _previousKeyboardState : currentKb;
+			_previousKeyboardState = currentKb;
+			_previousGamePadState = gp;
 			return;
 		}
 
@@ -190,13 +196,56 @@ public class PokemonHUD
 			PlayerParty.GetForFarmer(FarmerId).CycleActive();
 		}
 
-		// Controller shortcut: Click Right Stick to cycle active Pokemon
-		GamePadState gp = Game1.input.GetGamePadState();
+		// Controller shortcuts in overworld:
+		// - R3 (RightStick click): Cycle active Pokemon
+		// - L3 (LeftStick click): Expand/Collapse HUD
+		// - Hold L3 + D-Pad Up/Right/Down/Left: Field Moves 1-4 (F1-F4)
+		// - Hold L3 + Y: Open Pokedex
 		if (gp.IsConnected)
 		{
 			if (gp.IsButtonDown(Buttons.RightStick) && !_previousGamePadState.IsButtonDown(Buttons.RightStick))
 			{
 				Party.CycleActive();
+			}
+
+			if (gp.IsButtonDown(Buttons.LeftStick))
+			{
+				if (!_previousGamePadState.IsButtonDown(Buttons.LeftStick))
+				{
+					_leftStickComboUsed = false;
+				}
+
+				if (gp.IsButtonDown(Buttons.DPadUp) && !_previousGamePadState.IsButtonDown(Buttons.DPadUp))
+				{
+					_leftStickComboUsed = true;
+					PerformMoveByIndex(0);
+				}
+				else if (gp.IsButtonDown(Buttons.DPadRight) && !_previousGamePadState.IsButtonDown(Buttons.DPadRight))
+				{
+					_leftStickComboUsed = true;
+					PerformMoveByIndex(1);
+				}
+				else if (gp.IsButtonDown(Buttons.DPadDown) && !_previousGamePadState.IsButtonDown(Buttons.DPadDown))
+				{
+					_leftStickComboUsed = true;
+					PerformMoveByIndex(2);
+				}
+				else if (gp.IsButtonDown(Buttons.DPadLeft) && !_previousGamePadState.IsButtonDown(Buttons.DPadLeft))
+				{
+					_leftStickComboUsed = true;
+					PerformMoveByIndex(3);
+				}
+				else if (gp.IsButtonDown(Buttons.Y) && !_previousGamePadState.IsButtonDown(Buttons.Y))
+				{
+					_leftStickComboUsed = true;
+					Game1.playSound("bigSelect");
+					Game1.activeClickableMenu = new PokemonPokedexMenu();
+				}
+			}
+			else if (_previousGamePadState.IsButtonDown(Buttons.LeftStick) && !_leftStickComboUsed)
+			{
+				_isExpanded = !_isExpanded;
+				Game1.playSound(_isExpanded ? "bigSelect" : "bigDeSelect");
 			}
 		}
 		_previousGamePadState = gp;
@@ -222,7 +271,7 @@ public class PokemonHUD
 			else if (IsKeyPressed(currentKb, Keys.F4)) PerformMoveByIndex(3);
 		}
 
-		MouseState currentMouse = Mouse.GetState();
+		MouseState currentMouse = Game1.input.GetMouseState();
 		bool leftClicked = (_previousMouseState.LeftButton == ButtonState.Released && currentMouse.LeftButton == ButtonState.Pressed);
 		bool rightClicked = (_previousMouseState.RightButton == ButtonState.Released && currentMouse.RightButton == ButtonState.Pressed);
 		_previousMouseState = currentMouse;

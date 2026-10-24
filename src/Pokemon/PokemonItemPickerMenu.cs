@@ -332,6 +332,90 @@ public class PokemonItemPickerMenu : IClickableMenu
 		base.receiveScrollWheelAction(direction);
 	}
 
+	private int _gamepadIndex = 0;
+
+	public override bool areGamePadControlsImplemented() => true;
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (button == Buttons.B || button == Buttons.Back)
+		{
+			CloseMenu();
+			return;
+		}
+		if (button == Buttons.LeftShoulder)
+		{
+			_mode = (PickerMode)(((int)_mode + 2) % 3);
+			_currentPage = 0;
+			_gamepadIndex = 0;
+			RefreshItems();
+			SetupButtons();
+			Game1.playSound("shwip");
+			return;
+		}
+		if (button == Buttons.RightShoulder)
+		{
+			_mode = (PickerMode)(((int)_mode + 1) % 3);
+			_currentPage = 0;
+			_gamepadIndex = 0;
+			RefreshItems();
+			SetupButtons();
+			Game1.playSound("shwip");
+			return;
+		}
+		int maxPages = Math.Max(0, (_items.Count - 1) / ItemsPerPage);
+		if (button == Buttons.LeftTrigger)
+		{
+			_currentPage = (_currentPage - 1 + (maxPages + 1)) % (maxPages + 1);
+			SetupButtons();
+			_gamepadIndex = Math.Clamp(_gamepadIndex, 0, Math.Max(0, _itemButtons.Count - 1));
+			Game1.playSound("shwip");
+			return;
+		}
+		if (button == Buttons.RightTrigger)
+		{
+			_currentPage = (_currentPage + 1) % (maxPages + 1);
+			SetupButtons();
+			_gamepadIndex = Math.Clamp(_gamepadIndex, 0, Math.Max(0, _itemButtons.Count - 1));
+			Game1.playSound("shwip");
+			return;
+		}
+		if (button == Buttons.X)
+		{
+			if (_giveAllCurrentBtn != null)
+			{
+				receiveLeftClick(_giveAllCurrentBtn.bounds.Center.X, _giveAllCurrentBtn.bounds.Center.Y);
+			}
+			return;
+		}
+		if (_itemButtons.Count == 0) return;
+
+		if (button == Buttons.DPadLeft || button == Buttons.LeftThumbstickLeft)
+		{
+			if (_gamepadIndex > 0) { _gamepadIndex--; Game1.playSound("shiny"); }
+		}
+		else if (button == Buttons.DPadRight || button == Buttons.LeftThumbstickRight)
+		{
+			if (_gamepadIndex + 1 < _itemButtons.Count) { _gamepadIndex++; Game1.playSound("shiny"); }
+		}
+		else if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+		{
+			if (_gamepadIndex >= 3) { _gamepadIndex -= 3; Game1.playSound("shiny"); }
+		}
+		else if (button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+		{
+			if (_gamepadIndex + 3 < _itemButtons.Count) { _gamepadIndex += 3; Game1.playSound("shiny"); }
+		}
+		else if (button == Buttons.A || button == Buttons.Start)
+		{
+			if (_gamepadIndex >= 0 && _gamepadIndex < _itemButtons.Count)
+			{
+				var b = _itemButtons[_gamepadIndex].bounds;
+				receiveLeftClick(b.Center.X, b.Center.Y);
+			}
+		}
+	}
+
 	public override void receiveKeyPress(Keys key)
 	{
 		if (key == Keys.Escape)
@@ -421,7 +505,8 @@ public class PokemonItemPickerMenu : IClickableMenu
 		{
 			var btn = _itemButtons[i];
 			var entry = _items[startIndex + i];
-			bool hovered = btn.containsPoint(mouseX, mouseY);
+			bool isGamepadFocus = (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected) && _gamepadIndex == i;
+			bool hovered = btn.containsPoint(mouseX, mouseY) || isGamepadFocus;
 
 			Color cardBg = hovered ? new Color(255, 245, 205) : new Color(245, 236, 215);
 			drawTextureBox(

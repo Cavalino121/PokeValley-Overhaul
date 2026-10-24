@@ -288,6 +288,18 @@ public class PokemonStarterSelectMenu : IClickableMenu
 		}
 	}
 
+	public override bool areGamePadControlsImplemented() => true;
+
+	public override bool readyToClose() => PlayerParty.GetForFarmer(Game1.player).HasChosenStarter;
+
+	public override void receiveKeyPress(Keys key)
+	{
+		if (key == Keys.Enter || key == Keys.Space)
+		{
+			ConfirmChoice();
+		}
+	}
+
 	public override void receiveGamePadButton(Buttons button)
 	{
 		base.receiveGamePadButton(button);
@@ -648,7 +660,7 @@ public class PokemonStarterSelectMenu : IClickableMenu
 		}
 
 		// Draw Gamepad Cursor outline
-		if (Game1.options.gamepadControls || GamePad.GetState(PlayerIndex.One).IsConnected)
+		if (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected)
 		{
 			float pulse = 0.85f + (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6.0) * 0.15f;
 			if (_gamepadFocusOnConfirm && _confirmBtn != null)

@@ -67,6 +67,19 @@ public class PokemonPokedex
 		}
 	}
 
+	public static void SaveAll()
+	{
+		List<PokemonPokedex> list;
+		lock (_syncLock)
+		{
+			list = new List<PokemonPokedex>(_instancesByFarmer.Values);
+		}
+		foreach (var d in list)
+		{
+			d.Save();
+		}
+	}
+
 	public long FarmerId { get; }
 
 	private readonly HashSet<string> _seen = new(StringComparer.OrdinalIgnoreCase);

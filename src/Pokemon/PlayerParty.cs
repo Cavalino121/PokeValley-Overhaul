@@ -75,6 +75,46 @@ public class PlayerParty
 		}
 	}
 
+	public static void SaveAll()
+	{
+		List<PlayerParty> parties;
+		lock (_syncLock)
+		{
+			parties = new List<PlayerParty>(_instancesByFarmer.Values);
+		}
+		foreach (var p in parties)
+		{
+			p.SaveParty();
+		}
+	}
+
+	private string _lastRemoteStamp = null;
+
+	public void SyncFromModDataIfChanged(Farmer farmer)
+	{
+		try
+		{
+			if (farmer?.modData == null) return;
+			if (!farmer.modData.TryGetValue(PokemonSaveStore.ModDataStampKey, out string stamp) || string.IsNullOrEmpty(stamp))
+				return;
+			if (string.Equals(_lastRemoteStamp, stamp, StringComparison.Ordinal))
+				return;
+			_lastRemoteStamp = stamp;
+			PokemonSaveFile save = PokemonSaveStore.GetDataForFarmer(FarmerId);
+			if (farmer.modData.TryGetValue(PokemonSaveStore.ModDataPartyKey, out string partyJson) && !string.IsNullOrWhiteSpace(partyJson))
+			{
+				var section = JsonSerializer.Deserialize<PokemonPartySectionDto>(partyJson);
+				if (section != null)
+				{
+					save.Party = section.Party ?? new List<PokemonSaveDto>();
+					save.ActiveIndex = section.ActiveIndex;
+					LoadParty();
+				}
+			}
+		}
+		catch { }
+	}
+
 	public long FarmerId { get; }
 
 	public List<PokemonInstance> Team { get; } = new();
@@ -124,6 +164,7 @@ public class PlayerParty
 				return false;
 			}
 			ActiveIndex = index;
+			SaveParty();
 			Game1.playSound("coin");
 			Game1.addHUDMessage(new HUDMessage($"{Team[index].Nickname} agora está ativo!", 2));
 			return true;

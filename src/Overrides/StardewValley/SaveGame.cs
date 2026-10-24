@@ -452,9 +452,9 @@ public class SaveGame
 		string tempFarmerPath = finalFarmerPath + "_STARDEWVALLEYSAVETMP";
 		string tempDataPath = finalDataPath + "_STARDEWVALLEYSAVETMP";
 		ensureFolderStructureExists();
-		StardewValley.Pokemon.PokemonPokedex.Instance.Save();
-		StardewValley.Pokemon.PlayerParty.Instance.SaveParty();
-		StardewValley.Pokemon.PokemonStorage.Instance.SaveStorage();
+		StardewValley.Pokemon.PokemonPokedex.SaveAll();
+		StardewValley.Pokemon.PlayerParty.SaveAll();
+		StardewValley.Pokemon.PokemonStorage.SaveAll();
 		Stream fstream = null;
 		try
 		{

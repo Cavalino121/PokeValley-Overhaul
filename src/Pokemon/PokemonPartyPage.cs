@@ -200,6 +200,8 @@ public class PokemonPartyPage : IClickableMenu
 		}
 	}
 
+	public override bool areGamePadControlsImplemented() => true;
+
 	public override void receiveGamePadButton(Buttons button)
 	{
 		var team = Party.Team;

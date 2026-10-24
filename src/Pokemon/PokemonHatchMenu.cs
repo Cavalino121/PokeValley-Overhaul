@@ -44,6 +44,8 @@ public class PokemonHatchMenu : IClickableMenu
 		_continueButton = new ClickableComponent(new Rectangle(centerX - 90, centerY + 245, 180, 48), "continue", "Continuar");
 	}
 
+	public override bool areGamePadControlsImplemented() => true;
+
 	public override bool readyToClose() => false;
 
 	private void LoadTextures()
@@ -178,6 +180,16 @@ public class PokemonHatchMenu : IClickableMenu
 				PokemonMusicManager.StopAndRestoreStardewMusic();
 				exitThisMenu();
 			}
+		}
+	}
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (_hatchPhase == 2 && _revealTimer >= 0.8f && (button == Buttons.A || button == Buttons.B || button == Buttons.Start))
+		{
+			Game1.playSound("coin");
+			PokemonMusicManager.StopAndRestoreStardewMusic();
+			exitThisMenu();
 		}
 	}
 

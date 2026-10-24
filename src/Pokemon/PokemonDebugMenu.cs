@@ -1708,6 +1708,8 @@ public class PokemonDebugMenu : IClickableMenu
 		base.receiveKeyPress(key);
 	}
 
+	public override bool areGamePadControlsImplemented() => true;
+
 	public override void receiveGamePadButton(Buttons button)
 	{
 		if (button == Buttons.B || button == Buttons.Back)

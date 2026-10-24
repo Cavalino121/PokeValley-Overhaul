@@ -479,6 +479,8 @@ public class PokemonSummaryMenu : IClickableMenu
 		}
 	}
 
+	public override bool areGamePadControlsImplemented() => true;
+
 	public override void receiveGamePadButton(Buttons button)
 	{
 		if (button == Buttons.B || button == Buttons.Back)

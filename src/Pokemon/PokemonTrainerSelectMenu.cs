@@ -206,6 +206,95 @@ public class PokemonTrainerSelectMenu : IClickableMenu
 		}
 	}
 
+	public override bool areGamePadControlsImplemented() => true;
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (button == Buttons.B || button == Buttons.Back)
+		{
+			CloseMenu();
+			return;
+		}
+		if (button == Buttons.LeftShoulder)
+		{
+			_filter = (GenderFilter)(((int)_filter + 2) % 3);
+			_currentPage = 0;
+			Game1.playSound("smallSelect");
+			RefreshFilter();
+			SetupButtons();
+			return;
+		}
+		if (button == Buttons.RightShoulder)
+		{
+			_filter = (GenderFilter)(((int)_filter + 1) % 3);
+			_currentPage = 0;
+			Game1.playSound("smallSelect");
+			RefreshFilter();
+			SetupButtons();
+			return;
+		}
+		if (button == Buttons.LeftTrigger)
+		{
+			int maxPages = Math.Max(0, (_filteredSkins.Count - 1) / SkinsPerPage);
+			_currentPage = (_currentPage - 1 + (maxPages + 1)) % (maxPages + 1);
+			Game1.playSound("shwip");
+			SetupButtons();
+			if (_skinButtons.Count > 0) _selectedSkin = _skinButtons[0].name;
+			return;
+		}
+		if (button == Buttons.RightTrigger)
+		{
+			int maxPages = Math.Max(0, (_filteredSkins.Count - 1) / SkinsPerPage);
+			_currentPage = (_currentPage + 1) % (maxPages + 1);
+			Game1.playSound("shwip");
+			SetupButtons();
+			if (_skinButtons.Count > 0) _selectedSkin = _skinButtons[0].name;
+			return;
+		}
+		if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+		{
+			if (_filteredSkins.Count > 0)
+			{
+				int idx = Math.Max(0, _filteredSkins.IndexOf(_selectedSkin));
+				idx = (idx - 1 + _filteredSkins.Count) % _filteredSkins.Count;
+				_selectedSkin = _filteredSkins[idx];
+				_currentPage = idx / SkinsPerPage;
+				SetupButtons();
+				Game1.playSound("shiny");
+			}
+			return;
+		}
+		if (button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+		{
+			if (_filteredSkins.Count > 0)
+			{
+				int idx = Math.Max(0, _filteredSkins.IndexOf(_selectedSkin));
+				idx = (idx + 1) % _filteredSkins.Count;
+				_selectedSkin = _filteredSkins[idx];
+				_currentPage = idx / SkinsPerPage;
+				SetupButtons();
+				Game1.playSound("shiny");
+			}
+			return;
+		}
+		if (button == Buttons.A || button == Buttons.Start)
+		{
+			if (!string.IsNullOrEmpty(_selectedSkin))
+			{
+				if (_onSelectCallback != null)
+				{
+					Game1.playSound("reward");
+					_onSelectCallback(_selectedSkin);
+					return;
+				}
+				PokemonUI.TrainerSkin = _selectedSkin;
+				Game1.playSound("reward");
+				Game1.addHUDMessage(new HUDMessage($"Treinador de batalha definido como: {_selectedSkin}!", 2));
+			}
+			CloseMenu();
+		}
+	}
+
 	public override void receiveKeyPress(Keys key)
 	{
 		if (key == Keys.Escape || key == Keys.Back)

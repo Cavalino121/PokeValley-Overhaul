@@ -64,6 +64,19 @@ public class PokemonStorage
 		}
 	}
 
+	public static void SaveAll()
+	{
+		List<PokemonStorage> list;
+		lock (_syncLock)
+		{
+			list = new List<PokemonStorage>(_instancesByFarmer.Values);
+		}
+		foreach (var s in list)
+		{
+			s.SaveStorage();
+		}
+	}
+
 	public long FarmerId { get; }
 
 	public class Box
@@ -178,7 +191,8 @@ public class PokemonStorage
 		var mon = Boxes[boxIndex].Slots[slotIndex];
 		if (mon == null) return false;
 
-		if (PlayerParty.Instance.Team.Count >= 6)
+		var playerParty = PlayerParty.GetForFarmer(FarmerId);
+		if (playerParty.Team.Count >= 6)
 		{
 			Game1.playSound("cancel");
 			Game1.showRedMessage("Sua equipe já está cheia (máx 6 Pokémon)!");
@@ -186,8 +200,8 @@ public class PokemonStorage
 		}
 
 		Boxes[boxIndex].Slots[slotIndex] = null;
-		PlayerParty.Instance.Team.Add(mon);
-		PlayerParty.Instance.SaveParty();
+		playerParty.Team.Add(mon);
+		playerParty.SaveParty();
 		SaveStorage();
 		Game1.playSound("coin");
 		Game1.addHUDMessage(new HUDMessage($"{mon.Nickname} foi adicionado à sua equipe!", 2));
@@ -201,7 +215,8 @@ public class PokemonStorage
 	{
 		if (boxIndex < 0 || boxIndex >= TotalBoxes) return false;
 		if (slotIndex < 0 || slotIndex >= SlotsPerBox) return false;
-		var party = PlayerParty.Instance.Team;
+		var playerParty = PlayerParty.GetForFarmer(FarmerId);
+		var party = playerParty.Team;
 		if (partyIndex < 0 || partyIndex >= party.Count) return false;
 
 		var boxMon = Boxes[boxIndex].Slots[slotIndex];
@@ -224,8 +239,8 @@ public class PokemonStorage
 			}
 			Boxes[boxIndex].Slots[slotIndex] = partyMon;
 			party.RemoveAt(partyIndex);
-			if (PlayerParty.Instance.ActiveIndex >= party.Count)
-				PlayerParty.Instance.ActiveIndex = Math.Max(0, party.Count - 1);
+			if (playerParty.ActiveIndex >= party.Count)
+				playerParty.ActiveIndex = Math.Max(0, party.Count - 1);
 		}
 		else
 		{
@@ -239,7 +254,7 @@ public class PokemonStorage
 			party[partyIndex] = boxMon;
 		}
 
-		PlayerParty.Instance.SaveParty();
+		playerParty.SaveParty();
 		SaveStorage();
 		Game1.playSound("coin");
 		return true;
