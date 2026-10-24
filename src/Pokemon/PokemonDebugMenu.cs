@@ -43,6 +43,7 @@ public class PokemonDebugMenu : IClickableMenu
 	private string _filterRegion = "Todas"; // Todas, Kanto..Paldea
 	private StyleFilter _filterStyle = StyleFilter.Normal;
 	private int _battlePage = 0;
+	private static PlayerParty Party => PlayerParty.GetForFarmer(Game1.player);
 
 	private readonly Dictionary<string, PokemonInstance> _previewInstances = new(StringComparer.OrdinalIgnoreCase);
 
@@ -493,9 +494,9 @@ public class PokemonDebugMenu : IClickableMenu
 					if (_selectingWildBattleTarget)
 					{
 						_selectingWildBattleTarget = false;
-						if (PlayerParty.Instance.Team.Count == 0)
+						if (Party.Team.Count == 0)
 						{
-							PlayerParty.Instance.AddPokemon(new PokemonInstance(PokemonSpecies.Get("Pikachu"), _selectedLevel));
+							Party.AddPokemon(new PokemonInstance(PokemonSpecies.Get("Pikachu"), _selectedLevel));
 						}
 						Game1.playSound("flute");
 						Game1.activeClickableMenu = new PokemonBattleMenu(inst, isWild: true);
@@ -507,13 +508,13 @@ public class PokemonDebugMenu : IClickableMenu
 						inst.IsEgg = true;
 						inst.EggSteps = 10;
 						inst.Nickname = "Ovo Pokémon";
-						PlayerParty.Instance.AddPokemon(inst);
+						Party.AddPokemon(inst);
 						Game1.playSound("reward");
 						Game1.addHUDMessage(new HUDMessage($"🥚 Ovo de {species.Name} (10 passos p/ chocar) adicionado!", 2));
 						return;
 					}
 
-					PlayerParty.Instance.AddPokemon(inst);
+					Party.AddPokemon(inst);
 					Game1.playSound("reward");
 					return;
 				}
@@ -902,7 +903,7 @@ public class PokemonDebugMenu : IClickableMenu
 
 		if (action == "sim_player_battle")
 		{
-			if (PlayerParty.Instance.Team.Count == 0)
+			if (Party.Team.Count == 0)
 			{
 				Game1.showRedMessage("Adicione ao menos 1 Pokémon à sua equipe primeiro!");
 				return;
@@ -925,7 +926,7 @@ public class PokemonDebugMenu : IClickableMenu
 
 		Game1.playSound("flute");
 
-		if (PlayerParty.Instance.Team.Count == 0)
+		if (Party.Team.Count == 0)
 		{
 			Game1.showRedMessage("Adicione ao menos 1 Pokémon à sua equipe primeiro!");
 			return;
@@ -963,7 +964,7 @@ public class PokemonDebugMenu : IClickableMenu
 	{
 		if (action == "heal_team")
 		{
-			PlayerParty.Instance.HealAll();
+			Party.HealAll();
 			Game1.playSound("heal");
 			Game1.addHUDMessage(new HUDMessage("Toda a sua equipe Pokémon foi restaurada!", 2));
 		}
@@ -1100,7 +1101,7 @@ public class PokemonDebugMenu : IClickableMenu
 		}
 		else if (action == "max_friendship")
 		{
-			foreach (var p in PlayerParty.Instance.GetParty())
+			foreach (var p in Party.GetParty())
 			{
 				p.AdjustFriendship(255);
 			}
@@ -1116,7 +1117,7 @@ public class PokemonDebugMenu : IClickableMenu
 		// 1. Learnsets Canônicos
 		if (action == "mech_learnset_canonical")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			if (party.Count == 0)
 			{
 				Game1.showRedMessage("Adicione ao menos 1 Pokémon à sua equipe primeiro!");
@@ -1142,7 +1143,7 @@ public class PokemonDebugMenu : IClickableMenu
 		}
 		else if (action == "mech_level_team")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			if (party.Count == 0)
 			{
 				Game1.showRedMessage("Adicione ao menos 1 Pokémon à sua equipe primeiro!");
@@ -1176,7 +1177,7 @@ public class PokemonDebugMenu : IClickableMenu
 		// 2. TM/HM e Matriz Biológica
 		else if (action == "mech_validate_tms")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			var lead = party.Count > 0 ? party[0] : null;
 			if (lead == null)
 			{
@@ -1201,7 +1202,7 @@ public class PokemonDebugMenu : IClickableMenu
 		// 3. Condições de Status & Berries
 		else if (action == "mech_cycle_status")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			var lead = party.Count > 0 ? party[0] : null;
 			if (lead == null)
 			{
@@ -1224,7 +1225,7 @@ public class PokemonDebugMenu : IClickableMenu
 		}
 		else if (action == "mech_apply_confusion")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			var lead = party.Count > 0 ? party[0] : null;
 			if (lead == null)
 			{
@@ -1296,7 +1297,7 @@ public class PokemonDebugMenu : IClickableMenu
 			necro.HeldItem = "Poke_UltranecroziumZ";
 			var photon = PokemonMove.Get("Photon Geyser") ?? PokemonMove.Get("Thunderbolt");
 			if (photon != null) necro.Moves.Add(photon);
-			PlayerParty.Instance.AddPokemon(necro);
+			Party.AddPokemon(necro);
 			Game1.playSound("reward");
 			Game1.addHUDMessage(new HUDMessage("5. Necrozma Lv. 75 segurando Ultranecrozium Z adicionado à equipe!", 2));
 		}
@@ -1332,7 +1333,7 @@ public class PokemonDebugMenu : IClickableMenu
 		}
 		else if (action == "mech_trigger_friend_evo")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			var lead = party.Count > 0 ? party[0] : null;
 			if (lead != null)
 			{
@@ -1352,7 +1353,7 @@ public class PokemonDebugMenu : IClickableMenu
 			var riolu = new PokemonInstance(PokemonSpecies.Get("Riolu"), 29);
 			riolu.Friendship = 255;
 			riolu.Nickname = "Riolu (Amizade 255)";
-			PlayerParty.Instance.AddPokemon(riolu);
+			Party.AddPokemon(riolu);
 			Game1.playSound("reward");
 			Game1.addHUDMessage(new HUDMessage("7. Riolu com 255 de Amizade adicionado! Eleve 1 nível durante o dia para evoluir a Lucario.", 2));
 		}
@@ -1389,7 +1390,7 @@ public class PokemonDebugMenu : IClickableMenu
 		}
 		else if (action == "mech_cycle_tera_type")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			var lead = party.Count > 0 ? party[0] : null;
 			if (lead == null)
 			{
@@ -1450,7 +1451,7 @@ public class PokemonDebugMenu : IClickableMenu
 		// 3. Testar Reatividade dos Aldeões
 		if (action == "v2_test_npc_reactions")
 		{
-			var lead = PlayerParty.Instance.ActivePokemon ?? (PlayerParty.Instance.Team.Count > 0 ? PlayerParty.Instance.Team[0] : null);
+			var lead = Party.ActivePokemon ?? (Party.Team.Count > 0 ? Party.Team[0] : null);
 			if (lead == null)
 			{
 				Game1.showRedMessage("Adicione um Pokémon à sua equipe primeiro!");
@@ -1541,11 +1542,11 @@ public class PokemonDebugMenu : IClickableMenu
 
 		if (action == "v2_test_solo_evo")
 		{
-			var lead = PlayerParty.Instance.ActivePokemon ?? (PlayerParty.Instance.Team.Count > 0 ? PlayerParty.Instance.Team[0] : null);
+			var lead = Party.ActivePokemon ?? (Party.Team.Count > 0 ? Party.Team[0] : null);
 			if (lead == null)
 			{
 				lead = new PokemonInstance(PokemonSpecies.Get("Kadabra"), 30);
-				PlayerParty.Instance.AddPokemon(lead);
+				Party.AddPokemon(lead);
 				Game1.addHUDMessage(new HUDMessage("Kadabra Nv. 30 adicionado para teste!", 2));
 			}
 
@@ -1557,7 +1558,7 @@ public class PokemonDebugMenu : IClickableMenu
 				{
 					Game1.activeClickableMenu = new PokemonEvolutionMenu(lead, targetSpec, () =>
 					{
-						PlayerParty.Instance.SaveParty();
+						Party.SaveParty();
 					});
 					return;
 				}
@@ -1570,7 +1571,7 @@ public class PokemonDebugMenu : IClickableMenu
 		// 6. Acelerar Ovos da Equipe
 		if (action == "v2_hatch_1_step")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			int eggsAdjusted = 0;
 			foreach (var mon in party)
 			{
@@ -1593,7 +1594,7 @@ public class PokemonDebugMenu : IClickableMenu
 					EggSteps = 1,
 					Nickname = "Ovo Pokémon"
 				};
-				PlayerParty.Instance.AddPokemon(egg);
+				Party.AddPokemon(egg);
 				Game1.playSound("reward");
 				Game1.addHUDMessage(new HUDMessage("Ovo de Eevee gerado com 1 passo restante para chocar!", 1));
 			}
@@ -1603,7 +1604,7 @@ public class PokemonDebugMenu : IClickableMenu
 		// 7. Cura Total do PC Box
 		if (action == "v2_pc_full_restore")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			foreach (var mon in party)
 			{
 				mon.FullRestore();
@@ -1627,7 +1628,7 @@ public class PokemonDebugMenu : IClickableMenu
 					}
 				}
 			}
-			PlayerParty.Instance.SaveParty();
+			Party.SaveParty();
 			Game1.playSound("reward");
 			Game1.addHUDMessage(new HUDMessage($"Cura Total: {party.Count} na Equipe + {pcHealed} no PC restaurados!", 1));
 			return;
@@ -1636,7 +1637,7 @@ public class PokemonDebugMenu : IClickableMenu
 		// 8. Inspecionar Catch Rate & EXP Canônico
 		if (action == "v2_inspect_rates")
 		{
-			var lead = PlayerParty.Instance.ActivePokemon ?? (PlayerParty.Instance.Team.Count > 0 ? PlayerParty.Instance.Team[0] : null);
+			var lead = Party.ActivePokemon ?? (Party.Team.Count > 0 ? Party.Team[0] : null);
 			if (lead == null)
 			{
 				Game1.showRedMessage("Adicione um Pokémon à sua equipe primeiro!");
@@ -1659,7 +1660,7 @@ public class PokemonDebugMenu : IClickableMenu
 		// 9. Simular Equação Canônica de Captura
 		if (action == "v2_test_catch_formula")
 		{
-			var lead = PlayerParty.Instance.ActivePokemon ?? (PlayerParty.Instance.Team.Count > 0 ? PlayerParty.Instance.Team[0] : null);
+			var lead = Party.ActivePokemon ?? (Party.Team.Count > 0 ? Party.Team[0] : null);
 			int rate = lead?.Species.CatchRate ?? 45;
 			string spName = lead?.Nickname ?? "Mewtwo";
 			int maxHp = 100;
@@ -1684,12 +1685,12 @@ public class PokemonDebugMenu : IClickableMenu
 		// 10. Reverter Gimmicks
 		if (action == "v2_test_all_gimmick_revert")
 		{
-			var party = PlayerParty.Instance.GetParty();
+			var party = Party.GetParty();
 			foreach (var mon in party)
 			{
 				mon.EndBattleGimmicks(revertMega: true);
 			}
-			PlayerParty.Instance.SaveParty();
+			Party.SaveParty();
 			Game1.playSound("wand");
 			Game1.addHUDMessage(new HUDMessage("Todas as transformações (Mega, Tera, Dynamax) foram revertidas!", 1));
 			return;
@@ -1705,6 +1706,31 @@ public class PokemonDebugMenu : IClickableMenu
 			return;
 		}
 		base.receiveKeyPress(key);
+	}
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (button == Buttons.B || button == Buttons.Back)
+		{
+			Game1.playSound("bigDeSelect");
+			Game1.exitActiveMenu();
+			return;
+		}
+
+		if (button == Buttons.LeftShoulder || button == Buttons.LeftTrigger)
+		{
+			_currentTab = (Tab)(((int)_currentTab + 6) % 7);
+			SetupButtons();
+			Game1.playSound("shwip");
+			return;
+		}
+		if (button == Buttons.RightShoulder || button == Buttons.RightTrigger)
+		{
+			_currentTab = (Tab)(((int)_currentTab + 1) % 7);
+			SetupButtons();
+			Game1.playSound("shwip");
+			return;
+		}
 	}
 
 	public override void update(GameTime time)

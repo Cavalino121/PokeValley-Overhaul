@@ -41,8 +41,9 @@ public class PokemonSummaryMenu : IClickableMenu
 
 	private int _hoveredMoveIndex = -1;
 	private readonly List<Rectangle> _moveRects = new();
+	private readonly Farmer _farmer;
 
-	public PokemonSummaryMenu(PokemonInstance mon, List<PokemonInstance> contextList = null, IClickableMenu returnMenu = null)
+	public PokemonSummaryMenu(PokemonInstance mon, List<PokemonInstance> contextList = null, IClickableMenu returnMenu = null, Farmer farmer = null)
 		: base(
 			(Game1.uiViewport.Width - MenuWidth) / 2,
 			(Game1.uiViewport.Height - MenuHeight) / 2,
@@ -53,6 +54,7 @@ public class PokemonSummaryMenu : IClickableMenu
 		_mon = mon;
 		_contextList = contextList;
 		_returnMenu = returnMenu;
+		_farmer = farmer ?? Game1.player;
 		if (_contextList != null && _mon != null)
 		{
 			_contextIndex = _contextList.IndexOf(_mon);
@@ -167,7 +169,7 @@ public class PokemonSummaryMenu : IClickableMenu
 		{
 			_mon.UsedMegaStoneId = stoneId;
 			_mon.MegaEvolve(targetMega);
-			PlayerParty.Instance.SaveParty();
+			PlayerParty.GetForFarmer(_farmer).SaveParty();
 			Game1.playSound("reward");
 			Game1.addHUDMessage(new HUDMessage($"✨ {_mon.Nickname} Mega Evoluiu para {targetMega.Name}!", 2));
 		}
@@ -186,7 +188,7 @@ public class PokemonSummaryMenu : IClickableMenu
 			{
 				_mon.HeldItem = stoneKept;
 			}
-			PlayerParty.Instance.SaveParty();
+			PlayerParty.GetForFarmer(_farmer).SaveParty();
 			Game1.playSound("wand");
 			Game1.addHUDMessage(new HUDMessage($"{_mon.Nickname} voltou à forma normal!", 2));
 		}
@@ -258,7 +260,7 @@ public class PokemonSummaryMenu : IClickableMenu
 				{
 					Game1.player.addItemToInventoryBool(returned);
 				}
-				PlayerParty.Instance.SaveParty();
+				PlayerParty.GetForFarmer(_farmer).SaveParty();
 				Game1.playSound("reward");
 				Game1.addHUDMessage(new HUDMessage($"Trocou item de {_mon.Nickname} para {activeItem.DisplayName}!", 2));
 				return;
@@ -273,7 +275,7 @@ public class PokemonSummaryMenu : IClickableMenu
 				if (Game1.player.addItemToInventoryBool(unequipped))
 				{
 					_mon.HeldItem = null;
-					PlayerParty.Instance.SaveParty();
+					PlayerParty.GetForFarmer(_farmer).SaveParty();
 					Game1.playSound("coin");
 					Game1.addHUDMessage(new HUDMessage($"Desequipou {unequipped.DisplayName} de {_mon.Nickname}!", 2));
 				}
@@ -293,7 +295,7 @@ public class PokemonSummaryMenu : IClickableMenu
 			{
 				_mon.HeldItem = PokemonHeldItemManager.NormalizeId(activeItem.ItemId);
 				ConsumeActiveItem(activeItem, isCursor);
-				PlayerParty.Instance.SaveParty();
+				PlayerParty.GetForFarmer(_farmer).SaveParty();
 				Game1.playSound("reward");
 				Game1.addHUDMessage(new HUDMessage($"Equipou {activeItem.DisplayName} em {_mon.Nickname}!", 2));
 			}
@@ -377,7 +379,7 @@ public class PokemonSummaryMenu : IClickableMenu
 			}
 			else
 			{
-				PlayerParty.Instance.SaveParty();
+				PlayerParty.GetForFarmer(_farmer).SaveParty();
 				Game1.playSound("coin");
 				Game1.addHUDMessage(new HUDMessage($"Desequipou {returned?.DisplayName ?? oldHeld} de {_mon.Nickname}!", 2));
 				return;
@@ -388,7 +390,7 @@ public class PokemonSummaryMenu : IClickableMenu
 		{
 			_mon.HeldItem = PokemonHeldItemManager.NormalizeId(itemToEquip.ItemId);
 			Game1.player.Items.ReduceId(itemToEquip.QualifiedItemId, 1);
-			PlayerParty.Instance.SaveParty();
+			PlayerParty.GetForFarmer(_farmer).SaveParty();
 			Game1.playSound("reward");
 			Game1.addHUDMessage(new HUDMessage($"Equipou {itemToEquip.DisplayName} em {_mon.Nickname}!", 2));
 		}
@@ -474,6 +476,36 @@ public class PokemonSummaryMenu : IClickableMenu
 		else if (key == Keys.Right || key == Keys.Down || key == Keys.D || key == Keys.S)
 		{
 			CyclePokemon(1);
+		}
+	}
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (button == Buttons.B || button == Buttons.Back)
+		{
+			CloseSummary();
+			return;
+		}
+		if (button == Buttons.LeftShoulder || button == Buttons.RightShoulder || button == Buttons.LeftTrigger || button == Buttons.RightTrigger)
+		{
+			_currentTab = (_currentTab == SummaryTab.Battle) ? SummaryTab.Trainer : SummaryTab.Battle;
+			Game1.playSound("smallSelect");
+			return;
+		}
+		if (button == Buttons.DPadLeft || button == Buttons.LeftThumbstickLeft || button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+		{
+			CyclePokemon(-1);
+			return;
+		}
+		if (button == Buttons.DPadRight || button == Buttons.LeftThumbstickRight || button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+		{
+			CyclePokemon(1);
+			return;
+		}
+		if (button == Buttons.Y || button == Buttons.A)
+		{
+			CycleHeldItemFromInventory();
+			return;
 		}
 	}
 

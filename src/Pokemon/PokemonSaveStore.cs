@@ -58,55 +58,68 @@ public static class PokemonSaveStore
 		WriteIndented = false
 	};
 
-	private static PokemonSaveFile _data;
-	private static string _key;
-	private static string _path;
-	private static bool _loaded;
+	private sealed class FarmerSaveEntry
+	{
+		public PokemonSaveFile Data = new();
+		public string Path;
+		public string Key;
+		public bool Loaded;
+		public bool LoadedFromSaveFile;
+		public int LastEmbeddedProbeMs;
+	}
+
+	private static readonly Dictionary<long, FarmerSaveEntry> _farmerEntries = new();
+	private static readonly object _syncLock = new();
+
 	private static string _lastError;
 	private static bool _missingPathLogged;
 	private static bool _readFailed;
 	private static bool _reportedEmbeddedRead;
-	private static int _lastEmbeddedProbeMs;
 
 	/// <summary>Last persistence problem, for the debug menu. Null when everything went fine.</summary>
 	public static string LastError => _lastError;
 
 	/// <summary>Path of the mirror file currently in use, or null when no save is loaded.</summary>
-	public static string CurrentFilePath => _path;
+	public static string CurrentFilePath => _farmerEntries.TryGetValue(Game1.player?.UniqueMultiplayerID ?? 0L, out var e) ? e.Path : null;
 
 	/// <summary>True when the last load came from the copy embedded in the save file.</summary>
-	public static bool LoadedFromSaveFile { get; private set; }
+	public static bool LoadedFromSaveFile => _farmerEntries.TryGetValue(Game1.player?.UniqueMultiplayerID ?? 0L, out var e) && e.LoadedFromSaveFile;
 
 	/// <summary>Current save document. Never null once a save is loaded.</summary>
-	public static PokemonSaveFile Data
+	public static PokemonSaveFile Data => GetDataForFarmer(Game1.player?.UniqueMultiplayerID ?? 0L);
+
+	public static PokemonSaveFile GetDataForFarmer(long farmerId)
 	{
-		get
+		lock (_syncLock)
 		{
-			EnsureLoaded();
-			return _data;
+			EnsureLoadedForFarmer(farmerId);
+			if (_farmerEntries.TryGetValue(farmerId, out var entry))
+			{
+				return entry.Data;
+			}
+			return new PokemonSaveFile();
 		}
 	}
 
 	/// <summary>Drops cached state and reads the current save again. Called after a save is loaded.</summary>
 	public static void Reload()
 	{
-		_loaded = false;
-		_key = null;
-		_path = null;
-		_data = null;
-		EnsureLoaded();
+		lock (_syncLock)
+		{
+			_farmerEntries.Clear();
+			EnsureLoadedForFarmer(Game1.player?.UniqueMultiplayerID ?? 0L);
+		}
 	}
 
 	/// <summary>Starts from a blank document. Called when a new game is created.</summary>
 	public static void ResetForNewGame()
 	{
-		_data = new PokemonSaveFile();
-		_loaded = false;
-		_key = null;
-		_path = null;
-		_lastError = null;
-		LoadedFromSaveFile = false;
-		ClearPlayerModData();
+		lock (_syncLock)
+		{
+			_farmerEntries.Clear();
+			_lastError = null;
+			ClearPlayerModData(Game1.player);
+		}
 	}
 
 	/// <summary>
@@ -115,28 +128,41 @@ public static class PokemonSaveStore
 	/// </summary>
 	public static void Save(PokemonSaveSection section = PokemonSaveSection.All)
 	{
-		EnsureLoaded();
-		_data.SavedAtUtc = DateTime.UtcNow.Ticks;
-		WritePlayerModData(section);
-		WriteMirror();
+		SaveForFarmer(Game1.player?.UniqueMultiplayerID ?? 0L, section);
 	}
 
-	private static void EnsureLoaded()
+	public static void SaveForFarmer(long farmerId, PokemonSaveSection section = PokemonSaveSection.All)
+	{
+		lock (_syncLock)
+		{
+			EnsureLoadedForFarmer(farmerId);
+			if (!_farmerEntries.TryGetValue(farmerId, out var entry)) return;
+
+			entry.Data.SavedAtUtc = DateTime.UtcNow.Ticks;
+			Farmer farmer = Game1.getFarmerMaybeOffline(farmerId) ?? (Game1.player?.UniqueMultiplayerID == farmerId ? Game1.player : null);
+			WriteFarmerModData(farmer, entry.Data, section);
+			WriteMirrorForEntry(entry);
+		}
+	}
+
+	private static void EnsureLoadedForFarmer(long farmerId)
 	{
 		string key = CurrentSaveKey();
-		if (_loaded && string.Equals(_key, key, StringComparison.Ordinal))
+		if (!_farmerEntries.TryGetValue(farmerId, out var entry))
 		{
-			// A farmhand can finish loading the save before the host sends their
-			// farmer record. When the embedded document finally arrives, re-read it
-			// once so the player does not keep a stale mirror. Throttled because Data
-			// is read every frame by the HUD.
-			if (!LoadedFromSaveFile
-				&& _lastEmbeddedProbeMs > 0
-				&& Environment.TickCount - _lastEmbeddedProbeMs > 2000
-				&& HasEmbeddedData())
+			entry = new FarmerSaveEntry();
+			_farmerEntries[farmerId] = entry;
+		}
+
+		if (entry.Loaded && string.Equals(entry.Key, key, StringComparison.Ordinal))
+		{
+			if (!entry.LoadedFromSaveFile
+				&& entry.LastEmbeddedProbeMs > 0
+				&& Environment.TickCount - entry.LastEmbeddedProbeMs > 2000
+				&& HasEmbeddedDataForFarmer(farmerId))
 			{
-				_lastEmbeddedProbeMs = Environment.TickCount;
-				_loaded = false;
+				entry.LastEmbeddedProbeMs = Environment.TickCount;
+				entry.Loaded = false;
 			}
 			else
 			{
@@ -144,29 +170,28 @@ public static class PokemonSaveStore
 			}
 		}
 
-		_key = key;
-		_loaded = true;
-		_path = null;
-		_data = null;
-		LoadedFromSaveFile = false;
+		entry.Key = key;
+		entry.Loaded = true;
+		entry.Path = null;
+		entry.Data = new PokemonSaveFile();
+		entry.LoadedFromSaveFile = false;
 
 		if (key == null)
 		{
-			// No save selected yet: keep an empty document instead of reading a global file
-			// that belongs to a different playthrough.
-			_data = new PokemonSaveFile();
 			return;
 		}
 
-		_path = ResolvePath(key);
+		Farmer farmer = Game1.getFarmerMaybeOffline(farmerId) ?? (Game1.player?.UniqueMultiplayerID == farmerId ? Game1.player : null);
+		string fileName = (farmer == null || farmer.IsMainPlayer) ? FileNameHost : $"pokemon_save_{farmerId}.json";
+		entry.Path = ResolvePathForFile(key, fileName);
 
 		var file = new PokemonSaveFile();
 		bool haveData = false;
 
-		if (_path != null)
+		if (entry.Path != null)
 		{
 			_readFailed = false;
-			PokemonSaveFile mirror = ReadFile(_path);
+			PokemonSaveFile mirror = ReadFile(entry.Path);
 			if (mirror != null)
 			{
 				file = mirror;
@@ -174,58 +199,53 @@ public static class PokemonSaveStore
 			}
 			else if (_readFailed)
 			{
-				// The mirror exists but could not be read (locked by another process,
-				// permissions, antivirus). Keep it on disk untouched and work in memory.
-				_path = null;
+				entry.Path = null;
 			}
 		}
 
-		// The embedded copy is authoritative, so it is applied on top of the mirror.
-		// Exception: a crash between two saves leaves the mirror ahead of the .sv;
-		// in that case the newer mirror is recovered instead of rolling progress back.
-		long embeddedStamp = ReadEmbeddedStamp();
+		long embeddedStamp = ReadEmbeddedStampForFarmer(farmer);
 		bool recoveredFromMirror = haveData && embeddedStamp > 0 && file.SavedAtUtc > embeddedStamp
-			&& Game1.player != null && Game1.player.IsMainPlayer;
+			&& farmer != null && farmer.IsMainPlayer;
 
-		if (!recoveredFromMirror && ReadPlayerModData(file))
+		if (!recoveredFromMirror && ReadFarmerModData(farmer, file))
 		{
 			haveData = true;
-			LoadedFromSaveFile = true;
+			entry.LoadedFromSaveFile = true;
 		}
 
-		if (!haveData)
+		if (!haveData && (farmer == null || farmer.IsMainPlayer))
 		{
-			PokemonSaveFile legacy = TryImportLegacyFiles();
+			PokemonSaveFile legacy = TryImportLegacyFiles(key);
 			if (legacy != null)
 			{
-				_data = legacy;
+				entry.Data = legacy;
 				Log("migrated legacy pokemon_*.json files into the unified save");
-				Save();
-				LoadedFromSaveFile = true;
+				SaveForFarmer(farmerId);
+				entry.LoadedFromSaveFile = true;
 				return;
 			}
 		}
 
-		_data = file;
-		if (!LoadedFromSaveFile)
+		entry.Data = file;
+		if (!entry.LoadedFromSaveFile)
 		{
-			_lastEmbeddedProbeMs = Environment.TickCount;
+			entry.LastEmbeddedProbeMs = Environment.TickCount;
 		}
 
 		if (recoveredFromMirror)
 		{
 			Log("recovered a newer pokemon mirror after the save file lagged behind");
-			Save();
-			LoadedFromSaveFile = true;
+			SaveForFarmer(farmerId);
+			entry.LoadedFromSaveFile = true;
 		}
 	}
 
 	/// <summary>UTC ticks stamped on the embedded copy, or 0 when absent/unreadable.</summary>
-	private static long ReadEmbeddedStamp()
+	private static long ReadEmbeddedStampForFarmer(Farmer farmer)
 	{
 		try
 		{
-			var modData = Game1.player?.modData;
+			var modData = farmer?.modData;
 			if (modData == null || !modData.ContainsKey(ModDataStampKey)) return 0;
 			return long.TryParse(modData[ModDataStampKey], out long ticks) ? ticks : 0;
 		}
@@ -236,11 +256,12 @@ public static class PokemonSaveStore
 	}
 
 	/// <summary>Cheap check used to notice a farmer record that arrived after the load.</summary>
-	private static bool HasEmbeddedData()
+	private static bool HasEmbeddedDataForFarmer(long farmerId)
 	{
 		try
 		{
-			var modData = Game1.player?.modData;
+			Farmer farmer = Game1.getFarmerMaybeOffline(farmerId) ?? (Game1.player?.UniqueMultiplayerID == farmerId ? Game1.player : null);
+			var modData = farmer?.modData;
 			if (modData == null) return false;
 			return (modData.ContainsKey(ModDataPartyKey) && !string.IsNullOrWhiteSpace(modData[ModDataPartyKey]))
 				|| (modData.ContainsKey(ModDataPokedexKey) && !string.IsNullOrWhiteSpace(modData[ModDataPokedexKey]))
@@ -267,10 +288,8 @@ public static class PokemonSaveStore
 		}
 	}
 
-	private static string ResolvePath(string key)
+	private static string ResolvePathForFile(string key, string fileName)
 	{
-		string fileName = FileNameForPlayer();
-
 		try
 		{
 			string savesRoot = Program.GetSavesFolder();
@@ -310,22 +329,6 @@ public static class PokemonSaveStore
 		return null;
 	}
 
-	private static string FileNameForPlayer()
-	{
-		try
-		{
-			if (Game1.player == null || Game1.player.IsMainPlayer)
-			{
-				return FileNameHost;
-			}
-			return $"pokemon_save_{Game1.player.UniqueMultiplayerID}.json";
-		}
-		catch
-		{
-			return FileNameHost;
-		}
-	}
-
 	private static bool TryPrepareDirectory(string dir)
 	{
 		try
@@ -342,55 +345,52 @@ public static class PokemonSaveStore
 
 	// ---- Embedded copy (Farmer.modData -> .sv) ----------------------------
 
-	private static void WritePlayerModData(PokemonSaveSection section)
+	private static void WriteFarmerModData(Farmer farmer, PokemonSaveFile data, PokemonSaveSection section)
 	{
 		try
 		{
-			var player = Game1.player;
-			if (player?.modData == null) return;
+			if (farmer?.modData == null) return;
 
 			if (section is PokemonSaveSection.All or PokemonSaveSection.Party)
 			{
 				var party = new PokemonPartySectionDto
 				{
-					Party = _data.Party ?? new List<PokemonSaveDto>(),
-					ActiveIndex = _data.ActiveIndex
+					Party = data.Party ?? new List<PokemonSaveDto>(),
+					ActiveIndex = data.ActiveIndex
 				};
-				player.modData[ModDataPartyKey] = JsonSerializer.Serialize(party, CompactOptions);
+				farmer.modData[ModDataPartyKey] = JsonSerializer.Serialize(party, CompactOptions);
 			}
 
 			if (section is PokemonSaveSection.All or PokemonSaveSection.Pokedex)
 			{
-				player.modData[ModDataPokedexKey] = JsonSerializer.Serialize(
-					_data.Pokedex ?? new PokedexSaveData(), CompactOptions);
+				farmer.modData[ModDataPokedexKey] = JsonSerializer.Serialize(
+					data.Pokedex ?? new PokedexSaveData(), CompactOptions);
 			}
 
 			if (section is PokemonSaveSection.All or PokemonSaveSection.Storage)
 			{
-				player.modData[ModDataStorageKey] = JsonSerializer.Serialize(
-					_data.Storage ?? new PokemonStorageSaveDto(), CompactOptions);
+				farmer.modData[ModDataStorageKey] = JsonSerializer.Serialize(
+					data.Storage ?? new PokemonStorageSaveDto(), CompactOptions);
 			}
 
-			player.modData[ModDataStampKey] = _data.SavedAtUtc.ToString();
+			farmer.modData[ModDataStampKey] = data.SavedAtUtc.ToString();
 		}
 		catch (Exception ex)
 		{
-			Log($"could not embed the Pokémon document in the save file: {ex.Message}");
+			Log($"could not embed the Pokémon document for farmer {farmer?.UniqueMultiplayerID}: {ex.Message}");
 		}
 	}
 
-	/// <summary>Overlays any embedded section on <paramref name="file"/>. Returns true when at least one section was read.</summary>
-	private static bool ReadPlayerModData(PokemonSaveFile file)
+	private static bool ReadFarmerModData(Farmer farmer, PokemonSaveFile file)
 	{
 		try
 		{
-			var player = Game1.player;
-			if (player?.modData == null) return false;
+			if (farmer?.modData == null) return false;
 
 			bool any = false;
-			any |= ReadPartySection(player.modData, file);
-			any |= ReadPokedexSection(player.modData, file);
-			any |= ReadStorageSection(player.modData, file);
+			any |= ReadPartySection(farmer.modData, file);
+			any |= ReadPokedexSection(farmer.modData, file);
+			any |= ReadStorageSection(farmer.modData, file);
 			return any;
 		}
 		catch (Exception ex)
@@ -462,16 +462,15 @@ public static class PokemonSaveStore
 		}
 	}
 
-	private static void ClearPlayerModData()
+	private static void ClearPlayerModData(Farmer farmer)
 	{
 		try
 		{
-			var player = Game1.player;
-			if (player?.modData == null) return;
-			player.modData.Remove(ModDataPartyKey);
-			player.modData.Remove(ModDataPokedexKey);
-			player.modData.Remove(ModDataStorageKey);
-			player.modData.Remove(ModDataStampKey);
+			if (farmer?.modData == null) return;
+			farmer.modData.Remove(ModDataPartyKey);
+			farmer.modData.Remove(ModDataPokedexKey);
+			farmer.modData.Remove(ModDataStorageKey);
+			farmer.modData.Remove(ModDataStampKey);
 		}
 		catch (Exception ex)
 		{
@@ -481,11 +480,11 @@ public static class PokemonSaveStore
 
 	// ---- Mirror file ------------------------------------------------------
 
-	private static void WriteMirror()
+	private static void WriteMirrorForEntry(FarmerSaveEntry entry)
 	{
-		if (_path == null)
+		if (entry?.Path == null)
 		{
-			if (!_missingPathLogged && _key != null)
+			if (!_missingPathLogged && entry?.Key != null)
 			{
 				_missingPathLogged = true;
 				Log("no writable mirror location found; progress lives in the save file only this session");
@@ -495,14 +494,14 @@ public static class PokemonSaveStore
 
 		try
 		{
-			string json = JsonSerializer.Serialize(_data, JsonOptions);
-			string temp = _path + ".tmp";
+			string json = JsonSerializer.Serialize(entry.Data, JsonOptions);
+			string temp = entry.Path + ".tmp";
 			File.WriteAllText(temp, json, new UTF8Encoding(false));
-			WriteReplacing(temp, _path);
+			WriteReplacing(temp, entry.Path);
 		}
 		catch (Exception ex)
 		{
-			Log($"failed to write {Path.GetFileName(_path)}: {ex.Message}");
+			Log($"failed to write {Path.GetFileName(entry.Path)}: {ex.Message}");
 		}
 	}
 
@@ -578,15 +577,15 @@ public static class PokemonSaveStore
 
 	// ---- Legacy migration -------------------------------------------------
 
-	private static PokemonSaveFile TryImportLegacyFiles()
+	private static PokemonSaveFile TryImportLegacyFiles(string key = null)
 	{
 		var folders = new List<string>();
 		try
 		{
 			string savesRoot = Program.GetSavesFolder();
-			if (!string.IsNullOrEmpty(savesRoot) && _key != null)
+			if (!string.IsNullOrEmpty(savesRoot) && key != null)
 			{
-				folders.Add(Path.Combine(savesRoot, _key));
+				folders.Add(Path.Combine(savesRoot, key));
 			}
 		}
 		catch { }

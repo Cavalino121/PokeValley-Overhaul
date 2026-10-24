@@ -38,8 +38,10 @@ public class PokemonTradeMenu : IClickableMenu
 	}
 
 	private static readonly Dictionary<string, PendingPacket> _pendingPackets = new();
+	private static readonly Dictionary<long, PokemonTradeMenu> _activeTradeMenus = new();
+	private static readonly object _tradeSyncLock = new();
 
-	public static PokemonTradeMenu Instance { get; private set; }
+	public static PokemonTradeMenu Instance => _activeTradeMenus.TryGetValue(Game1.player?.UniqueMultiplayerID ?? 0L, out var m) ? m : null;
 
 	public enum TradeState
 	{
@@ -49,12 +51,16 @@ public class PokemonTradeMenu : IClickableMenu
 		Complete
 	}
 
+	private readonly long _myPlayerId;
 	private TradeState _state = TradeState.WaitingForPartner;
 	private bool _isSoloNpcMode = false;
 	private long _partnerId = 0;
 	private string _partnerName = "";
 	private bool _myConfirmed = false;
 	private bool _partnerConfirmed = false;
+
+	private int _gamepadSlotIndex = 0;
+	private bool _gamepadFocusOnConfirm = false;
 
 	private readonly ClickableTextureComponent _closeButton;
 	private readonly ClickableComponent _tradeButton;
@@ -85,7 +91,11 @@ public class PokemonTradeMenu : IClickableMenu
 	public PokemonTradeMenu()
 		: base((Game1.uiViewport.Width - MenuWidth) / 2, (Game1.uiViewport.Height - MenuHeight) / 2, MenuWidth, MenuHeight, showUpperRightCloseButton: true)
 	{
-		Instance = this;
+		_myPlayerId = Game1.player?.UniqueMultiplayerID ?? 0L;
+		lock (_tradeSyncLock)
+		{
+			_activeTradeMenus[_myPlayerId] = this;
+		}
 		Game1.playSound("bigSelect");
 
 		_closeButton = new ClickableTextureComponent(
@@ -176,18 +186,25 @@ public class PokemonTradeMenu : IClickableMenu
 
 	public static void HandleNetworkTradePacket(long senderId, string payload)
 	{
-		if (senderId == Game1.player.UniqueMultiplayerID) return;
 		if (string.IsNullOrEmpty(payload)) return;
 
 		if (payload.StartsWith("PART|", StringComparison.Ordinal))
 		{
 			string assembled = AssembleChunk(senderId, payload);
 			if (assembled == null) return;
-			Instance?.ReceiveNetworkPacket(senderId, assembled);
-			return;
+			payload = assembled;
 		}
 
-		Instance?.ReceiveNetworkPacket(senderId, payload);
+		lock (_tradeSyncLock)
+		{
+			foreach (var kvp in _activeTradeMenus)
+			{
+				if (kvp.Key != senderId)
+				{
+					kvp.Value.ReceiveNetworkPacket(senderId, payload);
+				}
+			}
+		}
 	}
 
 	/// <summary>
@@ -257,7 +274,8 @@ public class PokemonTradeMenu : IClickableMenu
 					_state = TradeState.Selecting;
 					_myConfirmed = false;
 					_partnerConfirmed = false;
-					SendPacket($"CONNECT|{Game1.player.UniqueMultiplayerID}|{Game1.player.Name}", senderId);
+					string myName = Game1.getFarmerMaybeOffline(_myPlayerId)?.Name ?? Game1.player?.Name ?? "Treinador";
+					SendPacket($"CONNECT|{_myPlayerId}|{myName}", senderId);
 					Game1.playSound("reward");
 					Game1.addHUDMessage(new HUDMessage($"Conectado com {_partnerName} no Terminal de Trocas!", 2));
 				}
@@ -271,7 +289,8 @@ public class PokemonTradeMenu : IClickableMenu
 					_state = TradeState.Selecting;
 					_myConfirmed = false;
 					_partnerConfirmed = false;
-					SendPacket($"CONNECT_ACK|{Game1.player.UniqueMultiplayerID}|{Game1.player.Name}", senderId);
+					string myName = Game1.getFarmerMaybeOffline(_myPlayerId)?.Name ?? Game1.player?.Name ?? "Treinador";
+					SendPacket($"CONNECT_ACK|{_myPlayerId}|{myName}", senderId);
 					Game1.playSound("reward");
 					Game1.addHUDMessage(new HUDMessage($"Conectado com {_partnerName} no Terminal de Trocas!", 2));
 				}
@@ -337,18 +356,11 @@ public class PokemonTradeMenu : IClickableMenu
 				break;
 
 			case "CANCEL":
-				if (_partnerId == senderId)
+				if (_partnerId == senderId || _state == TradeState.Selecting || _state == TradeState.WaitingForPartner)
 				{
-					Game1.showRedMessage($"{_partnerName} encerrou a sessão de troca.");
-					_partnerId = 0;
-					_partnerName = "";
-					_offeredPartnerMon = null;
-					_myConfirmed = false;
-					_partnerConfirmed = false;
-					if (!_isSoloNpcMode)
-					{
-						_state = TradeState.WaitingForPartner;
-					}
+					string pName = !string.IsNullOrEmpty(_partnerName) ? _partnerName : "O outro jogador";
+					Game1.showRedMessage($"{pName} encerrou a sessão de troca.");
+					CloseAndCleanup(notifyPartner: false);
 				}
 				break;
 		}
@@ -360,12 +372,35 @@ public class PokemonTradeMenu : IClickableMenu
 	}
 
 	/// <summary>
-	/// Sends a trade packet through the game chat channel. Chat payloads are capped
-	/// in practice, get filtered by the platform, and used to be visible to every
-	/// player, so the body is compressed, base64-encoded and split when needed.
+	/// Sends a trade packet through the game chat channel or direct local memory.
 	/// </summary>
 	private void SendPacket(string packet, long recipient)
 	{
+		if (string.IsNullOrEmpty(packet)) return;
+
+		// Local split-screen immediate in-memory dispatch:
+		if (LocalMultiplayer.IsLocalMultiplayer())
+		{
+			lock (_tradeSyncLock)
+			{
+				if (recipient == Multiplayer.AllPlayers)
+				{
+					foreach (var kvp in _activeTradeMenus)
+					{
+						if (kvp.Key != _myPlayerId)
+						{
+							kvp.Value.ReceiveNetworkPacket(_myPlayerId, packet);
+						}
+					}
+				}
+				else if (_activeTradeMenus.TryGetValue(recipient, out var targetMenu))
+				{
+					targetMenu.ReceiveNetworkPacket(_myPlayerId, packet);
+				}
+			}
+			return;
+		}
+
 		if (!Game1.IsMultiplayer || Game1.multiplayer == null) return;
 		if (string.IsNullOrEmpty(packet)) return;
 
@@ -437,7 +472,7 @@ public class PokemonTradeMenu : IClickableMenu
 	{
 		if (_myConfirmed && _partnerConfirmed)
 		{
-			SendPacket($"START_TRANSFER|{Game1.player.UniqueMultiplayerID}", _partnerId);
+			SendPacket($"START_TRANSFER|{_myPlayerId}", _partnerId);
 			_state = TradeState.Transferring;
 			_animTimer = 0f;
 			Game1.playSound("wand");
@@ -455,7 +490,8 @@ public class PokemonTradeMenu : IClickableMenu
 			if (_pingTimer >= 1.5f)
 			{
 				_pingTimer = 0f;
-				BroadcastPacket($"WAITING|{Game1.player.UniqueMultiplayerID}|{Game1.player.Name}");
+				string myName = Game1.getFarmerMaybeOffline(_myPlayerId)?.Name ?? Game1.player?.Name ?? "Treinador";
+				BroadcastPacket($"WAITING|{_myPlayerId}|{myName}");
 			}
 		}
 		else if (_state == TradeState.Transferring)
@@ -532,7 +568,7 @@ public class PokemonTradeMenu : IClickableMenu
 				}
 			}
 
-			var party = PlayerParty.Instance.Team;
+			var party = PlayerParty.GetForFarmer(_myPlayerId).Team;
 
 			// Select player Pokémon slot
 			for (int i = 0; i < _playerSlots.Count; i++)
@@ -542,14 +578,15 @@ public class PokemonTradeMenu : IClickableMenu
 					if (_selectedPlayerSlot != i)
 					{
 						_selectedPlayerSlot = i;
+						_gamepadSlotIndex = i;
 						_myConfirmed = false;
 						Game1.playSound("smallSelect");
 
 						if (!_isSoloNpcMode && _partnerId != 0)
 						{
 							string json = JsonSerializer.Serialize(PokemonToDto(party[i]));
-							SendPacket($"OFFER|{Game1.player.UniqueMultiplayerID}|{EncodePayload(json)}", _partnerId);
-							SendPacket($"UNCONFIRM|{Game1.player.UniqueMultiplayerID}", _partnerId);
+							SendPacket($"OFFER|{_myPlayerId}|{EncodePayload(json)}", _partnerId);
+							SendPacket($"UNCONFIRM|{_myPlayerId}", _partnerId);
 						}
 					}
 					return;
@@ -559,52 +596,199 @@ public class PokemonTradeMenu : IClickableMenu
 			// Confirm Trade Button
 			if (_tradeButton.containsPoint(x, y))
 			{
-				if (_selectedPlayerSlot < 0 || _selectedPlayerSlot >= party.Count)
+				ToggleConfirm();
+			}
+		}
+	}
+
+	public override void receiveKeyPress(Keys key)
+	{
+		if (key == Keys.Escape)
+		{
+			Game1.playSound("bigDeSelect");
+			CloseAndCleanup(notifyPartner: true);
+			return;
+		}
+		base.receiveKeyPress(key);
+	}
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		base.receiveGamePadButton(button);
+
+		if (_state == TradeState.Transferring) return;
+
+		var party = PlayerParty.GetForFarmer(_myPlayerId).Team;
+
+		switch (button)
+		{
+			case Buttons.DPadUp:
+			case Buttons.LeftThumbstickUp:
+				if (_gamepadFocusOnConfirm)
 				{
-					Game1.playSound("cancel");
-					Game1.showRedMessage("Selecione um Pokémon da sua equipe para oferecer na troca!");
-					return;
+					_gamepadFocusOnConfirm = false;
+					Game1.playSound("shiny");
 				}
-
-				if (_offeredPartnerMon == null)
+				else if (_gamepadSlotIndex > 0)
 				{
-					Game1.playSound("cancel");
-					Game1.showRedMessage("Aguarde o parceiro selecionar um Pokémon para a troca!");
-					return;
+					_gamepadSlotIndex--;
+					Game1.playSound("shiny");
 				}
+				break;
 
-				if (!_myConfirmed)
+			case Buttons.DPadDown:
+			case Buttons.LeftThumbstickDown:
+				if (!_gamepadFocusOnConfirm)
 				{
-					_myConfirmed = true;
-					Game1.playSound("select");
-
-					if (!_isSoloNpcMode)
+					if (_gamepadSlotIndex < Math.Min(5, party.Count - 1))
 					{
-						SendPacket($"CONFIRM|{Game1.player.UniqueMultiplayerID}", _partnerId);
-						CheckStartTransfer();
+						_gamepadSlotIndex++;
+						Game1.playSound("shiny");
 					}
 					else
 					{
-						// In solo mode, immediately start transfer!
-						_state = TradeState.Transferring;
-						_animTimer = 0f;
-						Game1.playSound("wand");
+						_gamepadFocusOnConfirm = true;
+						Game1.playSound("shiny");
 					}
 				}
-				else if (!_isSoloNpcMode && !_partnerConfirmed)
+				break;
+
+			case Buttons.DPadLeft:
+			case Buttons.LeftThumbstickLeft:
+				if (_isSoloNpcMode && _npcPartners.Count > 1)
 				{
-					// Toggle off confirmation
-					_myConfirmed = false;
-					SendPacket($"UNCONFIRM|{Game1.player.UniqueMultiplayerID}", _partnerId);
-					Game1.playSound("cancel");
+					_npcPartnerIndex = (_npcPartnerIndex - 1 + _npcPartners.Count) % _npcPartners.Count;
+					_partnerName = _npcPartners[_npcPartnerIndex].PartnerName;
+					_offeredPartnerMon = _npcPartners[_npcPartnerIndex].Pokemon;
+					Game1.playSound("smallSelect");
 				}
+				break;
+
+			case Buttons.DPadRight:
+			case Buttons.LeftThumbstickRight:
+				if (_isSoloNpcMode && _npcPartners.Count > 1)
+				{
+					_npcPartnerIndex = (_npcPartnerIndex + 1) % _npcPartners.Count;
+					_partnerName = _npcPartners[_npcPartnerIndex].PartnerName;
+					_offeredPartnerMon = _npcPartners[_npcPartnerIndex].Pokemon;
+					Game1.playSound("smallSelect");
+				}
+				break;
+
+			case Buttons.A:
+				if (_state == TradeState.WaitingForPartner)
+				{
+					_isSoloNpcMode = true;
+					_state = TradeState.Selecting;
+					_partnerName = _npcPartners.Count > 0 ? _npcPartners[0].PartnerName : "Terminal Link";
+					_offeredPartnerMon = _npcPartners.Count > 0 ? _npcPartners[0].Pokemon : null;
+					Game1.playSound("select");
+				}
+				else if (_state == TradeState.Selecting)
+				{
+					if (_gamepadFocusOnConfirm)
+					{
+						ToggleConfirm();
+					}
+					else if (_gamepadSlotIndex >= 0 && _gamepadSlotIndex < party.Count)
+					{
+						if (_selectedPlayerSlot != _gamepadSlotIndex)
+						{
+							_selectedPlayerSlot = _gamepadSlotIndex;
+							_myConfirmed = false;
+							Game1.playSound("smallSelect");
+
+							if (!_isSoloNpcMode && _partnerId != 0)
+							{
+								string json = JsonSerializer.Serialize(PokemonToDto(party[_gamepadSlotIndex]));
+								SendPacket($"OFFER|{_myPlayerId}|{EncodePayload(json)}", _partnerId);
+								SendPacket($"UNCONFIRM|{_myPlayerId}", _partnerId);
+							}
+						}
+					}
+				}
+				break;
+
+			case Buttons.X:
+			case Buttons.Start:
+				if (_state == TradeState.Selecting)
+				{
+					ToggleConfirm();
+				}
+				break;
+
+			case Buttons.Y:
+				if (_state == TradeState.WaitingForPartner)
+				{
+					_isSoloNpcMode = true;
+					_state = TradeState.Selecting;
+					_partnerName = _npcPartners.Count > 0 ? _npcPartners[0].PartnerName : "Terminal Link";
+					_offeredPartnerMon = _npcPartners.Count > 0 ? _npcPartners[0].Pokemon : null;
+					Game1.playSound("select");
+				}
+				else if (_isSoloNpcMode && _npcPartners.Count > 1)
+				{
+					_npcPartnerIndex = (_npcPartnerIndex + 1) % _npcPartners.Count;
+					_partnerName = _npcPartners[_npcPartnerIndex].PartnerName;
+					_offeredPartnerMon = _npcPartners[_npcPartnerIndex].Pokemon;
+					Game1.playSound("smallSelect");
+				}
+				break;
+
+			case Buttons.B:
+				Game1.playSound("bigDeSelect");
+				CloseAndCleanup(notifyPartner: true);
+				break;
+		}
+	}
+
+	private void ToggleConfirm()
+	{
+		var party = PlayerParty.GetForFarmer(_myPlayerId).Team;
+		if (_selectedPlayerSlot < 0 || _selectedPlayerSlot >= party.Count)
+		{
+			Game1.playSound("cancel");
+			Game1.showRedMessage("Selecione um Pokémon da sua equipe para oferecer na troca!");
+			return;
+		}
+
+		if (_offeredPartnerMon == null)
+		{
+			Game1.playSound("cancel");
+			Game1.showRedMessage("Aguarde o parceiro selecionar um Pokémon para a troca!");
+			return;
+		}
+
+		if (!_myConfirmed)
+		{
+			_myConfirmed = true;
+			Game1.playSound("select");
+
+			if (!_isSoloNpcMode)
+			{
+				SendPacket($"CONFIRM|{_myPlayerId}", _partnerId);
+				CheckStartTransfer();
 			}
+			else
+			{
+				// In solo mode, immediately start transfer!
+				_state = TradeState.Transferring;
+				_animTimer = 0f;
+				Game1.playSound("wand");
+			}
+		}
+		else if (!_isSoloNpcMode && !_partnerConfirmed)
+		{
+			// Toggle off confirmation
+			_myConfirmed = false;
+			SendPacket($"UNCONFIRM|{_myPlayerId}", _partnerId);
+			Game1.playSound("cancel");
 		}
 	}
 
 	private void FinalizeTrade()
 	{
-		var party = PlayerParty.Instance.Team;
+		var party = PlayerParty.GetForFarmer(_myPlayerId).Team;
 		if (_selectedPlayerSlot < 0 || _selectedPlayerSlot >= party.Count || _offeredPartnerMon == null)
 		{
 			CloseAndCleanup();
@@ -616,7 +800,7 @@ public class PokemonTradeMenu : IClickableMenu
 
 		// Swap into party
 		party[_selectedPlayerSlot] = receivedMon;
-		PlayerParty.Instance.SaveParty();
+		PlayerParty.GetForFarmer(_myPlayerId).SaveParty();
 
 		Game1.playSound("reward");
 		Game1.playSound("coin");
@@ -628,7 +812,10 @@ public class PokemonTradeMenu : IClickableMenu
 			PokemonSpecies target = PokemonSpecies.Get(evo.TargetSpecies);
 			if (target != null)
 			{
-				Instance = null;
+				lock (_tradeSyncLock)
+				{
+					_activeTradeMenus.Remove(_myPlayerId);
+				}
 				Game1.activeClickableMenu = new PokemonEvolutionMenu(receivedMon, target, () =>
 				{
 					Game1.activeClickableMenu = null;
@@ -641,19 +828,29 @@ public class PokemonTradeMenu : IClickableMenu
 		CloseAndCleanup();
 	}
 
-	private void CloseAndCleanup()
+	private void CloseAndCleanup(bool notifyPartner = true)
 	{
-		if (!_isSoloNpcMode && _partnerId != 0)
+		if (notifyPartner && !_isSoloNpcMode)
 		{
-			SendPacket($"CANCEL|{Game1.player.UniqueMultiplayerID}", _partnerId);
+			if (_partnerId != 0)
+			{
+				SendPacket($"CANCEL|{_myPlayerId}", _partnerId);
+			}
+			else
+			{
+				BroadcastPacket($"CANCEL|{_myPlayerId}");
+			}
 		}
-		Instance = null;
+		lock (_tradeSyncLock)
+		{
+			_activeTradeMenus.Remove(_myPlayerId);
+		}
 		exitThisMenu();
 	}
 
 	public override void emergencyShutDown()
 	{
-		CloseAndCleanup();
+		CloseAndCleanup(notifyPartner: true);
 		base.emergencyShutDown();
 	}
 
@@ -703,6 +900,22 @@ public class PokemonTradeMenu : IClickableMenu
 		// Confirm Trade Button
 		DrawTradeButton(b);
 
+		// Draw Gamepad Cursor Outline
+		if (Game1.options.gamepadControls || GamePad.GetState(PlayerIndex.One).IsConnected)
+		{
+			float pulse = 0.85f + (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6.0) * 0.15f;
+			if (_gamepadFocusOnConfirm)
+			{
+				Rectangle focusRect = new Rectangle(_tradeButton.bounds.X - 4, _tradeButton.bounds.Y - 4, _tradeButton.bounds.Width + 8, _tradeButton.bounds.Height + 8);
+				PokemonUI.Border(b, focusRect, 3, Color.Gold * pulse);
+			}
+			else if (_gamepadSlotIndex >= 0 && _gamepadSlotIndex < _playerSlots.Count)
+			{
+				Rectangle focusRect = new Rectangle(_playerSlots[_gamepadSlotIndex].bounds.X - 3, _playerSlots[_gamepadSlotIndex].bounds.Y - 3, _playerSlots[_gamepadSlotIndex].bounds.Width + 6, _playerSlots[_gamepadSlotIndex].bounds.Height + 6);
+				PokemonUI.Border(b, focusRect, 3, Color.Gold * pulse);
+			}
+		}
+
 		drawMouse(b);
 	}
 
@@ -734,7 +947,7 @@ public class PokemonTradeMenu : IClickableMenu
 
 	private void DrawPlayerParty(SpriteBatch b)
 	{
-		var party = PlayerParty.Instance.Team;
+		var party = PlayerParty.GetForFarmer(_myPlayerId).Team;
 		int startX = xPositionOnScreen + 30;
 		int startY = yPositionOnScreen + 64;
 
@@ -842,7 +1055,7 @@ public class PokemonTradeMenu : IClickableMenu
 
 	private void DrawTradeButton(SpriteBatch b)
 	{
-		bool partySelected = (_selectedPlayerSlot >= 0 && _selectedPlayerSlot < PlayerParty.Instance.Team.Count);
+		bool partySelected = (_selectedPlayerSlot >= 0 && _selectedPlayerSlot < PlayerParty.GetForFarmer(_myPlayerId).Team.Count);
 		bool partnerReady = (_offeredPartnerMon != null);
 		bool canClick = partySelected && partnerReady;
 

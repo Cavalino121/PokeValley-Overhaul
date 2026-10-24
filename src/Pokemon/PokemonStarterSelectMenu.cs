@@ -87,6 +87,10 @@ public class PokemonStarterSelectMenu : IClickableMenu
 	private const int VisibleRowCount = 7;
 	private StarterOption _selectedStarter;
 	private PokemonInstance _previewMon;
+	private static readonly Dictionary<string, PokemonInstance> _previewCache = new(StringComparer.OrdinalIgnoreCase);
+
+	private int _gamepadGridIndex = 0;
+	private bool _gamepadFocusOnConfirm = false;
 
 	private readonly List<ClickableComponent> _genTabs = new();
 	private readonly List<ClickableComponent> _starterButtons = new();
@@ -111,8 +115,12 @@ public class PokemonStarterSelectMenu : IClickableMenu
 	private void CreatePreviewInstance()
 	{
 		if (_selectedStarter == null) return;
-		PokemonSpecies sp = PokemonSpecies.Get(_selectedStarter.SpeciesName) ?? PokemonSpecies.Get("Pikachu");
-		_previewMon = new PokemonInstance(sp, 5);
+		if (!_previewCache.TryGetValue(_selectedStarter.SpeciesName, out _previewMon))
+		{
+			PokemonSpecies sp = PokemonSpecies.Get(_selectedStarter.SpeciesName) ?? PokemonSpecies.Get("Pikachu");
+			_previewMon = new PokemonInstance(sp, 5);
+			_previewCache[_selectedStarter.SpeciesName] = _previewMon;
+		}
 	}
 
 	private List<StarterOption> GetVisibleStarters()
@@ -276,12 +284,178 @@ public class PokemonStarterSelectMenu : IClickableMenu
 		// Confirm button
 		if (_confirmBtn != null && _confirmBtn.containsPoint(x, y))
 		{
-			if (_selectedStarter != null)
+			ConfirmChoice();
+		}
+	}
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		base.receiveGamePadButton(button);
+
+		List<StarterOption> visibleList = GetVisibleStarters();
+		int totalRows = (int)Math.Ceiling(visibleList.Count / 3.0);
+		int maxScroll = Math.Max(0, totalRows - VisibleRowCount);
+
+		switch (button)
+		{
+			case Buttons.DPadLeft:
+			case Buttons.LeftThumbstickLeft:
+				if (_gamepadFocusOnConfirm)
+				{
+					_gamepadFocusOnConfirm = false;
+					int currentRow = _gamepadGridIndex / 3;
+					_gamepadGridIndex = Math.Min(_starterButtons.Count - 1, currentRow * 3 + 2);
+					Game1.playSound("shiny");
+				}
+				else if (_gamepadGridIndex % 3 > 0)
+				{
+					_gamepadGridIndex--;
+					UpdateHoverFromGamepad();
+					Game1.playSound("shiny");
+				}
+				break;
+
+			case Buttons.DPadRight:
+			case Buttons.LeftThumbstickRight:
+				if (!_gamepadFocusOnConfirm)
+				{
+					if (_gamepadGridIndex % 3 == 2 || _gamepadGridIndex == _starterButtons.Count - 1)
+					{
+						_gamepadFocusOnConfirm = true;
+						Game1.playSound("shiny");
+					}
+					else if (_gamepadGridIndex + 1 < _starterButtons.Count)
+					{
+						_gamepadGridIndex++;
+						UpdateHoverFromGamepad();
+						Game1.playSound("shiny");
+					}
+				}
+				break;
+
+			case Buttons.DPadUp:
+			case Buttons.LeftThumbstickUp:
+				if (!_gamepadFocusOnConfirm)
+				{
+					if (_gamepadGridIndex >= 3)
+					{
+						_gamepadGridIndex -= 3;
+						UpdateHoverFromGamepad();
+						Game1.playSound("shiny");
+					}
+					else if (_scrollRow > 0)
+					{
+						_scrollRow--;
+						SetupLayout();
+						_gamepadGridIndex = Math.Min(_starterButtons.Count - 1, _gamepadGridIndex);
+						UpdateHoverFromGamepad();
+						Game1.playSound("shiny");
+					}
+				}
+				break;
+
+			case Buttons.DPadDown:
+			case Buttons.LeftThumbstickDown:
+				if (!_gamepadFocusOnConfirm)
+				{
+					if (_gamepadGridIndex + 3 < _starterButtons.Count)
+					{
+						_gamepadGridIndex += 3;
+						UpdateHoverFromGamepad();
+						Game1.playSound("shiny");
+					}
+					else if (_scrollRow < maxScroll)
+					{
+						_scrollRow++;
+						SetupLayout();
+						_gamepadGridIndex = Math.Min(_starterButtons.Count - 1, _gamepadGridIndex);
+						UpdateHoverFromGamepad();
+						Game1.playSound("shiny");
+					}
+					else
+					{
+						_gamepadFocusOnConfirm = true;
+						Game1.playSound("shiny");
+					}
+				}
+				break;
+
+			case Buttons.LeftShoulder: // LB: Previous Gen Tab
+				_selectedGen = (_selectedGen - 1 + 11) % 11;
+				_scrollRow = 0;
+				_gamepadGridIndex = 0;
+				_gamepadFocusOnConfirm = false;
+				SetupLayout();
+				UpdateHoverFromGamepad();
+				Game1.playSound("shwip");
+				break;
+
+			case Buttons.RightShoulder: // RB: Next Gen Tab
+				_selectedGen = (_selectedGen + 1) % 11;
+				_scrollRow = 0;
+				_gamepadGridIndex = 0;
+				_gamepadFocusOnConfirm = false;
+				SetupLayout();
+				UpdateHoverFromGamepad();
+				Game1.playSound("shwip");
+				break;
+
+			case Buttons.A: // Select starter or confirm
+				if (_gamepadFocusOnConfirm)
+				{
+					ConfirmChoice();
+				}
+				else if (_gamepadGridIndex >= 0 && _gamepadGridIndex < _starterButtons.Count)
+				{
+					var btn = _starterButtons[_gamepadGridIndex];
+					var found = AllStarters.Find(s => s.SpeciesName.Equals(btn.name, StringComparison.OrdinalIgnoreCase));
+					if (found != null)
+					{
+						if (_selectedStarter == found)
+						{
+							ConfirmChoice();
+						}
+						else
+						{
+							_selectedStarter = found;
+							CreatePreviewInstance();
+							Game1.playSound("smallSelect");
+						}
+					}
+				}
+				break;
+
+			case Buttons.Start: // Start immediately confirms choice!
+				ConfirmChoice();
+				break;
+
+			case Buttons.B:
+				Game1.playSound("cancel");
+				break;
+		}
+	}
+
+	private void UpdateHoverFromGamepad()
+	{
+		if (_gamepadGridIndex >= 0 && _gamepadGridIndex < _starterButtons.Count)
+		{
+			var btn = _starterButtons[_gamepadGridIndex];
+			var found = AllStarters.Find(s => s.SpeciesName.Equals(btn.name, StringComparison.OrdinalIgnoreCase));
+			if (found != null && found != _selectedStarter)
 			{
-				PlayerParty.Instance.ChooseStarter(_selectedStarter.SpeciesName);
-				Game1.playSound("reward");
-				Game1.exitActiveMenu();
+				_selectedStarter = found;
+				CreatePreviewInstance();
 			}
+		}
+	}
+
+	private void ConfirmChoice()
+	{
+		if (_selectedStarter != null)
+		{
+			PlayerParty.GetForFarmer(Game1.player).ChooseStarter(_selectedStarter.SpeciesName);
+			Game1.playSound("reward");
+			Game1.exitActiveMenu();
 		}
 	}
 
@@ -331,11 +505,18 @@ public class PokemonStarterSelectMenu : IClickableMenu
 			PokemonUI.DrawCardBorder(b, btn.bounds, cardBorder, isSel ? 2 : 1);
 
 			// Mini icon preview
-			PokemonSpecies sp = PokemonSpecies.Get(btn.name);
-			if (sp != null)
+			if (!_previewCache.TryGetValue(btn.name, out var previewItem))
 			{
-				PokemonInstance dummy = new PokemonInstance(sp, 5);
-				Texture2D icon = dummy.GetIconSprite(Game1.graphics.GraphicsDevice) ?? dummy.GetFrontSprite(Game1.graphics.GraphicsDevice);
+				PokemonSpecies sp = PokemonSpecies.Get(btn.name);
+				if (sp != null)
+				{
+					previewItem = new PokemonInstance(sp, 5);
+					_previewCache[btn.name] = previewItem;
+				}
+			}
+			if (previewItem != null)
+			{
+				Texture2D icon = previewItem.GetIconSprite(Game1.graphics.GraphicsDevice) ?? previewItem.GetFrontSprite(Game1.graphics.GraphicsDevice);
 				if (icon != null)
 				{
 					Rectangle srcRect = new Rectangle(0, 0, Math.Min(icon.Width, icon.Height), Math.Min(icon.Width, icon.Height));
@@ -464,6 +645,22 @@ public class PokemonStarterSelectMenu : IClickableMenu
 			Color cTint = confHov ? new Color(255, 235, 175) : Color.White;
 			IClickableMenu.drawTextureBox(b, _confirmBtn.bounds.X, _confirmBtn.bounds.Y, _confirmBtn.bounds.Width, _confirmBtn.bounds.Height, cTint);
 			PokemonUI.Text(b, Game1.dialogueFont, _confirmBtn.label, _confirmBtn.bounds, confHov ? Color.DarkRed : Color.DarkGreen, center: true, maxScale: 0.72f);
+		}
+
+		// Draw Gamepad Cursor outline
+		if (Game1.options.gamepadControls || GamePad.GetState(PlayerIndex.One).IsConnected)
+		{
+			float pulse = 0.85f + (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6.0) * 0.15f;
+			if (_gamepadFocusOnConfirm && _confirmBtn != null)
+			{
+				Rectangle focusRect = new Rectangle(_confirmBtn.bounds.X - 4, _confirmBtn.bounds.Y - 4, _confirmBtn.bounds.Width + 8, _confirmBtn.bounds.Height + 8);
+				PokemonUI.DrawCardBorder(b, focusRect, Color.Gold * pulse, 3);
+			}
+			else if (_gamepadGridIndex >= 0 && _gamepadGridIndex < _starterButtons.Count)
+			{
+				Rectangle focusRect = new Rectangle(_starterButtons[_gamepadGridIndex].bounds.X - 3, _starterButtons[_gamepadGridIndex].bounds.Y - 3, _starterButtons[_gamepadGridIndex].bounds.Width + 6, _starterButtons[_gamepadGridIndex].bounds.Height + 6);
+				PokemonUI.DrawCardBorder(b, focusRect, Color.Gold * pulse, 3);
+			}
 		}
 
 		drawMouse(b);

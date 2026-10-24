@@ -14,6 +14,7 @@ public class PokemonPartyPage : IClickableMenu
 	private ClickableComponent _pcButton;
 	private ClickableComponent _pokedexButton;
 	private int _selectedSlot = 0;
+	private static PlayerParty Party => PlayerParty.GetForFarmer(Game1.player);
 
 	// Authentic Pokemon GBA Palette
 	private static readonly Color GbaBorder = new Color(24, 48, 56);
@@ -53,7 +54,7 @@ public class PokemonPartyPage : IClickableMenu
 		_renameButtons.Clear();
 		_activateButtons.Clear();
 
-		var team = PlayerParty.Instance.Team;
+		var team = Party.Team;
 		int startX = xPositionOnScreen + 32;
 		int startY = yPositionOnScreen + IClickableMenu.spaceToClearTopBorder + 32;
 		int cardWidth = width - 64;
@@ -81,7 +82,7 @@ public class PokemonPartyPage : IClickableMenu
 			int cy = startY + i * (cardHeight + gap);
 			if (i < team.Count)
 			{
-				_activateButtons.Add(new ClickableComponent(new Rectangle(btnX, cy + 10, btnW, btnH), i.ToString(), (i == PlayerParty.Instance.ActiveIndex) ? "★ Ativo" : "Tornar Ativo"));
+				_activateButtons.Add(new ClickableComponent(new Rectangle(btnX, cy + 10, btnW, btnH), i.ToString(), (i == Party.ActiveIndex) ? "★ Ativo" : "Tornar Ativo"));
 				_renameButtons.Add(new ClickableComponent(new Rectangle(btnX, cy + 44, btnW, btnH), i.ToString(), "Renomear"));
 			}
 		}
@@ -111,7 +112,7 @@ public class PokemonPartyPage : IClickableMenu
 			}
 		}
 
-		var team = PlayerParty.Instance.Team;
+		var team = Party.Team;
 
 		// 1. Rename Buttons
 		for (int i = 0; i < _renameButtons.Count; i++)
@@ -146,7 +147,7 @@ public class PokemonPartyPage : IClickableMenu
 					Game1.showRedMessage($"{team[i].Nickname} está desmaiado e não pode ser ativado!");
 					return;
 				}
-				PlayerParty.Instance.SetActive(i);
+				Party.SetActive(i);
 				UpdateLayout();
 				return;
 			}
@@ -171,7 +172,7 @@ public class PokemonPartyPage : IClickableMenu
 					return;
 				}
 				_selectedSlot = i;
-				PlayerParty.Instance.SetActive(i);
+				Party.SetActive(i);
 				Game1.playSound("smallSelect");
 				UpdateLayout();
 				return;
@@ -181,7 +182,7 @@ public class PokemonPartyPage : IClickableMenu
 
 	public override void receiveRightClick(int x, int y, bool playSound = true)
 	{
-		var team = PlayerParty.Instance.Team;
+		var team = Party.Team;
 		int startX = xPositionOnScreen + 32;
 		int startY = yPositionOnScreen + IClickableMenu.spaceToClearTopBorder + 32;
 		int cardWidth = width - 64;
@@ -199,10 +200,67 @@ public class PokemonPartyPage : IClickableMenu
 		}
 	}
 
+	public override void receiveGamePadButton(Buttons button)
+	{
+		var team = Party.Team;
+		if (team.Count == 0) return;
+
+		if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+		{
+			_selectedSlot = Math.Max(0, _selectedSlot - 1);
+			Game1.playSound("shiny");
+			return;
+		}
+		if (button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+		{
+			_selectedSlot = Math.Min(team.Count - 1, _selectedSlot + 1);
+			Game1.playSound("shiny");
+			return;
+		}
+		if (button == Buttons.A)
+		{
+			if (_selectedSlot >= 0 && _selectedSlot < team.Count)
+			{
+				if (team[_selectedSlot].IsFainted)
+				{
+					Game1.playSound("cancel");
+					Game1.showRedMessage($"{team[_selectedSlot].Nickname} está desmaiado e não pode ser ativado!");
+					return;
+				}
+				Party.SetActive(_selectedSlot);
+				Game1.playSound("smallSelect");
+				UpdateLayout();
+			}
+			return;
+		}
+		if (button == Buttons.X)
+		{
+			if (_selectedSlot >= 0 && _selectedSlot < team.Count)
+			{
+				Game1.activeClickableMenu = new PokemonSummaryMenu(team[_selectedSlot], team, Game1.activeClickableMenu);
+			}
+			return;
+		}
+		if (button == Buttons.Y)
+		{
+			if (CanAccessPC())
+			{
+				Game1.playSound("computer");
+				Game1.activeClickableMenu = new PokemonStorageMenu();
+			}
+			else
+			{
+				Game1.playSound("bigSelect");
+				Game1.activeClickableMenu = new PokemonPokedexMenu();
+			}
+			return;
+		}
+	}
+
 	public override void draw(SpriteBatch b)
 	{
 		UpdateLayout();
-		var team = PlayerParty.Instance.Team;
+		var team = Party.Team;
 		int startX = xPositionOnScreen + 32;
 		int startY = yPositionOnScreen + IClickableMenu.spaceToClearTopBorder + 32;
 		int cardWidth = width - 64;
@@ -252,7 +310,7 @@ public class PokemonPartyPage : IClickableMenu
 			if (i < team.Count)
 			{
 				var p = team[i];
-				bool isActive = (i == PlayerParty.Instance.ActiveIndex);
+				bool isActive = (i == Party.ActiveIndex);
 				bool isHovered = cardBounds.Contains(mouseX, mouseY);
 
 				// Background capsule
@@ -262,6 +320,14 @@ public class PokemonPartyPage : IClickableMenu
 				Color borderColor = p.IsFainted ? new Color(180, 50, 50) : (isActive ? new Color(36, 120, 80) : new Color(160, 190, 185));
 				int borderThickness = isActive ? 2 : 1;
 				PokemonUI.Border(b, cardBounds, borderThickness, borderColor);
+
+				if ((Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected) && _selectedSlot == i)
+				{
+					float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6f);
+					int exp = pulse > 0 ? 3 : 2;
+					Rectangle glow = new Rectangle(cardBounds.X - exp, cardBounds.Y - exp, cardBounds.Width + exp * 2, cardBounds.Height + exp * 2);
+					PokemonUI.Border(b, glow, 3, Color.Gold);
+				}
 
 				// Left indicator stripe for active Pokemon
 				if (isActive)

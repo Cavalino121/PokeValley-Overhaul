@@ -43,8 +43,39 @@ public class PokemonSaveDto
 
 public class PlayerParty
 {
-	private static PlayerParty _instance;
-	public static PlayerParty Instance => _instance ??= new PlayerParty();
+	private static readonly Dictionary<long, PlayerParty> _instancesByFarmer = new();
+	private static readonly object _syncLock = new();
+
+	public static PlayerParty Instance => GetForFarmer(Game1.player);
+
+	public static PlayerParty GetForFarmer(Farmer farmer)
+	{
+		long id = farmer?.UniqueMultiplayerID ?? 0L;
+		return GetForFarmer(id);
+	}
+
+	public static PlayerParty GetForFarmer(long farmerId)
+	{
+		lock (_syncLock)
+		{
+			if (!_instancesByFarmer.TryGetValue(farmerId, out var party))
+			{
+				party = new PlayerParty(farmerId);
+				_instancesByFarmer[farmerId] = party;
+			}
+			return party;
+		}
+	}
+
+	public static void ClearAll()
+	{
+		lock (_syncLock)
+		{
+			_instancesByFarmer.Clear();
+		}
+	}
+
+	public long FarmerId { get; }
 
 	public List<PokemonInstance> Team { get; } = new();
 	public List<PokemonInstance> GetParty() => Team;
@@ -53,8 +84,9 @@ public class PlayerParty
 
 	public int ActiveIndex { get; set; } = 0;
 
-	private PlayerParty()
+	private PlayerParty(long farmerId)
 	{
+		FarmerId = farmerId;
 		LoadParty();
 	}
 
@@ -117,7 +149,7 @@ public class PlayerParty
 	{
 		if (pokemon?.Species != null)
 		{
-			PokemonPokedex.Instance.RecordCaught(pokemon.Species.Name);
+			PokemonPokedex.GetForFarmer(FarmerId).RecordCaught(pokemon.Species.Name);
 		}
 
 		if (Team.Count < 6)
@@ -127,9 +159,10 @@ public class PlayerParty
 		}
 		else
 		{
-			if (PokemonStorage.Instance.Deposit(pokemon))
+			var storage = PokemonStorage.GetForFarmer(FarmerId);
+			if (storage.Deposit(pokemon))
 			{
-				Game1.addHUDMessage(new HUDMessage($"{pokemon.Nickname} foi enviado para o PC (Caixa {PokemonStorage.Instance.LastDepositedBox + 1})!", 2));
+				Game1.addHUDMessage(new HUDMessage($"{pokemon.Nickname} foi enviado para o PC (Caixa {storage.LastDepositedBox + 1})!", 2));
 			}
 			else
 			{
@@ -160,15 +193,16 @@ public class PlayerParty
 		PokemonInstance starter = new PokemonInstance(species, 5);
 		Team.Clear();
 		AddPokemon(starter);
-		PokemonPokedex.Instance.RecordCaught(species.Name);
+		PokemonPokedex.GetForFarmer(FarmerId).RecordCaught(species.Name);
 
-		// Starter kit: 5 Poké Balls and 1 Potion
-		if (Game1.player != null)
+		// Starter kit: 5 Poké Balls and 1 Potion for this farmer
+		Farmer farmer = Game1.getFarmerMaybeOffline(FarmerId) ?? (Game1.player?.UniqueMultiplayerID == FarmerId ? Game1.player : null);
+		if (farmer != null)
 		{
 			Item balls = ItemRegistry.Create("(O)PokeBall", 5, 0, allowNull: true) ?? new StardewValley.Object("PokeBall", 5);
 			Item potion = ItemRegistry.Create("(O)PokemonPotion", 1, 0, allowNull: true) ?? new StardewValley.Object("PokemonPotion", 1);
-			if (balls != null) Game1.player.addItemToInventoryBool(balls);
-			if (potion != null) Game1.player.addItemToInventoryBool(potion);
+			if (balls != null) farmer.addItemToInventoryBool(balls);
+			if (potion != null) farmer.addItemToInventoryBool(potion);
 		}
 
 		Game1.addHUDMessage(new HUDMessage($"Você escolheu {species.Name} como seu parceiro Pokémon! (+5 Pokébolas, +1 Potion)", 2));
@@ -235,6 +269,7 @@ public class PlayerParty
 	{
 		Team.Clear();
 		ActiveIndex = 0;
+		ClearAll();
 		PokemonSaveStore.ResetForNewGame();
 	}
 
@@ -243,6 +278,7 @@ public class PlayerParty
 	{
 		Team.Clear();
 		ActiveIndex = 0;
+		ClearAll();
 		PokemonSaveStore.Reload();
 		LoadParty();
 	}
@@ -251,7 +287,7 @@ public class PlayerParty
 	{
 		try
 		{
-			PokemonSaveFile save = PokemonSaveStore.Data;
+			PokemonSaveFile save = PokemonSaveStore.GetDataForFarmer(FarmerId);
 			save.Party = new List<PokemonSaveDto>(Team.Count);
 			foreach (var pokemon in Team)
 			{
@@ -262,11 +298,11 @@ public class PlayerParty
 				}
 			}
 			save.ActiveIndex = ActiveIndex;
-			PokemonSaveStore.Save(PokemonSaveSection.Party);
+			PokemonSaveStore.SaveForFarmer(FarmerId, PokemonSaveSection.Party);
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"[PlayerParty] Falha ao salvar a equipe: {ex.Message}");
+			Console.WriteLine($"[PlayerParty] Falha ao salvar a equipe do jogador {FarmerId}: {ex.Message}");
 		}
 	}
 
@@ -274,7 +310,7 @@ public class PlayerParty
 	{
 		if (!string.IsNullOrWhiteSpace(speciesNameOrInternal))
 		{
-			PokemonPokedex.Instance.RecordSeen(speciesNameOrInternal);
+			PokemonPokedex.GetForFarmer(FarmerId).RecordSeen(speciesNameOrInternal);
 		}
 	}
 
@@ -282,7 +318,7 @@ public class PlayerParty
 	{
 		try
 		{
-			PokemonSaveFile save = PokemonSaveStore.Data;
+			PokemonSaveFile save = PokemonSaveStore.GetDataForFarmer(FarmerId);
 			if (save.Party == null || save.Party.Count == 0)
 			{
 				return;
@@ -309,7 +345,7 @@ public class PlayerParty
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"[PlayerParty] Falha ao carregar a equipe: {ex.Message}");
+			Console.WriteLine($"[PlayerParty] Falha ao carregar a equipe do jogador {FarmerId}: {ex.Message}");
 		}
 	}
 }

@@ -14,8 +14,40 @@ namespace StardewValley.Pokemon;
 /// </summary>
 public class PokemonFollower
 {
-	private static PokemonFollower _instance;
-	public static PokemonFollower Instance => _instance ??= new PokemonFollower();
+	private static readonly Dictionary<long, PokemonFollower> _instancesByFarmer = new();
+	private static readonly object _syncLock = new();
+
+	public static PokemonFollower Instance => GetForFarmer(Game1.player);
+
+	public static PokemonFollower GetForFarmer(Farmer farmer)
+	{
+		long id = farmer?.UniqueMultiplayerID ?? 0L;
+		return GetForFarmer(id);
+	}
+
+	public static PokemonFollower GetForFarmer(long farmerId)
+	{
+		lock (_syncLock)
+		{
+			if (!_instancesByFarmer.TryGetValue(farmerId, out var follower))
+			{
+				follower = new PokemonFollower(farmerId);
+				_instancesByFarmer[farmerId] = follower;
+			}
+			return follower;
+		}
+	}
+
+	public static void ClearAll()
+	{
+		lock (_syncLock)
+		{
+			_instancesByFarmer.Clear();
+		}
+	}
+
+	public long FarmerId { get; }
+	private Farmer CurrentFarmer => Game1.getFarmerMaybeOffline(FarmerId) ?? (Game1.player?.UniqueMultiplayerID == FarmerId ? Game1.player : Game1.player);
 
 	public bool Enabled { get; set; } = true;
 
@@ -38,7 +70,10 @@ public class PokemonFollower
 	private float _stuckTimer = 0f;
 	private Vector2 _lastFramePos = Vector2.Zero;
 
-	private PokemonFollower() { }
+	private PokemonFollower(long farmerId)
+	{
+		FarmerId = farmerId;
+	}
 
 	private float _heartTimer = 0f;
 	private Vector2 _heartPos = Vector2.Zero;
@@ -165,8 +200,9 @@ public class PokemonFollower
 	public void Update(GameTime gameTime)
 	{
 		PokemonEncounterManager.UpdateOverworldSpawns(gameTime);
-		if (!Enabled || Game1.player == null || Game1.currentLocation == null) return;
-		var active = PlayerParty.Instance.ActivePokemon;
+		Farmer farmer = CurrentFarmer;
+		if (!Enabled || farmer == null || Game1.currentLocation == null) return;
+		var active = PlayerParty.GetForFarmer(FarmerId).ActivePokemon;
 		if (active == null || active.IsFainted)
 		{
 			_pathHistory.Clear();
@@ -190,7 +226,7 @@ public class PokemonFollower
 			LoadFollowerSprite(_lastSpecies, _lastShiny);
 		}
 
-		Rectangle playerBox = Game1.player.GetBoundingBox();
+		Rectangle playerBox = farmer.GetBoundingBox();
 		Vector2 playerCenter = new Vector2(playerBox.Center.X, playerBox.Center.Y);
 		string curLocName = Game1.currentLocation.NameOrUniqueName;
 
@@ -198,11 +234,11 @@ public class PokemonFollower
 		if (_position == Vector2.Zero || _lastLocationName != curLocName || Vector2.Distance(_position, playerCenter) > 580f)
 		{
 			_lastLocationName = curLocName;
-			_position = FindSafeSpawnPosition(Game1.currentLocation, playerCenter, Game1.player.FacingDirection);
+			_position = FindSafeSpawnPosition(Game1.currentLocation, playerCenter, farmer.FacingDirection);
 			_lastFramePos = _position;
 			_stuckTimer = 0f;
 			_pathHistory.Clear();
-			_facingDirection = Game1.player.FacingDirection;
+			_facingDirection = farmer.FacingDirection;
 		}
 
 		// 1. Separation / Anti-Overlap: follower gently steps away if player stands on top of it
@@ -212,7 +248,7 @@ public class PokemonFollower
 			Vector2 pushVec = _position - playerCenter;
 			if (pushVec.LengthSquared() < 1f)
 			{
-				pushVec = Game1.player.FacingDirection switch
+				pushVec = farmer.FacingDirection switch
 				{
 					0 => new Vector2(0, 52),
 					1 => new Vector2(-52, 0),
@@ -241,7 +277,7 @@ public class PokemonFollower
 		}
 
 		// 2. Track player movement history (breadcrumb trail)
-		if (Game1.player.isMoving())
+		if (farmer.isMoving())
 		{
 			Vector2 lastQueued = _pathHistory.Count > 0 ? _lastQueuedPos : _position;
 			if (_pathHistory.Count == 0 || Vector2.Distance(playerCenter, lastQueued) >= 24f)
@@ -298,7 +334,7 @@ public class PokemonFollower
 				_stuckTimer += dt;
 				if (_stuckTimer >= 2.2f)
 				{
-					_position = FindSafeSpawnPosition(Game1.currentLocation, playerCenter, Game1.player.FacingDirection);
+					_position = FindSafeSpawnPosition(Game1.currentLocation, playerCenter, farmer.FacingDirection);
 					_pathHistory.Clear();
 					_stuckTimer = 0f;
 				}
@@ -325,7 +361,7 @@ public class PokemonFollower
 			if (_walkDistanceCounter >= 128f * 16f)
 			{
 				_walkDistanceCounter = 0f;
-				var activeMon = PlayerParty.Instance.ActivePokemon;
+				var activeMon = PlayerParty.GetForFarmer(FarmerId).ActivePokemon;
 				if (activeMon != null)
 				{
 					int gain = (string.Equals(activeMon.HeldItem, "Poke_SootheBell", StringComparison.OrdinalIgnoreCase) || string.Equals(activeMon.HeldItem, "SootheBell", StringComparison.OrdinalIgnoreCase)) ? 2 : 1;
@@ -378,17 +414,19 @@ public class PokemonFollower
 		}
 
 		bool clickedSprite = hitBounds.Contains(worldMouseX, worldMouseY);
-		Rectangle pBox = Game1.player.GetBoundingBox();
+		Farmer farmer = CurrentFarmer;
+		if (farmer == null) return;
+		Rectangle pBox = farmer.GetBoundingBox();
 		float playerDist = Vector2.Distance(new Vector2(pBox.Center.X, pBox.Center.Y), _position);
 
 		if (clickedSprite && playerDist <= 240f)
 		{
-			var active = PlayerParty.Instance.ActivePokemon;
+			var active = PlayerParty.GetForFarmer(FarmerId).ActivePokemon;
 			if (active != null)
 			{
 				_petCooldown = 0.65f;
 				Game1.playSound("dwop");
-				Game1.player.doEmote(Farmer.heartEmote);
+				farmer.doEmote(Farmer.heartEmote);
 				_heartTimer = 1.6f;
 				_heartPos = _position + new Vector2(0, -52);
 				int petBonus = (string.Equals(active.HeldItem, "Poke_SootheBell", StringComparison.OrdinalIgnoreCase) || string.Equals(active.HeldItem, "SootheBell", StringComparison.OrdinalIgnoreCase)) ? 6 : 3;
@@ -456,9 +494,10 @@ public class PokemonFollower
 	public void Draw(SpriteBatch b)
 	{
 		PokemonEncounterManager.DrawOverworldSpawns(b);
-		if (!Enabled || Game1.player == null || Game1.currentLocation == null) return;
+		Farmer farmer = CurrentFarmer;
+		if (!Enabled || farmer == null || Game1.currentLocation == null) return;
 		if (Game1.activeClickableMenu is PokemonHatchMenu) return;
-		var active = PlayerParty.Instance.ActivePokemon;
+		var active = PlayerParty.GetForFarmer(FarmerId).ActivePokemon;
 		if (active == null || active.IsFainted) return;
 
 		// Convert world coordinates to screen viewport (in World space, matching GameLocation.draw)

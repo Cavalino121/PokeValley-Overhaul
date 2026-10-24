@@ -80,6 +80,12 @@ public class PokemonBattleMenu : IClickableMenu
 	private ClickableComponent _bagPrevButton;
 	private ClickableComponent _bagNextButton;
 
+	// Gamepad Navigation Indices
+	private int _gamepadActionIndex = 0;
+	private int _gamepadMoveIndex = 0;
+	private int _gamepadBagIndex = 0;
+	private int _gamepadSwitchIndex = 0;
+
 	// Gen 6-9 Battle Gimmicks State
 	private bool _megaUsedThisBattle = false;
 	private bool _zMoveUsedThisBattle = false;
@@ -1350,6 +1356,244 @@ private PokemonMove SelectEnemyMove()
 				}
 			}
 		}
+	}
+
+	public override void receiveGamePadButton(Buttons button)
+	{
+		base.receiveGamePadButton(button);
+
+		if (IsSpectator)
+		{
+			if (button is Buttons.A or Buttons.B or Buttons.Start)
+			{
+				Game1.playSound("bigDeSelect");
+				exitThisMenuNoSound();
+			}
+			return;
+		}
+
+		if (_isCapturing) return;
+
+		if (Phase == BattlePhase.MessageWait)
+		{
+			if (button is Buttons.A or Buttons.B or Buttons.X or Buttons.Y or Buttons.Start)
+			{
+				Game1.playSound("smallSelect");
+				AdvanceMessageQueue();
+			}
+			return;
+		}
+
+		if (Phase == BattlePhase.Victory || Phase == BattlePhase.Defeat)
+		{
+			if (button is Buttons.A or Buttons.B or Buttons.X or Buttons.Y or Buttons.Start)
+			{
+				exitThisMenuNoSound();
+			}
+			return;
+		}
+
+		// Button B: Back to ActionSelect
+		if (button == Buttons.B && (Phase == BattlePhase.MoveSelect || Phase == BattlePhase.BagSelect || Phase == BattlePhase.SwitchSelect))
+		{
+			if ((PlayerPokemon == null || PlayerPokemon.IsFainted) && Phase == BattlePhase.SwitchSelect)
+			{
+				Game1.playSound("cancel");
+				return;
+			}
+			Game1.playSound("bigDeSelect");
+			Phase = BattlePhase.ActionSelect;
+			return;
+		}
+
+		// LB / RB / X / Y: Toggle Gimmick in MoveSelect
+		if (Phase == BattlePhase.MoveSelect && (button is Buttons.LeftShoulder or Buttons.RightShoulder or Buttons.X or Buttons.Y))
+		{
+			ToggleBattleGimmick();
+			return;
+		}
+
+		switch (Phase)
+		{
+			case BattlePhase.ActionSelect:
+				switch (button)
+				{
+					case Buttons.DPadLeft:
+					case Buttons.LeftThumbstickLeft:
+						if (_gamepadActionIndex % 2 == 1) { _gamepadActionIndex--; Game1.playSound("shiny"); }
+						break;
+					case Buttons.DPadRight:
+					case Buttons.LeftThumbstickRight:
+						if (_gamepadActionIndex % 2 == 0) { _gamepadActionIndex++; Game1.playSound("shiny"); }
+						break;
+					case Buttons.DPadUp:
+					case Buttons.LeftThumbstickUp:
+						if (_gamepadActionIndex >= 2) { _gamepadActionIndex -= 2; Game1.playSound("shiny"); }
+						break;
+					case Buttons.DPadDown:
+					case Buttons.LeftThumbstickDown:
+						if (_gamepadActionIndex <= 1) { _gamepadActionIndex += 2; Game1.playSound("shiny"); }
+						break;
+					case Buttons.A:
+					case Buttons.Start:
+						Game1.playSound("smallSelect");
+						HandleActionSelection(_gamepadActionIndex);
+						break;
+				}
+				break;
+
+			case BattlePhase.MoveSelect:
+				if (PlayerPokemon == null) break;
+				int moveCount = Math.Min(PlayerPokemon.Moves.Count, 4);
+				switch (button)
+				{
+					case Buttons.DPadLeft:
+					case Buttons.LeftThumbstickLeft:
+						if (_gamepadMoveIndex % 2 == 1) { _gamepadMoveIndex--; Game1.playSound("shiny"); }
+						break;
+					case Buttons.DPadRight:
+					case Buttons.LeftThumbstickRight:
+						if (_gamepadMoveIndex % 2 == 0 && _gamepadMoveIndex + 1 < moveCount) { _gamepadMoveIndex++; Game1.playSound("shiny"); }
+						break;
+					case Buttons.DPadUp:
+					case Buttons.LeftThumbstickUp:
+						if (_gamepadMoveIndex >= 2) { _gamepadMoveIndex -= 2; Game1.playSound("shiny"); }
+						break;
+					case Buttons.DPadDown:
+					case Buttons.LeftThumbstickDown:
+						if (_gamepadMoveIndex <= 1 && _gamepadMoveIndex + 2 < moveCount) { _gamepadMoveIndex += 2; Game1.playSound("shiny"); }
+						break;
+					case Buttons.A:
+					case Buttons.Start:
+						if (_gamepadMoveIndex >= 0 && _gamepadMoveIndex < moveCount)
+						{
+							PokemonMove move = PlayerPokemon.Moves[_gamepadMoveIndex];
+							if (move.CurrentPP > 0)
+							{
+								Game1.playSound("select");
+								ExecuteTurn(move);
+							}
+							else
+							{
+								Game1.playSound("cancel");
+								QueueMessage("Não há mais PP para este golpe!", () => Phase = BattlePhase.MoveSelect);
+							}
+						}
+						break;
+				}
+				break;
+
+			case BattlePhase.BagSelect:
+				switch (button)
+				{
+					case Buttons.DPadUp:
+					case Buttons.LeftThumbstickUp:
+						if (_gamepadBagIndex > 0) { _gamepadBagIndex--; Game1.playSound("shiny"); }
+						break;
+					case Buttons.DPadDown:
+					case Buttons.LeftThumbstickDown:
+						if (_gamepadBagIndex + 1 < _bagButtons.Count) { _gamepadBagIndex++; Game1.playSound("shiny"); }
+						break;
+					case Buttons.DPadLeft:
+					case Buttons.LeftThumbstickLeft:
+						if (_bagPage > 0) { _bagPage--; SetupBagButtons(); _gamepadBagIndex = 0; Game1.playSound("shwip"); }
+						break;
+					case Buttons.DPadRight:
+					case Buttons.LeftThumbstickRight:
+						_bagPage++; SetupBagButtons(); _gamepadBagIndex = 0; Game1.playSound("shwip");
+						break;
+					case Buttons.A:
+					case Buttons.Start:
+						if (_gamepadBagIndex >= 0 && _gamepadBagIndex < _bagButtons.Count)
+						{
+							UseBagItem(_bagButtons[_gamepadBagIndex].name);
+						}
+						break;
+				}
+				break;
+
+			case BattlePhase.SwitchSelect:
+				switch (button)
+				{
+					case Buttons.DPadUp:
+					case Buttons.LeftThumbstickUp:
+						if (_gamepadSwitchIndex > 0) { _gamepadSwitchIndex--; Game1.playSound("shiny"); }
+						break;
+					case Buttons.DPadDown:
+					case Buttons.LeftThumbstickDown:
+						if (_gamepadSwitchIndex + 1 < _switchButtons.Count) { _gamepadSwitchIndex++; Game1.playSound("shiny"); }
+						break;
+					case Buttons.A:
+					case Buttons.Start:
+						if (_gamepadSwitchIndex >= 0 && _gamepadSwitchIndex < _switchButtons.Count)
+						{
+							if (int.TryParse(_switchButtons[_gamepadSwitchIndex].name, out int slot))
+							{
+								if (slot >= 0 && slot < PlayerTeam.Count && PlayerTeam[slot].IsFainted)
+								{
+									Game1.playSound("cancel");
+									QueueMessage("Este Pokémon está desmaiado e não pode batalhar!", () => Phase = BattlePhase.SwitchSelect);
+									return;
+								}
+								SwitchPokemon(slot);
+							}
+						}
+						break;
+				}
+				break;
+		}
+	}
+
+	private void ToggleBattleGimmick()
+	{
+		if (PlayerPokemon == null) return;
+
+		// 1. Terastallize
+		if (!_teraUsedThisBattle && !PlayerPokemon.IsTerastallized && !PlayerPokemon.IsDynamaxed && PokemonItemManager.CanTerastallize(Game1.player, PlayerPokemon))
+		{
+			_teraToggled = !_teraToggled;
+			if (_teraToggled) { _dynamaxToggled = false; _gmaxToggled = false; _zMoveToggled = false; _megaToggled = false; }
+			Game1.playSound("smallSelect");
+			return;
+		}
+
+		// 2. Mega Evolution / Ultra Burst
+		bool canUltra = PokemonItemManager.CanUseUltraBurst(Game1.player, PlayerPokemon);
+		if (!_megaUsedThisBattle && !PlayerPokemon.IsDynamaxed && (PokemonItemManager.GetAvailableMegaEvolution(Game1.player, PlayerPokemon, out _, out _) || canUltra))
+		{
+			_megaToggled = !_megaToggled;
+			if (_megaToggled) { _dynamaxToggled = false; _gmaxToggled = false; _zMoveToggled = false; _teraToggled = false; }
+			Game1.playSound("smallSelect");
+			return;
+		}
+
+		// 3. Dynamax / Gigantamax
+		if (!_dynamaxUsedThisBattle && !PlayerPokemon.IsDynamaxed && !PlayerPokemon.IsMegaEvolved && PokemonItemManager.IsWearingDynamaxBand(Game1.player))
+		{
+			if (PlayerPokemon.Species != null && PlayerPokemon.Species.HasGigantamax)
+			{
+				_gmaxToggled = !_gmaxToggled;
+				if (_gmaxToggled) { _dynamaxToggled = false; _megaToggled = false; _zMoveToggled = false; _teraToggled = false; }
+			}
+			else
+			{
+				_dynamaxToggled = !_dynamaxToggled;
+				if (_dynamaxToggled) { _gmaxToggled = false; _megaToggled = false; _zMoveToggled = false; _teraToggled = false; }
+			}
+			Game1.playSound("smallSelect");
+			return;
+		}
+
+		// 4. Z-Move
+		if (!_zMoveUsedThisBattle && !PlayerPokemon.IsDynamaxed && PokemonItemManager.HasAnyMatchingZCrystal(Game1.player, PlayerPokemon))
+		{
+			_zMoveToggled = !_zMoveToggled;
+			if (_zMoveToggled) { _dynamaxToggled = false; _gmaxToggled = false; _megaToggled = false; _teraToggled = false; }
+			Game1.playSound("smallSelect");
+			return;
+		}
+
+		Game1.playSound("cancel");
 	}
 
 	public override void receiveKeyPress(Keys key)
@@ -5092,8 +5336,16 @@ private PokemonMove SelectEnemyMove()
 		{
 			var btn = _actionButtons[i];
 			bool hovered = btn.containsPoint(mouseX, mouseY);
-			IClickableMenu.drawTextureBox(b, btn.bounds.X, btn.bounds.Y, btn.bounds.Height > 0 ? btn.bounds.Width : 100, btn.bounds.Height, hovered ? Color.LemonChiffon : Color.White);
-			PokemonUI.Text(b, Game1.smallFont, btn.label, new Rectangle(btn.bounds.X + 8, btn.bounds.Y + 8, btn.bounds.Width - 16, btn.bounds.Height - 16), hovered ? Color.DarkRed : Game1.textColor, center: true, maxScale: 0.85f);
+			bool gamepadFocused = (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected) && (_gamepadActionIndex == i);
+			IClickableMenu.drawTextureBox(b, btn.bounds.X, btn.bounds.Y, btn.bounds.Height > 0 ? btn.bounds.Width : 100, btn.bounds.Height, (hovered || gamepadFocused) ? Color.LemonChiffon : Color.White);
+			if (gamepadFocused)
+			{
+				float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6f);
+				int exp = pulse > 0 ? 3 : 2;
+				Rectangle glowRect = new Rectangle(btn.bounds.X - exp, btn.bounds.Y - exp, btn.bounds.Width + exp * 2, btn.bounds.Height + exp * 2);
+				PokemonUI.Border(b, glowRect, 3, Color.Gold);
+			}
+			PokemonUI.Text(b, Game1.smallFont, btn.label, new Rectangle(btn.bounds.X + 8, btn.bounds.Y + 8, btn.bounds.Width - 16, btn.bounds.Height - 16), (hovered || gamepadFocused) ? Color.DarkRed : Game1.textColor, center: true, maxScale: 0.85f);
 		}
 	}
 
@@ -5214,15 +5466,24 @@ private PokemonMove SelectEnemyMove()
 			{
 				PokemonMove move = PlayerPokemon.Moves[i];
 				bool hovered = btn.containsPoint(mouseX, mouseY);
+				bool gamepadFocused = (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected) && (_gamepadMoveIndex == i);
 				string sigName = null;
 				int sigPwr = 0;
 				PokemonType sigType = PokemonType.Normal;
 				bool hasSigZ = showZMoves && PokemonItemManager.CanUseSignatureZMove(Game1.player, PlayerPokemon, move, out sigName, out sigPwr, out sigType);
 				bool moveHasZCrystal = showZMoves && (hasSigZ || PokemonItemManager.HasZCrystalForType(Game1.player, move.Type, PlayerPokemon));
 				Color cardTint = showMaxMoves
-					? (hovered ? new Color(255, 210, 225) : new Color(255, 230, 240))
-					: (moveHasZCrystal ? (hovered ? new Color(255, 245, 180) : new Color(255, 250, 210)) : (hovered ? Color.LemonChiffon : Color.White));
+					? ((hovered || gamepadFocused) ? new Color(255, 210, 225) : new Color(255, 230, 240))
+					: (moveHasZCrystal ? ((hovered || gamepadFocused) ? new Color(255, 245, 180) : new Color(255, 250, 210)) : ((hovered || gamepadFocused) ? Color.LemonChiffon : Color.White));
 				IClickableMenu.drawTextureBox(b, btn.bounds.X, btn.bounds.Y, btn.bounds.Width, btn.bounds.Height, cardTint);
+
+				if (gamepadFocused)
+				{
+					float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6f);
+					int exp = pulse > 0 ? 3 : 2;
+					Rectangle glowRect = new Rectangle(btn.bounds.X - exp, btn.bounds.Y - exp, btn.bounds.Width + exp * 2, btn.bounds.Height + exp * 2);
+					PokemonUI.Border(b, glowRect, 3, Color.Gold);
+				}
 
 				string dispName = showMaxMoves
 					? move.GetMaxMoveName(isGmaxPreview, PlayerPokemon.Species?.InternalName)
@@ -5282,11 +5543,20 @@ private PokemonMove SelectEnemyMove()
 		IClickableMenu.drawTextureBox(b, _backButton.bounds.X, _backButton.bounds.Y, _backButton.bounds.Width, _backButton.bounds.Height, backHovered ? Color.Wheat : Color.White);
 		PokemonUI.Text(b, Game1.smallFont, _backButton.label, new Rectangle(_backButton.bounds.X + 4, _backButton.bounds.Y + 4, _backButton.bounds.Width - 8, _backButton.bounds.Height - 8), Color.DarkSlateGray, center: true, maxScale: 0.85f);
 
-		foreach (var btn in _bagButtons)
+		for (int i = 0; i < _bagButtons.Count; i++)
 		{
+			var btn = _bagButtons[i];
 			bool hovered = btn.containsPoint(mouseX, mouseY);
-			IClickableMenu.drawTextureBox(b, btn.bounds.X, btn.bounds.Y, btn.bounds.Width, btn.bounds.Height, hovered ? Color.LemonChiffon : Color.White);
-			PokemonUI.Text(b, Game1.smallFont, btn.label, new Rectangle(btn.bounds.X + 8, btn.bounds.Y + 6, btn.bounds.Width - 16, btn.bounds.Height - 12), hovered ? Color.DarkRed : Game1.textColor, maxScale: 0.85f);
+			bool gamepadFocused = (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected) && (_gamepadBagIndex == i);
+			IClickableMenu.drawTextureBox(b, btn.bounds.X, btn.bounds.Y, btn.bounds.Width, btn.bounds.Height, (hovered || gamepadFocused) ? Color.LemonChiffon : Color.White);
+			if (gamepadFocused)
+			{
+				float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6f);
+				int exp = pulse > 0 ? 3 : 2;
+				Rectangle glowRect = new Rectangle(btn.bounds.X - exp, btn.bounds.Y - exp, btn.bounds.Width + exp * 2, btn.bounds.Height + exp * 2);
+				PokemonUI.Border(b, glowRect, 3, Color.Gold);
+			}
+			PokemonUI.Text(b, Game1.smallFont, btn.label, new Rectangle(btn.bounds.X + 8, btn.bounds.Y + 6, btn.bounds.Width - 16, btn.bounds.Height - 12), (hovered || gamepadFocused) ? Color.DarkRed : Game1.textColor, maxScale: 0.85f);
 		}
 
 		if (_bagPrevButton != null)
@@ -5329,13 +5599,22 @@ private PokemonMove SelectEnemyMove()
 			var p = (i < PlayerTeam.Count) ? PlayerTeam[i] : null;
 			bool isCurrent = (i == PlayerActiveIndex);
 			bool hovered = btn.containsPoint(mouseX, mouseY);
+			bool gamepadFocused = (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected) && (_gamepadSwitchIndex == i);
 
-			Color boxColor = (p != null && p.IsFainted) ? (Color.Gray * 0.5f) : (isCurrent ? Color.LightSkyBlue : (hovered ? Color.LemonChiffon : Color.White));
+			Color boxColor = (p != null && p.IsFainted) ? (Color.Gray * 0.5f) : (isCurrent ? Color.LightSkyBlue : ((hovered || gamepadFocused) ? Color.LemonChiffon : Color.White));
 			IClickableMenu.drawTextureBox(b, btn.bounds.X, btn.bounds.Y, btn.bounds.Width, btn.bounds.Height, boxColor);
+
+			if (gamepadFocused)
+			{
+				float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6f);
+				int exp = pulse > 0 ? 3 : 2;
+				Rectangle glowRect = new Rectangle(btn.bounds.X - exp, btn.bounds.Y - exp, btn.bounds.Width + exp * 2, btn.bounds.Height + exp * 2);
+				PokemonUI.Border(b, glowRect, 3, Color.Gold);
+			}
 
 			string label = btn.label;
 			if (isCurrent) label += " [Ativo]";
-			PokemonUI.Text(b, Game1.smallFont, label, new Rectangle(btn.bounds.X + 12, btn.bounds.Y + 6, btn.bounds.Width - 24, btn.bounds.Height - 12), (p != null && p.IsFainted) ? Color.DarkRed : (hovered ? Color.DarkRed : Game1.textColor), maxScale: 0.85f);
+			PokemonUI.Text(b, Game1.smallFont, label, new Rectangle(btn.bounds.X + 12, btn.bounds.Y + 6, btn.bounds.Width - 24, btn.bounds.Height - 12), (p != null && p.IsFainted) ? Color.DarkRed : ((hovered || gamepadFocused) ? Color.DarkRed : Game1.textColor), maxScale: 0.85f);
 		}
 	}
 }

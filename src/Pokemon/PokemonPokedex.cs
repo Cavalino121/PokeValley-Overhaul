@@ -33,22 +33,54 @@ public class PokedexSaveData
 
 public class PokemonPokedex
 {
-	private static PokemonPokedex _instance;
-	public static PokemonPokedex Instance => _instance ??= new PokemonPokedex();
+	private static readonly Dictionary<long, PokemonPokedex> _instancesByFarmer = new();
+	private static readonly object _syncLock = new();
+	private static readonly Dictionary<string, PokedexEntryInfo> _entries = new(StringComparer.OrdinalIgnoreCase);
+	private static bool _catalogInitialized = false;
+
+	public static PokemonPokedex Instance => GetForFarmer(Game1.player);
+
+	public static PokemonPokedex GetForFarmer(Farmer farmer)
+	{
+		long id = farmer?.UniqueMultiplayerID ?? 0L;
+		return GetForFarmer(id);
+	}
+
+	public static PokemonPokedex GetForFarmer(long farmerId)
+	{
+		lock (_syncLock)
+		{
+			if (!_instancesByFarmer.TryGetValue(farmerId, out var dex))
+			{
+				dex = new PokemonPokedex(farmerId);
+				_instancesByFarmer[farmerId] = dex;
+			}
+			return dex;
+		}
+	}
+
+	public static void ClearAll()
+	{
+		lock (_syncLock)
+		{
+			_instancesByFarmer.Clear();
+		}
+	}
+
+	public long FarmerId { get; }
 
 	private readonly HashSet<string> _seen = new(StringComparer.OrdinalIgnoreCase);
 	private readonly HashSet<string> _caught = new(StringComparer.OrdinalIgnoreCase);
 	private readonly Dictionary<string, int> _hintLevels = new(StringComparer.OrdinalIgnoreCase);
-	private readonly Dictionary<string, PokedexEntryInfo> _entries = new(StringComparer.OrdinalIgnoreCase);
 	private readonly HashSet<string> _dailyPurchasedKeys = new(StringComparer.OrdinalIgnoreCase);
 	private string _lastPurchaseDayKey = "";
 
 	public IReadOnlyCollection<string> SeenSpecies => _seen;
 	public IReadOnlyCollection<string> CaughtSpecies => _caught;
 
-
-	private PokemonPokedex()
+	private PokemonPokedex(long farmerId)
 	{
+		FarmerId = farmerId;
 		InitializeDexData();
 		Load();
 		SyncWithParty();
@@ -187,8 +219,9 @@ public class PokemonPokedex
 
 	public void SyncWithParty()
 	{
-		if (PlayerParty.Instance?.Team == null) return;
-		foreach (var p in PlayerParty.Instance.Team)
+		var party = PlayerParty.GetForFarmer(FarmerId);
+		if (party?.Team == null) return;
+		foreach (var p in party.Team)
 		{
 			if (p?.Species != null && !p.IsEgg)
 			{
@@ -201,7 +234,7 @@ public class PokemonPokedex
 	{
 		try
 		{
-			PokemonSaveFile save = PokemonSaveStore.Data;
+			PokemonSaveFile save = PokemonSaveStore.GetDataForFarmer(FarmerId);
 			save.Pokedex = new PokedexSaveData
 			{
 				Seen = new List<string>(_seen),
@@ -210,11 +243,11 @@ public class PokemonPokedex
 				LastPurchaseDayKey = _lastPurchaseDayKey,
 				DailyPurchasedKeys = new List<string>(_dailyPurchasedKeys)
 			};
-			PokemonSaveStore.Save(PokemonSaveSection.Pokedex);
+			PokemonSaveStore.SaveForFarmer(FarmerId, PokemonSaveSection.Pokedex);
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"[PokemonPokedex] Erro ao salvar Pokédex: {ex.Message}");
+			Console.WriteLine($"[PokemonPokedex] Erro ao salvar Pokédex do jogador {FarmerId}: {ex.Message}");
 		}
 	}
 
@@ -222,7 +255,8 @@ public class PokemonPokedex
 	{
 		try
 		{
-			PokedexSaveData data = PokemonSaveStore.Data.Pokedex;
+			PokemonSaveFile save = PokemonSaveStore.GetDataForFarmer(FarmerId);
+			PokedexSaveData data = save?.Pokedex;
 			if (data == null) return;
 
 			if (data.Seen != null)
@@ -238,7 +272,7 @@ public class PokemonPokedex
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"[PokemonPokedex] Erro ao carregar Pokédex: {ex.Message}");
+			Console.WriteLine($"[PokemonPokedex] Erro ao carregar Pokédex do jogador {FarmerId}: {ex.Message}");
 		}
 	}
 
@@ -250,6 +284,7 @@ public class PokemonPokedex
 		_hintLevels.Clear();
 		_dailyPurchasedKeys.Clear();
 		_lastPurchaseDayKey = "";
+		ClearAll();
 		PokemonSaveStore.Reload();
 		Load();
 		SyncWithParty();
@@ -263,6 +298,7 @@ public class PokemonPokedex
 		_hintLevels.Clear();
 		_dailyPurchasedKeys.Clear();
 		_lastPurchaseDayKey = "";
+		ClearAll();
 	}
 
 	public PokedexEntryInfo GetEntry(string speciesName)
@@ -294,8 +330,10 @@ public class PokemonPokedex
 		};
 	}
 
-	private void InitializeDexData()
+	private static void InitializeDexData()
 	{
+		if (_catalogInitialized) return;
+		_catalogInitialized = true;
 		// Populate all 1,025 species with authentic height, weight, category, description, habitat, season, weather, time, and tier
 		PokemonPokedexCatalog.Populate(_entries);
 	}

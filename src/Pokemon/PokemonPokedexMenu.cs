@@ -38,6 +38,9 @@ public class PokemonPokedexMenu : IClickableMenu
 	private ClickableComponent _nextButton;
 	private ClickableTextureComponent _closeButton;
 
+	private int _gamepadIndex = 0;
+	private static PokemonPokedex Pokedex => PokemonPokedex.GetForFarmer(Game1.player);
+
 	private PokemonInstance _cachedDummy;
 	private string _cachedSpriteSpecies;
 
@@ -75,8 +78,8 @@ public class PokemonPokedexMenu : IClickableMenu
 
 		foreach (var sp in all)
 		{
-			bool isSeen = PokemonPokedex.Instance.IsSeen(sp.Name);
-			bool isCaught = PokemonPokedex.Instance.IsCaught(sp.Name);
+			bool isSeen = Pokedex.IsSeen(sp.Name);
+			bool isCaught = Pokedex.IsCaught(sp.Name);
 			int dex = sp.DexNumber;
 
 			bool match = _filter switch
@@ -215,13 +218,122 @@ public class PokemonPokedexMenu : IClickableMenu
 		base.receiveKeyPress(key);
 	}
 
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (button == Buttons.B || button == Buttons.Back)
+		{
+			Game1.playSound("bigDeSelect");
+			Game1.exitActiveMenu();
+			return;
+		}
+
+		int countOnPage = _speciesButtons.Count;
+		int maxPages = Math.Max(0, (_filteredList.Count - 1) / EntriesPerPage);
+
+		if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+		{
+			if (_gamepadIndex > 0)
+			{
+				_gamepadIndex--;
+				SelectGamepadSpecies();
+				Game1.playSound("shiny");
+			}
+			else if (_currentPage > 0)
+			{
+				_currentPage--;
+				_gamepadIndex = EntriesPerPage - 1;
+				SetupButtons();
+				SelectGamepadSpecies();
+				Game1.playSound("shwip");
+			}
+			return;
+		}
+
+		if (button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+		{
+			if (_gamepadIndex < countOnPage - 1)
+			{
+				_gamepadIndex++;
+				SelectGamepadSpecies();
+				Game1.playSound("shiny");
+			}
+			else if (_currentPage < maxPages)
+			{
+				_currentPage++;
+				_gamepadIndex = 0;
+				SetupButtons();
+				SelectGamepadSpecies();
+				Game1.playSound("shwip");
+			}
+			return;
+		}
+
+		// Page switching with LB / RB
+		if (button == Buttons.LeftShoulder || button == Buttons.LeftTrigger)
+		{
+			_currentPage = (_currentPage - 1 + (maxPages + 1)) % (maxPages + 1);
+			_gamepadIndex = 0;
+			SetupButtons();
+			SelectGamepadSpecies();
+			Game1.playSound("shwip");
+			return;
+		}
+		if (button == Buttons.RightShoulder || button == Buttons.RightTrigger)
+		{
+			_currentPage = (_currentPage + 1) % (maxPages + 1);
+			_gamepadIndex = 0;
+			SetupButtons();
+			SelectGamepadSpecies();
+			Game1.playSound("shwip");
+			return;
+		}
+
+		// Cycle filters with X / Y
+		if (button == Buttons.X || button == Buttons.Y)
+		{
+			int totalFilters = Enum.GetValues<PokedexFilter>().Length;
+			int nextFilter = ((int)_filter + (button == Buttons.Y ? 1 : totalFilters - 1)) % totalFilters;
+			_filter = (PokedexFilter)nextFilter;
+			_currentPage = 0;
+			_gamepadIndex = 0;
+			RefreshFilterList();
+			if (_filteredList.Count > 0)
+			{
+				_selectedSpecies = _filteredList[0];
+				_cachedDummy = null;
+				_cachedSpriteSpecies = null;
+			}
+			SetupButtons();
+			Game1.playSound("smallSelect");
+			return;
+		}
+
+		if (button == Buttons.A || button == Buttons.Start)
+		{
+			SelectGamepadSpecies();
+			Game1.playSound("select");
+			return;
+		}
+	}
+
+	private void SelectGamepadSpecies()
+	{
+		int startIndex = _currentPage * EntriesPerPage;
+		if (startIndex + _gamepadIndex >= 0 && startIndex + _gamepadIndex < _filteredList.Count)
+		{
+			_selectedSpecies = _filteredList[startIndex + _gamepadIndex];
+			_cachedDummy = null;
+			_cachedSpriteSpecies = null;
+		}
+	}
+
 	public override void draw(SpriteBatch b)
 	{
 		b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.72f);
 		IClickableMenu.drawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
 
-		int seenCount = PokemonPokedex.Instance.SeenSpecies.Count;
-		int caughtCount = PokemonPokedex.Instance.CaughtSpecies.Count;
+		int seenCount = Pokedex.SeenSpecies.Count;
+		int caughtCount = Pokedex.CaughtSpecies.Count;
 		int totalDex = PokemonSpecies.AllSpecies().Count;
 		string title = "POKÉDEX NACIONAL";
 		string stats = $"Vistos: {seenCount}   •   Capturados: {caughtCount}   •   Total Registrável: {totalDex}";
@@ -259,17 +371,27 @@ public class PokemonPokedexMenu : IClickableMenu
 		IClickableMenu.drawTextureBox(b, listFrameX, listFrameY, 456, 476, Color.LightGray * 0.45f);
 
 		// Draw Species entries
-		foreach (var sb in _speciesButtons)
+		for (int i = 0; i < _speciesButtons.Count; i++)
 		{
+			var sb = _speciesButtons[i];
 			var sp = PokemonSpecies.Get(sb.name);
 			bool isSelected = _selectedSpecies != null && _selectedSpecies.InternalName == sp.InternalName;
 			bool hov = sb.containsPoint(mouseX, mouseY);
-			bool isSeen = PokemonPokedex.Instance.IsSeen(sp.Name);
-			bool isCaught = PokemonPokedex.Instance.IsCaught(sp.Name);
-			int hintLvl = PokemonPokedex.Instance.GetHintLevel(sp.Name);
+			bool isGamepadFocus = (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected) && _gamepadIndex == i;
+			bool isSeen = Pokedex.IsSeen(sp.Name);
+			bool isCaught = Pokedex.IsCaught(sp.Name);
+			int hintLvl = Pokedex.GetHintLevel(sp.Name);
 
-			Color cardBg = isSelected ? Color.LightGreen : (hov ? Color.LightGoldenrodYellow : Color.White);
+			Color cardBg = isSelected ? Color.LightGreen : ((hov || isGamepadFocus) ? Color.LightGoldenrodYellow : Color.White);
 			IClickableMenu.drawTextureBox(b, sb.bounds.X, sb.bounds.Y, sb.bounds.Width, sb.bounds.Height, cardBg);
+
+			if (isGamepadFocus)
+			{
+				float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6f);
+				int exp = pulse > 0 ? 3 : 2;
+				Rectangle glow = new Rectangle(sb.bounds.X - exp, sb.bounds.Y - exp, sb.bounds.Width + exp * 2, sb.bounds.Height + exp * 2);
+				PokemonUI.Border(b, glow, 3, Color.Gold);
+			}
 
 			if (isCaught)
 			{
@@ -339,6 +461,12 @@ public class PokemonPokedexMenu : IClickableMenu
 
 		DrawDetailedEntry(b, detailX, detailY, detailW, detailH);
 
+		if (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected)
+		{
+			string legend = "[D-Pad] Navegar  [LB/RB] Páginas  [X/Y] Filtro  [B] Voltar";
+			PokemonUI.Text(b, Game1.tinyFont, legend, new Rectangle(xPositionOnScreen + 28, yPositionOnScreen + height - 26, 440, 18), Color.DarkSlateGray * 0.85f, maxScale: 0.72f);
+		}
+
 		_closeButton.draw(b);
 		drawMouse(b);
 	}
@@ -347,10 +475,10 @@ public class PokemonPokedexMenu : IClickableMenu
 	{
 		if (_selectedSpecies == null) return;
 
-		bool isSeen = PokemonPokedex.Instance.IsSeen(_selectedSpecies.Name);
-		bool isCaught = PokemonPokedex.Instance.IsCaught(_selectedSpecies.Name);
-		int hintLvl = PokemonPokedex.Instance.GetHintLevel(_selectedSpecies.Name);
-		var entry = PokemonPokedex.Instance.GetEntry(_selectedSpecies.Name);
+		bool isSeen = Pokedex.IsSeen(_selectedSpecies.Name);
+		bool isCaught = Pokedex.IsCaught(_selectedSpecies.Name);
+		int hintLvl = Pokedex.GetHintLevel(_selectedSpecies.Name);
+		var entry = Pokedex.GetEntry(_selectedSpecies.Name);
 
 		int boxX = x + 18;
 		int boxY = y + 16;

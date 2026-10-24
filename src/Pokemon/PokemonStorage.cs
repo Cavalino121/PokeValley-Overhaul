@@ -32,8 +32,39 @@ public class PokemonStorage
 	public const int BoxRows = 5;
 	public const int BoxCols = 6;
 
-	private static PokemonStorage _instance;
-	public static PokemonStorage Instance => _instance ??= new PokemonStorage();
+	private static readonly Dictionary<long, PokemonStorage> _instancesByFarmer = new();
+	private static readonly object _syncLock = new();
+
+	public static PokemonStorage Instance => GetForFarmer(Game1.player);
+
+	public static PokemonStorage GetForFarmer(Farmer farmer)
+	{
+		long id = farmer?.UniqueMultiplayerID ?? 0L;
+		return GetForFarmer(id);
+	}
+
+	public static PokemonStorage GetForFarmer(long farmerId)
+	{
+		lock (_syncLock)
+		{
+			if (!_instancesByFarmer.TryGetValue(farmerId, out var storage))
+			{
+				storage = new PokemonStorage(farmerId);
+				_instancesByFarmer[farmerId] = storage;
+			}
+			return storage;
+		}
+	}
+
+	public static void ClearAll()
+	{
+		lock (_syncLock)
+		{
+			_instancesByFarmer.Clear();
+		}
+	}
+
+	public long FarmerId { get; }
 
 	public class Box
 	{
@@ -76,8 +107,9 @@ public class PokemonStorage
 	public int CurrentBoxIndex { get; set; } = 0;
 	public int LastDepositedBox { get; private set; } = 0;
 
-	private PokemonStorage()
+	private PokemonStorage(long farmerId)
 	{
+		FarmerId = farmerId;
 		for (int i = 0; i < TotalBoxes; i++)
 		{
 			Boxes.Add(new Box($"Caixa {i + 1}", i % 8));
@@ -253,6 +285,7 @@ public class PokemonStorage
 			Boxes.Add(new Box($"Caixa {i + 1}", i % 8));
 		}
 		CurrentBoxIndex = 0;
+		ClearAll();
 	}
 
 	public void Reload()
@@ -286,12 +319,13 @@ public class PokemonStorage
 				root.Boxes.Add(boxDto);
 			}
 
-			PokemonSaveStore.Data.Storage = root;
-			PokemonSaveStore.Save(PokemonSaveSection.Storage);
+			PokemonSaveFile save = PokemonSaveStore.GetDataForFarmer(FarmerId);
+			save.Storage = root;
+			PokemonSaveStore.SaveForFarmer(FarmerId, PokemonSaveSection.Storage);
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"[PokemonStorage] Falha ao salvar as caixas: {ex.Message}");
+			Console.WriteLine($"[PokemonStorage] Falha ao salvar as caixas do jogador {FarmerId}: {ex.Message}");
 		}
 	}
 
@@ -299,7 +333,8 @@ public class PokemonStorage
 	{
 		try
 		{
-			PokemonStorageSaveDto root = PokemonSaveStore.Data.Storage;
+			PokemonSaveFile save = PokemonSaveStore.GetDataForFarmer(FarmerId);
+			PokemonStorageSaveDto root = save.Storage;
 			if (root == null || root.Boxes == null) return;
 
 			CurrentBoxIndex = Math.Clamp(root.CurrentBoxIndex, 0, TotalBoxes - 1);
@@ -319,7 +354,7 @@ public class PokemonStorage
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"[PokemonStorage] Falha ao carregar as caixas: {ex.Message}");
+			Console.WriteLine($"[PokemonStorage] Falha ao carregar as caixas do jogador {FarmerId}: {ex.Message}");
 		}
 	}
 }

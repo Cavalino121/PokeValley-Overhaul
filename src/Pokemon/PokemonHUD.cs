@@ -12,8 +12,40 @@ namespace StardewValley.Pokemon;
 
 public class PokemonHUD
 {
-	private static PokemonHUD _instance;
-	public static PokemonHUD Instance => _instance ??= new PokemonHUD();
+	private static readonly Dictionary<long, PokemonHUD> _instancesByFarmer = new();
+	private static readonly object _syncLock = new();
+
+	public static PokemonHUD Instance => GetForFarmer(Game1.player);
+
+	public static PokemonHUD GetForFarmer(Farmer farmer)
+	{
+		long id = farmer?.UniqueMultiplayerID ?? 0L;
+		return GetForFarmer(id);
+	}
+
+	public static PokemonHUD GetForFarmer(long farmerId)
+	{
+		lock (_syncLock)
+		{
+			if (!_instancesByFarmer.TryGetValue(farmerId, out var hud))
+			{
+				hud = new PokemonHUD(farmerId);
+				_instancesByFarmer[farmerId] = hud;
+			}
+			return hud;
+		}
+	}
+
+	public static void ClearAll()
+	{
+		lock (_syncLock)
+		{
+			_instancesByFarmer.Clear();
+		}
+	}
+
+	public long FarmerId { get; }
+	private PlayerParty Party => PlayerParty.GetForFarmer(FarmerId);
 
 	private readonly List<ClickableComponent> _partySlotButtons = new();
 	private readonly List<ClickableComponent> _moveButtons = new();
@@ -23,6 +55,7 @@ public class PokemonHUD
 
 	private KeyboardState _previousKeyboardState;
 	private MouseState _previousMouseState;
+	private GamePadState _previousGamePadState;
 	private double _lastAbilityTime = 0;
 	private bool _isExpanded = false;
 	private static Texture2D _pokedexTex;
@@ -30,8 +63,9 @@ public class PokemonHUD
 
 	public bool Visible { get; set; } = true;
 
-	private PokemonHUD()
+	private PokemonHUD(long farmerId)
 	{
+		FarmerId = farmerId;
 		SetupBounds();
 	}
 
@@ -141,10 +175,10 @@ public class PokemonHUD
 
 		SetupBounds();
 		PokemonItemManager.FixInventoryRods(Game1.player);
-		PokemonFollower.Instance.Update(gameTime);
+		PokemonFollower.GetForFarmer(FarmerId).Update(gameTime);
 
 		// Check if new farmer / player hasn't chosen starter yet!
-		if (!PlayerParty.Instance.HasChosenStarter && Game1.activeClickableMenu == null && !Game1.fadeToBlack && !Game1.eventUp)
+		if (!PlayerParty.GetForFarmer(FarmerId).HasChosenStarter && Game1.activeClickableMenu == null && !Game1.fadeToBlack && !Game1.eventUp)
 		{
 			Game1.activeClickableMenu = new PokemonStarterSelectMenu();
 			return;
@@ -153,20 +187,31 @@ public class PokemonHUD
 		// R quick cycle active Pokemon (avoids Tab inventory toolbar swap conflict)
 		if (IsKeyPressed(currentKb, Keys.R))
 		{
-			PlayerParty.Instance.CycleActive();
+			PlayerParty.GetForFarmer(FarmerId).CycleActive();
 		}
+
+		// Controller shortcut: Click Right Stick to cycle active Pokemon
+		GamePadState gp = Game1.input.GetGamePadState();
+		if (gp.IsConnected)
+		{
+			if (gp.IsButtonDown(Buttons.RightStick) && !_previousGamePadState.IsButtonDown(Buttons.RightStick))
+			{
+				Party.CycleActive();
+			}
+		}
+		_previousGamePadState = gp;
 
 		bool altHeld = currentKb.IsKeyDown(Keys.LeftAlt) || currentKb.IsKeyDown(Keys.RightAlt);
 
 		// Alt + 1..6 Quick Switch
 		if (altHeld)
 		{
-			if (IsKeyPressed(currentKb, Keys.D1) || IsKeyPressed(currentKb, Keys.NumPad1)) PlayerParty.Instance.SetActive(0);
-			else if (IsKeyPressed(currentKb, Keys.D2) || IsKeyPressed(currentKb, Keys.NumPad2)) PlayerParty.Instance.SetActive(1);
-			else if (IsKeyPressed(currentKb, Keys.D3) || IsKeyPressed(currentKb, Keys.NumPad3)) PlayerParty.Instance.SetActive(2);
-			else if (IsKeyPressed(currentKb, Keys.D4) || IsKeyPressed(currentKb, Keys.NumPad4)) PlayerParty.Instance.SetActive(3);
-			else if (IsKeyPressed(currentKb, Keys.D5) || IsKeyPressed(currentKb, Keys.NumPad5)) PlayerParty.Instance.SetActive(4);
-			else if (IsKeyPressed(currentKb, Keys.D6) || IsKeyPressed(currentKb, Keys.NumPad6)) PlayerParty.Instance.SetActive(5);
+			if (IsKeyPressed(currentKb, Keys.D1) || IsKeyPressed(currentKb, Keys.NumPad1)) Party.SetActive(0);
+			else if (IsKeyPressed(currentKb, Keys.D2) || IsKeyPressed(currentKb, Keys.NumPad2)) Party.SetActive(1);
+			else if (IsKeyPressed(currentKb, Keys.D3) || IsKeyPressed(currentKb, Keys.NumPad3)) Party.SetActive(2);
+			else if (IsKeyPressed(currentKb, Keys.D4) || IsKeyPressed(currentKb, Keys.NumPad4)) Party.SetActive(3);
+			else if (IsKeyPressed(currentKb, Keys.D5) || IsKeyPressed(currentKb, Keys.NumPad5)) Party.SetActive(4);
+			else if (IsKeyPressed(currentKb, Keys.D6) || IsKeyPressed(currentKb, Keys.NumPad6)) Party.SetActive(5);
 		}
 		else
 		{
@@ -264,13 +309,13 @@ public class PokemonHUD
 		}
 
 		// Only process lateral panel clicks when expanded!
-		if (_isExpanded && PlayerParty.Instance.Team.Count > 0)
+		if (_isExpanded && Party.Team.Count > 0)
 		{
 			// 1. Cycle Active Button
 			if (_cycleActiveButton != null && _cycleActiveButton.containsPoint(mouseX, mouseY))
 			{
 				_lastLeftClickTime = now;
-				PlayerParty.Instance.CycleActive();
+				Party.CycleActive();
 				return true;
 			}
 
@@ -280,9 +325,9 @@ public class PokemonHUD
 				if (_partySlotButtons[i].containsPoint(mouseX, mouseY))
 				{
 					_lastLeftClickTime = now;
-					if (i < PlayerParty.Instance.Team.Count)
+					if (i < Party.Team.Count)
 					{
-						PlayerParty.Instance.SetActive(i);
+						Party.SetActive(i);
 					}
 					return true;
 				}
@@ -319,7 +364,7 @@ public class PokemonHUD
 				return true; // Click consumed by lateral panel background!
 			}
 		}
-		else if (_isExpanded && PlayerParty.Instance.Team.Count == 0)
+		else if (_isExpanded && Party.Team.Count == 0)
 		{
 			Rectangle emptyBox = new Rectangle(16, 160, 220, 48);
 			if (emptyBox.Contains(mouseX, mouseY))
@@ -346,9 +391,9 @@ public class PokemonHUD
 		if (_pokedexToggleButton != null && _pokedexToggleButton.containsPoint(mouseX, mouseY))
 		{
 			_lastRightClickTime = now;
-			if (PlayerParty.Instance.ActivePokemon != null)
+			if (Party.ActivePokemon != null)
 			{
-				Game1.activeClickableMenu = new PokemonSummaryMenu(PlayerParty.Instance.ActivePokemon, PlayerParty.Instance.Team);
+				Game1.activeClickableMenu = new PokemonSummaryMenu(Party.ActivePokemon, Party.Team);
 			}
 			else
 			{
@@ -358,16 +403,16 @@ public class PokemonHUD
 			return true;
 		}
 
-		if (_isExpanded && PlayerParty.Instance.Team.Count > 0)
+		if (_isExpanded && Party.Team.Count > 0)
 		{
 			for (int i = 0; i < _partySlotButtons.Count; i++)
 			{
 				if (_partySlotButtons[i].containsPoint(mouseX, mouseY))
 				{
 					_lastRightClickTime = now;
-					if (i < PlayerParty.Instance.Team.Count)
+					if (i < Party.Team.Count)
 					{
-						Game1.activeClickableMenu = new PokemonSummaryMenu(PlayerParty.Instance.Team[i], PlayerParty.Instance.Team);
+						Game1.activeClickableMenu = new PokemonSummaryMenu(Party.Team[i], Party.Team);
 					}
 					return true;
 				}
@@ -393,7 +438,7 @@ public class PokemonHUD
 		if (Game1.currentGameTime.TotalGameTime.TotalSeconds - _lastAbilityTime < 0.5) return;
 		_lastAbilityTime = Game1.currentGameTime.TotalGameTime.TotalSeconds;
 
-		var active = PlayerParty.Instance.ActivePokemon;
+		var active = Party.ActivePokemon;
 		if (active == null)
 		{
 			Game1.showRedMessage("Você não possui Pokémon ativo!");
@@ -825,8 +870,8 @@ public class PokemonHUD
 
 		int mouseX = Game1.getMouseX(true);
 		int mouseY = Game1.getMouseY(true);
-		var team = PlayerParty.Instance.Team;
-		var active = PlayerParty.Instance.ActivePokemon;
+		var team = Party.Team;
+		var active = Party.ActivePokemon;
 
 		// 0. Always Draw Pokédex Toggle Button at top-left
 		if (_pokedexToggleButton != null)
@@ -903,7 +948,7 @@ public class PokemonHUD
 		}
 
 		// 2. Draw 6 Party Slots (GBA Capsule Cards)
-		int activeIdx = PlayerParty.Instance.ActiveIndex;
+		int activeIdx = Party.ActiveIndex;
 		for (int i = 0; i < 6; i++)
 		{
 			var btn = _partySlotButtons[i];

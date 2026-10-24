@@ -36,6 +36,22 @@ public class PokemonStorageMenu : IClickableMenu
 	private int _selectedPartyIndex = -1;
 	private int _selectedBoxIndex = -1;
 
+	// Gamepad Navigation
+	private enum StorageFocusArea
+	{
+		Box,
+		Party,
+		ActionMenu
+	}
+	private StorageFocusArea _focusArea = StorageFocusArea.Box;
+	private int _gamepadBoxIndex = 0;
+	private int _gamepadPartyIndex = 0;
+	private int _gamepadActionIndex = 0;
+
+	private readonly Farmer _farmer;
+	private PokemonStorage Storage => PokemonStorage.GetForFarmer(_farmer ?? Game1.player);
+	private PlayerParty Party => PlayerParty.GetForFarmer(_farmer ?? Game1.player);
+
 	// Action popup for selected mon
 	private bool _showActionMenu = false;
 	private Vector2 _actionMenuPos = Vector2.Zero;
@@ -56,9 +72,10 @@ public class PokemonStorageMenu : IClickableMenu
 		new Color(220, 240, 236)  // Crystal Teal
 	};
 
-	public PokemonStorageMenu()
+	public PokemonStorageMenu(Farmer farmer = null)
 		: base((Game1.uiViewport.Width - MenuWidth) / 2, (Game1.uiViewport.Height - MenuHeight) / 2, MenuWidth, MenuHeight, showUpperRightCloseButton: true)
 	{
+		_farmer = farmer ?? Game1.player;
 		Game1.playSound("bigSelect");
 
 		_closeButton = new ClickableTextureComponent(
@@ -146,22 +163,22 @@ public class PokemonStorageMenu : IClickableMenu
 		// Box Switchers
 		if (_prevBoxBtn.containsPoint(x, y))
 		{
-			PokemonStorage.Instance.CurrentBoxIndex = (PokemonStorage.Instance.CurrentBoxIndex - 1 + PokemonStorage.TotalBoxes) % PokemonStorage.TotalBoxes;
+			Storage.CurrentBoxIndex = (Storage.CurrentBoxIndex - 1 + PokemonStorage.TotalBoxes) % PokemonStorage.TotalBoxes;
 			Game1.playSound("shwip");
 			return;
 		}
 		if (_nextBoxBtn.containsPoint(x, y))
 		{
-			PokemonStorage.Instance.CurrentBoxIndex = (PokemonStorage.Instance.CurrentBoxIndex + 1) % PokemonStorage.TotalBoxes;
+			Storage.CurrentBoxIndex = (Storage.CurrentBoxIndex + 1) % PokemonStorage.TotalBoxes;
 			Game1.playSound("shwip");
 			return;
 		}
 		if (_jumpBoxBtn.containsPoint(x, y))
 		{
 			// Cycle wallpaper
-			var box = PokemonStorage.Instance.CurrentBox;
+			var box = Storage.CurrentBox;
 			box.WallpaperIndex = (box.WallpaperIndex + 1) % BoxWallpapers.Length;
-			PokemonStorage.Instance.SaveStorage();
+			Storage.SaveStorage();
 			Game1.playSound("coin");
 			return;
 		}
@@ -171,13 +188,13 @@ public class PokemonStorageMenu : IClickableMenu
 		{
 			if (_partySlots[i].containsPoint(x, y))
 			{
-				var party = PlayerParty.Instance.Team;
+				var party = Party.Team;
 				if (i < party.Count)
 				{
 					// If we had a box slot selected, swap or withdraw!
 					if (_selectedBoxIndex >= 0)
 					{
-						PokemonStorage.Instance.SwapWithParty(PokemonStorage.Instance.CurrentBoxIndex, _selectedBoxIndex, i);
+						Storage.SwapWithParty(Storage.CurrentBoxIndex, _selectedBoxIndex, i);
 						_selectedBoxIndex = -1;
 						return;
 					}
@@ -187,7 +204,7 @@ public class PokemonStorageMenu : IClickableMenu
 				else if (_selectedBoxIndex >= 0)
 				{
 					// Move from box to this empty party slot
-					PokemonStorage.Instance.Withdraw(PokemonStorage.Instance.CurrentBoxIndex, _selectedBoxIndex);
+					Storage.Withdraw(Storage.CurrentBoxIndex, _selectedBoxIndex);
 					_selectedBoxIndex = -1;
 				}
 				return;
@@ -199,13 +216,13 @@ public class PokemonStorageMenu : IClickableMenu
 		{
 			if (_boxSlots[i].containsPoint(x, y))
 			{
-				var box = PokemonStorage.Instance.CurrentBox;
+				var box = Storage.CurrentBox;
 				var mon = box.Slots[i];
 
 				// If we had a party slot selected, swap or deposit!
 				if (_selectedPartyIndex >= 0)
 				{
-					PokemonStorage.Instance.SwapWithParty(PokemonStorage.Instance.CurrentBoxIndex, i, _selectedPartyIndex);
+					Storage.SwapWithParty(Storage.CurrentBoxIndex, i, _selectedPartyIndex);
 					_selectedPartyIndex = -1;
 					return;
 				}
@@ -215,7 +232,7 @@ public class PokemonStorageMenu : IClickableMenu
 				{
 					if (_selectedBoxIndex != i)
 					{
-						PokemonStorage.Instance.MoveWithinStorage(PokemonStorage.Instance.CurrentBoxIndex, _selectedBoxIndex, PokemonStorage.Instance.CurrentBoxIndex, i);
+						Storage.MoveWithinStorage(Storage.CurrentBoxIndex, _selectedBoxIndex, Storage.CurrentBoxIndex, i);
 					}
 					_selectedBoxIndex = -1;
 					return;
@@ -285,7 +302,7 @@ public class PokemonStorageMenu : IClickableMenu
 			return;
 		}
 
-		var party = PlayerParty.Instance.Team;
+		var party = Party.Team;
 		for (int i = 0; i < _partySlots.Count; i++)
 		{
 			if (_partySlots[i].containsPoint(x, y) && i < party.Count && party[i] != null)
@@ -295,7 +312,7 @@ public class PokemonStorageMenu : IClickableMenu
 			}
 		}
 
-		var box = PokemonStorage.Instance.CurrentBox;
+		var box = Storage.CurrentBox;
 		for (int i = 0; i < _boxSlots.Count; i++)
 		{
 			if (_boxSlots[i].containsPoint(x, y) && i < PokemonStorage.SlotsPerBox && box.Slots[i] != null)
@@ -312,7 +329,7 @@ public class PokemonStorageMenu : IClickableMenu
 
 		if (_actionFromParty)
 		{
-			var party = PlayerParty.Instance.Team;
+			var party = Party.Team;
 			if (_actionTargetSlot < 0 || _actionTargetSlot >= party.Count) return;
 
 			if (action == "summary")
@@ -335,14 +352,14 @@ public class PokemonStorageMenu : IClickableMenu
 					return;
 				}
 				var mon = party[_actionTargetSlot];
-				if (PokemonStorage.Instance.Deposit(mon, PokemonStorage.Instance.CurrentBoxIndex))
+				if (Storage.Deposit(mon, Storage.CurrentBoxIndex))
 				{
 					party.RemoveAt(_actionTargetSlot);
-					if (PlayerParty.Instance.ActiveIndex >= party.Count)
-						PlayerParty.Instance.ActiveIndex = Math.Max(0, party.Count - 1);
-					PlayerParty.Instance.SaveParty();
+					if (Party.ActiveIndex >= party.Count)
+						Party.ActiveIndex = Math.Max(0, party.Count - 1);
+					Party.SaveParty();
 					Game1.playSound("coin");
-					Game1.addHUDMessage(new HUDMessage($"{mon.Nickname} foi guardado na Caixa {PokemonStorage.Instance.LastDepositedBox + 1}!", 2));
+					Game1.addHUDMessage(new HUDMessage($"{mon.Nickname} foi guardado na Caixa {Storage.LastDepositedBox + 1}!", 2));
 				}
 				else
 				{
@@ -352,13 +369,13 @@ public class PokemonStorageMenu : IClickableMenu
 			}
 			else if (action == "make_active")
 			{
-				PlayerParty.Instance.SetActive(_actionTargetSlot);
+				Party.SetActive(_actionTargetSlot);
 			}
 		}
 		else
 		{
-			int curBox = PokemonStorage.Instance.CurrentBoxIndex;
-			var box = PokemonStorage.Instance.CurrentBox;
+			int curBox = Storage.CurrentBoxIndex;
+			var box = Storage.CurrentBox;
 			if (_actionTargetSlot < 0 || _actionTargetSlot >= PokemonStorage.SlotsPerBox) return;
 
 			if (action == "summary" && box.Slots[_actionTargetSlot] != null)
@@ -368,7 +385,7 @@ public class PokemonStorageMenu : IClickableMenu
 			}
 			if (action == "withdraw")
 			{
-				PokemonStorage.Instance.Withdraw(curBox, _actionTargetSlot);
+				Storage.Withdraw(curBox, _actionTargetSlot);
 			}
 			else if (action == "select_move")
 			{
@@ -378,7 +395,7 @@ public class PokemonStorageMenu : IClickableMenu
 			}
 			else if (action == "release")
 			{
-				PokemonStorage.Instance.Release(curBox, _actionTargetSlot);
+				Storage.Release(curBox, _actionTargetSlot);
 			}
 		}
 	}
@@ -432,6 +449,242 @@ public class PokemonStorageMenu : IClickableMenu
 		base.receiveKeyPress(key);
 	}
 
+	public override void receiveGamePadButton(Buttons button)
+	{
+		if (_showActionMenu)
+		{
+			if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+			{
+				_gamepadActionIndex = Math.Max(0, _gamepadActionIndex - 1);
+				Game1.playSound("shiny");
+				return;
+			}
+			if (button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+			{
+				_gamepadActionIndex = Math.Min(_actionButtons.Count - 1, _gamepadActionIndex + 1);
+				Game1.playSound("shiny");
+				return;
+			}
+			if (button == Buttons.A || button == Buttons.Start)
+			{
+				if (_gamepadActionIndex >= 0 && _gamepadActionIndex < _actionButtons.Count)
+				{
+					HandleActionSelection(_actionButtons[_gamepadActionIndex].name);
+					_showActionMenu = false;
+				}
+				return;
+			}
+			if (button == Buttons.B)
+			{
+				_showActionMenu = false;
+				Game1.playSound("smallSelect");
+				return;
+			}
+			return;
+		}
+
+		// Box cycling (LB / RB)
+		if (button == Buttons.LeftShoulder || button == Buttons.LeftTrigger)
+		{
+			Storage.CurrentBoxIndex = (Storage.CurrentBoxIndex - 1 + PokemonStorage.TotalBoxes) % PokemonStorage.TotalBoxes;
+			Game1.playSound("shwip");
+			return;
+		}
+		if (button == Buttons.RightShoulder || button == Buttons.RightTrigger)
+		{
+			Storage.CurrentBoxIndex = (Storage.CurrentBoxIndex + 1) % PokemonStorage.TotalBoxes;
+			Game1.playSound("shwip");
+			return;
+		}
+
+		// Directional Navigation
+		if (button == Buttons.DPadLeft || button == Buttons.LeftThumbstickLeft)
+		{
+			if (_focusArea == StorageFocusArea.Box)
+			{
+				if (_gamepadBoxIndex % PokemonStorage.BoxCols > 0)
+				{
+					_gamepadBoxIndex--;
+					Game1.playSound("shiny");
+				}
+				else
+				{
+					_focusArea = StorageFocusArea.Party;
+					int row = _gamepadBoxIndex / PokemonStorage.BoxCols;
+					_gamepadPartyIndex = Math.Clamp(row, 0, 5);
+					Game1.playSound("shiny");
+				}
+			}
+			return;
+		}
+		if (button == Buttons.DPadRight || button == Buttons.LeftThumbstickRight)
+		{
+			if (_focusArea == StorageFocusArea.Party)
+			{
+				_focusArea = StorageFocusArea.Box;
+				int row = Math.Clamp(_gamepadPartyIndex, 0, PokemonStorage.BoxRows - 1);
+				_gamepadBoxIndex = row * PokemonStorage.BoxCols;
+				Game1.playSound("shiny");
+			}
+			else if (_focusArea == StorageFocusArea.Box)
+			{
+				if (_gamepadBoxIndex % PokemonStorage.BoxCols < PokemonStorage.BoxCols - 1)
+				{
+					_gamepadBoxIndex++;
+					Game1.playSound("shiny");
+				}
+			}
+			return;
+		}
+		if (button == Buttons.DPadUp || button == Buttons.LeftThumbstickUp)
+		{
+			if (_focusArea == StorageFocusArea.Box)
+			{
+				if (_gamepadBoxIndex >= PokemonStorage.BoxCols)
+				{
+					_gamepadBoxIndex -= PokemonStorage.BoxCols;
+					Game1.playSound("shiny");
+				}
+			}
+			else if (_focusArea == StorageFocusArea.Party)
+			{
+				if (_gamepadPartyIndex > 0)
+				{
+					_gamepadPartyIndex--;
+					Game1.playSound("shiny");
+				}
+			}
+			return;
+		}
+		if (button == Buttons.DPadDown || button == Buttons.LeftThumbstickDown)
+		{
+			if (_focusArea == StorageFocusArea.Box)
+			{
+				if (_gamepadBoxIndex + PokemonStorage.BoxCols < PokemonStorage.SlotsPerBox)
+				{
+					_gamepadBoxIndex += PokemonStorage.BoxCols;
+					Game1.playSound("shiny");
+				}
+			}
+			else if (_focusArea == StorageFocusArea.Party)
+			{
+				if (_gamepadPartyIndex < 5)
+				{
+					_gamepadPartyIndex++;
+					Game1.playSound("shiny");
+				}
+			}
+			return;
+		}
+
+		// Action Confirm (A or Start)
+		if (button == Buttons.A || button == Buttons.Start)
+		{
+			if (_focusArea == StorageFocusArea.Party)
+			{
+				var party = Party.Team;
+				if (_selectedBoxIndex >= 0)
+				{
+					Storage.SwapWithParty(Storage.CurrentBoxIndex, _selectedBoxIndex, _gamepadPartyIndex);
+					_selectedBoxIndex = -1;
+					return;
+				}
+				if (_selectedPartyIndex >= 0)
+				{
+					if (_selectedPartyIndex != _gamepadPartyIndex && _selectedPartyIndex < party.Count && _gamepadPartyIndex < party.Count)
+					{
+						var tmp = party[_selectedPartyIndex];
+						party[_selectedPartyIndex] = party[_gamepadPartyIndex];
+						party[_gamepadPartyIndex] = tmp;
+						Party.SaveParty();
+						Game1.playSound("shiny");
+					}
+					_selectedPartyIndex = -1;
+					return;
+				}
+				if (_gamepadPartyIndex < party.Count)
+				{
+					OpenActionMenu(_partySlots[_gamepadPartyIndex].bounds.Center.X, _partySlots[_gamepadPartyIndex].bounds.Center.Y, isParty: true, _gamepadPartyIndex);
+					_gamepadActionIndex = 0;
+				}
+			}
+			else if (_focusArea == StorageFocusArea.Box)
+			{
+				var box = Storage.CurrentBox;
+				if (_selectedPartyIndex >= 0)
+				{
+					Storage.SwapWithParty(Storage.CurrentBoxIndex, _gamepadBoxIndex, _selectedPartyIndex);
+					_selectedPartyIndex = -1;
+					return;
+				}
+				if (_selectedBoxIndex >= 0)
+				{
+					if (_selectedBoxIndex != _gamepadBoxIndex)
+					{
+						Storage.MoveWithinStorage(Storage.CurrentBoxIndex, _selectedBoxIndex, Storage.CurrentBoxIndex, _gamepadBoxIndex);
+					}
+					_selectedBoxIndex = -1;
+					return;
+				}
+				if (_gamepadBoxIndex < box.Slots.Length && box.Slots[_gamepadBoxIndex] != null)
+				{
+					OpenActionMenu(_boxSlots[_gamepadBoxIndex].bounds.Center.X, _boxSlots[_gamepadBoxIndex].bounds.Center.Y, isParty: false, _gamepadBoxIndex);
+					_gamepadActionIndex = 0;
+				}
+			}
+			return;
+		}
+
+		// Button X: Quick Summary
+		if (button == Buttons.X)
+		{
+			if (_focusArea == StorageFocusArea.Party)
+			{
+				var party = Party.Team;
+				if (_gamepadPartyIndex >= 0 && _gamepadPartyIndex < party.Count && party[_gamepadPartyIndex] != null)
+				{
+					Game1.activeClickableMenu = new PokemonSummaryMenu(party[_gamepadPartyIndex], party, this);
+					return;
+				}
+			}
+			else if (_focusArea == StorageFocusArea.Box)
+			{
+				var box = Storage.CurrentBox;
+				if (_gamepadBoxIndex >= 0 && _gamepadBoxIndex < box.Slots.Length && box.Slots[_gamepadBoxIndex] != null)
+				{
+					Game1.activeClickableMenu = new PokemonSummaryMenu(box.Slots[_gamepadBoxIndex], null, this);
+					return;
+				}
+			}
+			return;
+		}
+
+		// Button Y: Cycle Box Wallpaper
+		if (button == Buttons.Y)
+		{
+			var box = Storage.CurrentBox;
+			box.WallpaperIndex = (box.WallpaperIndex + 1) % BoxWallpapers.Length;
+			Storage.SaveStorage();
+			Game1.playSound("coin");
+			return;
+		}
+
+		// Button B: Cancel selection or Exit menu
+		if (button == Buttons.B)
+		{
+			if (_selectedPartyIndex >= 0 || _selectedBoxIndex >= 0)
+			{
+				_selectedPartyIndex = -1;
+				_selectedBoxIndex = -1;
+				Game1.playSound("smallSelect");
+				return;
+			}
+			Game1.playSound("bigDeSelect");
+			exitThisMenu();
+			return;
+		}
+	}
+
 	public override void draw(SpriteBatch b)
 	{
 		// Dark background overlay
@@ -446,7 +699,7 @@ public class PokemonStorageMenu : IClickableMenu
 		PokemonUI.Text(b, Game1.dialogueFont, "SISTEMA DE ARMAZENAMENTO POKÉMON", new Rectangle(xPositionOnScreen + 16, yPositionOnScreen + 10, 340, 32), Color.White, maxScale: 0.8f);
 
 		// Box Switcher Buttons
-		var currentBox = PokemonStorage.Instance.CurrentBox;
+		var currentBox = Storage.CurrentBox;
 		b.Draw(Game1.staminaRect, _prevBoxBtn.bounds, new Color(48, 112, 96));
 		PokemonUI.Border(b, _prevBoxBtn.bounds, 1, new Color(72, 144, 128));
 		// Draw clear '<' arrow with small blocks
@@ -487,6 +740,13 @@ public class PokemonStorageMenu : IClickableMenu
 			DrawActionMenu(b);
 		}
 
+		// Gamepad Controls Legend
+		if (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected)
+		{
+			string legend = "[D-Pad] Navegar  [A] Selecionar  [B] Voltar  [X] Sumário  [Y] Tema  [LB/RB] Mudar Caixa";
+			PokemonUI.Text(b, Game1.tinyFont, legend, new Rectangle(xPositionOnScreen + 380, yPositionOnScreen + height - 20, width - 400, 16), Color.DarkSlateGray * 0.85f, maxScale: 0.72f);
+		}
+
 		// Cursor
 		drawMouse(b);
 	}
@@ -498,20 +758,31 @@ public class PokemonStorageMenu : IClickableMenu
 
 		// Party Title
 		b.Draw(Game1.staminaRect, new Rectangle(_partyArea.X + 2, _partyArea.Y + 2, _partyArea.Width - 4, 28), new Color(48, 96, 84));
-		PokemonUI.Text(b, Game1.smallFont, $"SUA EQUIPE ({PlayerParty.Instance.Team.Count}/6)", new Rectangle(_partyArea.X + 8, _partyArea.Y + 4, _partyArea.Width - 16, 22), Color.White, center: true);
+		PokemonUI.Text(b, Game1.smallFont, $"SUA EQUIPE ({Party.Team.Count}/6)", new Rectangle(_partyArea.X + 8, _partyArea.Y + 4, _partyArea.Width - 16, 22), Color.White, center: true);
 
-		var team = PlayerParty.Instance.Team;
+		bool isGamepad = (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected) && !_showActionMenu;
+		float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6f);
+		int exp = pulse > 0 ? 3 : 2;
+
+		var team = Party.Team;
 		for (int i = 0; i < _partySlots.Count; i++)
 		{
 			var rect = _partySlots[i].bounds;
 			bool isHover = (_hoverPartyIndex == i);
 			bool isSelected = (_selectedPartyIndex == i);
+			bool isGamepadFocus = isGamepad && (_focusArea == StorageFocusArea.Party) && (_gamepadPartyIndex == i);
 
-			Color cardBg = isSelected ? new Color(255, 248, 200) : (isHover ? new Color(245, 252, 248) : new Color(238, 244, 242));
-			Color borderCol = isSelected ? Color.DarkOrange : (isHover ? new Color(36, 120, 96) : new Color(180, 200, 192));
+			Color cardBg = isSelected ? new Color(255, 248, 200) : ((isHover || isGamepadFocus) ? new Color(245, 252, 248) : new Color(238, 244, 242));
+			Color borderCol = isSelected ? Color.DarkOrange : ((isHover || isGamepadFocus) ? new Color(36, 120, 96) : new Color(180, 200, 192));
 
 			b.Draw(Game1.staminaRect, rect, cardBg);
 			PokemonUI.Border(b, rect, isSelected ? 3 : 2, borderCol);
+
+			if (isGamepadFocus)
+			{
+				Rectangle glow = new Rectangle(rect.X - exp, rect.Y - exp, rect.Width + exp * 2, rect.Height + exp * 2);
+				PokemonUI.Border(b, glow, 3, Color.Gold);
+			}
 
 			if (i < team.Count)
 			{
@@ -530,7 +801,7 @@ public class PokemonStorageMenu : IClickableMenu
 
 				// Name & Level
 				string shinyStar = p.IsShiny ? "★ " : "";
-				string status = (i == PlayerParty.Instance.ActiveIndex) ? " [ATIVO]" : (p.IsFainted ? " [DESM]" : "");
+				string status = (i == Party.ActiveIndex) ? " [ATIVO]" : (p.IsFainted ? " [DESM]" : "");
 				Color nameColor = p.IsFainted ? Color.Red : new Color(24, 32, 40);
 				PokemonUI.Text(b, Game1.smallFont, $"{shinyStar}{p.Nickname}{status}", new Rectangle(rect.X + 60, rect.Y + 6, rect.Width - 68, 20), nameColor, maxScale: 0.82f);
 				PokemonUI.Text(b, Game1.tinyFont, $"Lv.{p.Level} {p.Gender} | {p.Species.Name}", new Rectangle(rect.X + 60, rect.Y + 26, rect.Width - 68, 16), Color.DarkSlateGray, maxScale: 0.78f);
@@ -547,11 +818,15 @@ public class PokemonStorageMenu : IClickableMenu
 
 	private void DrawBoxGrid(SpriteBatch b)
 	{
-		var box = PokemonStorage.Instance.CurrentBox;
+		var box = Storage.CurrentBox;
 		Color wallpaper = BoxWallpapers[box.WallpaperIndex % BoxWallpapers.Length];
 
 		PokemonUI.Border(b, _boxArea, 2, new Color(48, 80, 72));
 		b.Draw(Game1.staminaRect, new Rectangle(_boxArea.X + 2, _boxArea.Y + 2, _boxArea.Width - 4, _boxArea.Height - 4), wallpaper);
+
+		bool isGamepad = (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected) && !_showActionMenu;
+		float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6f);
+		int exp = pulse > 0 ? 3 : 2;
 
 		// Grid Slots
 		for (int i = 0; i < _boxSlots.Count; i++)
@@ -560,12 +835,19 @@ public class PokemonStorageMenu : IClickableMenu
 			var mon = box.Slots[i];
 			bool isHover = (_hoverBoxIndex == i);
 			bool isSelected = (_selectedBoxIndex == i);
+			bool isGamepadFocus = isGamepad && (_focusArea == StorageFocusArea.Box) && (_gamepadBoxIndex == i);
 
-			Color slotBg = isSelected ? new Color(255, 248, 180) : (isHover ? Color.White * 0.85f : Color.White * 0.45f);
-			Color borderCol = isSelected ? Color.DarkOrange : (isHover ? new Color(36, 120, 96) : Color.DarkSlateGray * 0.25f);
+			Color slotBg = isSelected ? new Color(255, 248, 180) : ((isHover || isGamepadFocus) ? Color.White * 0.85f : Color.White * 0.45f);
+			Color borderCol = isSelected ? Color.DarkOrange : ((isHover || isGamepadFocus) ? new Color(36, 120, 96) : Color.DarkSlateGray * 0.25f);
 
 			b.Draw(Game1.staminaRect, rect, slotBg);
 			PokemonUI.Border(b, rect, isSelected ? 3 : 1, borderCol);
+
+			if (isGamepadFocus)
+			{
+				Rectangle glow = new Rectangle(rect.X - exp, rect.Y - exp, rect.Width + exp * 2, rect.Height + exp * 2);
+				PokemonUI.Border(b, glow, 3, Color.Gold);
+			}
 
 			if (mon != null)
 			{
@@ -596,30 +878,43 @@ public class PokemonStorageMenu : IClickableMenu
 		PokemonInstance target = null;
 		string origin = "";
 
-		if (_hoverPartyIndex >= 0 && _hoverPartyIndex < PlayerParty.Instance.Team.Count)
+		if (_hoverPartyIndex >= 0 && _hoverPartyIndex < Party.Team.Count)
 		{
-			target = PlayerParty.Instance.Team[_hoverPartyIndex];
+			target = Party.Team[_hoverPartyIndex];
 			origin = "Equipe";
 		}
 		else if (_hoverBoxIndex >= 0 && _hoverBoxIndex < PokemonStorage.SlotsPerBox)
 		{
-			target = PokemonStorage.Instance.CurrentBox.Slots[_hoverBoxIndex];
+			target = Storage.CurrentBox.Slots[_hoverBoxIndex];
 			origin = "PC";
 		}
-		else if (_selectedPartyIndex >= 0 && _selectedPartyIndex < PlayerParty.Instance.Team.Count)
+		else if (_selectedPartyIndex >= 0 && _selectedPartyIndex < Party.Team.Count)
 		{
-			target = PlayerParty.Instance.Team[_selectedPartyIndex];
+			target = Party.Team[_selectedPartyIndex];
 			origin = "Equipe (Selecionado)";
 		}
 		else if (_selectedBoxIndex >= 0 && _selectedBoxIndex < PokemonStorage.SlotsPerBox)
 		{
-			target = PokemonStorage.Instance.CurrentBox.Slots[_selectedBoxIndex];
+			target = Storage.CurrentBox.Slots[_selectedBoxIndex];
 			origin = "PC (Selecionado)";
+		}
+		else if (Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected)
+		{
+			if (_focusArea == StorageFocusArea.Party && _gamepadPartyIndex >= 0 && _gamepadPartyIndex < Party.Team.Count)
+			{
+				target = Party.Team[_gamepadPartyIndex];
+				origin = "Equipe";
+			}
+			else if (_focusArea == StorageFocusArea.Box && _gamepadBoxIndex >= 0 && _gamepadBoxIndex < Storage.CurrentBox.Slots.Length)
+			{
+				target = Storage.CurrentBox.Slots[_gamepadBoxIndex];
+				origin = "PC";
+			}
 		}
 
 		if (target == null)
 		{
-			PokemonUI.Text(b, Game1.smallFont, "Passe o cursor sobre um Pokémon (ou clique com Botão Direito para abrir o Sumário Completo).", _previewArea, Color.DarkSlateGray * 0.75f, center: true, maxScale: 0.85f);
+			PokemonUI.Text(b, Game1.smallFont, "Passe o cursor sobre um Pokémon (ou clique com Botão Direito / [X] para abrir o Sumário).", _previewArea, Color.DarkSlateGray * 0.75f, center: true, maxScale: 0.85f);
 			return;
 		}
 
@@ -651,7 +946,7 @@ public class PokemonStorageMenu : IClickableMenu
 		PokemonUI.Text(b, Game1.tinyFont, $"Tipo: {typesText} | {target.Nature}", new Rectangle(infoX, infoY + 42, col2W, 16), new Color(20, 100, 50), maxScale: 0.76f);
 		PokemonUI.Text(b, Game1.tinyFont, $"HP: {target.CurrentHP}/{target.MaxHP}", new Rectangle(infoX, infoY + 62, 105, 16), Color.Black, maxScale: 0.76f);
 		PokemonUI.HpBar(b, new Rectangle(infoX + 100, infoY + 66, 125, 8), target.HpRatio);
-		PokemonUI.Text(b, Game1.tinyFont, "[Botão Direito: Sumário Completo]", new Rectangle(infoX, infoY + 82, col2W, 16), new Color(30, 90, 160), maxScale: 0.70f);
+		PokemonUI.Text(b, Game1.tinyFont, "[Botão Direito / X: Sumário Completo]", new Rectangle(infoX, infoY + 82, col2W, 16), new Color(30, 90, 160), maxScale: 0.70f);
 
 		// Column 3: Stats, IVs/EVs & Moves
 		int statX = infoX + col2W + 12;
@@ -681,16 +976,29 @@ public class PokemonStorageMenu : IClickableMenu
 		PokemonUI.Border(b, menuRect, 3, new Color(24, 48, 56));
 		b.Draw(Game1.staminaRect, new Rectangle(menuRect.X + 3, menuRect.Y + 3, menuRect.Width - 6, menuRect.Height - 6), new Color(248, 252, 250));
 
+		bool isGamepad = Game1.options.gamepadControls || Game1.input.GetGamePadState().IsConnected;
+		float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 6f);
+		int exp = pulse > 0 ? 3 : 2;
+
 		for (int i = 0; i < _actionButtons.Count; i++)
 		{
 			var btn = _actionButtons[i];
 			bool isHover = btn.containsPoint(Game1.getMouseX(), Game1.getMouseY());
-			Color btnBg = isHover ? new Color(216, 236, 228) : Color.White;
-			Color border = isHover ? new Color(36, 96, 76) : new Color(180, 200, 192);
+			bool isGamepadFocus = isGamepad && (_gamepadActionIndex == i);
+
+			Color btnBg = (isHover || isGamepadFocus) ? new Color(216, 236, 228) : Color.White;
+			Color border = (isHover || isGamepadFocus) ? new Color(36, 96, 76) : new Color(180, 200, 192);
 
 			b.Draw(Game1.staminaRect, btn.bounds, btnBg);
 			PokemonUI.Border(b, btn.bounds, 1, border);
-			PokemonUI.Text(b, Game1.smallFont, btn.label, btn.bounds, Color.Black, center: true, maxScale: 0.85f);
+
+			if (isGamepadFocus)
+			{
+				Rectangle glow = new Rectangle(btn.bounds.X - exp, btn.bounds.Y - exp, btn.bounds.Width + exp * 2, btn.bounds.Height + exp * 2);
+				PokemonUI.Border(b, glow, 3, Color.Gold);
+			}
+
+			PokemonUI.Text(b, Game1.smallFont, btn.label, btn.bounds, (isHover || isGamepadFocus) ? Color.DarkGreen : Color.Black, center: true, maxScale: 0.85f);
 		}
 	}
 }
