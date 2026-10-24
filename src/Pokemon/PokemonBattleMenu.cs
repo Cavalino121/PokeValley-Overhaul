@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using StardewValley.Menus;
+using StardewValley.Locations;
 
 namespace StardewValley.Pokemon;
 
@@ -433,6 +434,143 @@ private PokemonMove SelectEnemyMove()
 	private Vector2 _enemyLungeOffset = Vector2.Zero;
 	private readonly List<FloatingDamage> _floatingDamages = new();
 
+
+	public enum BattleWeather
+	{
+		None,
+		Rain,
+		HarshSun,
+		Sandstorm,
+		Snow
+	}
+
+	public BattleWeather CurrentWeather = BattleWeather.None;
+	public int WeatherTurns = 0;
+
+	private struct WeatherParticle
+	{
+		public Vector2 Position;
+		public Vector2 Velocity;
+		public float Size;
+		public float Alpha;
+		public float Rotation;
+	}
+
+	private readonly List<WeatherParticle> _weatherParticles = new();
+	private float _weatherAnimTimer = 0f;
+
+	private void InitWeatherParticles()
+	{
+		_weatherParticles.Clear();
+		for (int i = 0; i < 50; i++)
+		{
+			_weatherParticles.Add(new WeatherParticle
+			{
+				Position = new Vector2(Game1.random.Next(width), Game1.random.Next(_boxY > 0 ? _boxY : 600)),
+				Velocity = new Vector2(-40f + Game1.random.Next(-10, 11), 500f + Game1.random.Next(-50, 51)),
+				Size = 1.0f + (float)Game1.random.NextDouble() * 1.5f,
+				Alpha = 0.4f + (float)Game1.random.NextDouble() * 0.45f,
+				Rotation = 0f
+			});
+		}
+	}
+
+	private void UpdateWeatherParticles(float dt)
+	{
+		_weatherAnimTimer += dt;
+		if (CurrentWeather == BattleWeather.None) return;
+
+		int maxY = _boxY > 0 ? _boxY : 600;
+		for (int i = 0; i < _weatherParticles.Count; i++)
+		{
+			var p = _weatherParticles[i];
+			if (CurrentWeather == BattleWeather.Rain)
+			{
+				p.Position += new Vector2(-60f, 650f) * dt;
+				if (p.Position.Y > maxY || p.Position.X < -50)
+				{
+					p.Position = new Vector2(Game1.random.Next(width + 100), -20);
+				}
+			}
+			else if (CurrentWeather == BattleWeather.Sandstorm)
+			{
+				p.Position += new Vector2(450f, 25f + (float)Math.Sin(_weatherAnimTimer * 3f + i) * 15f) * dt;
+				p.Rotation += dt * 4f;
+				if (p.Position.X > width + 50)
+				{
+					p.Position = new Vector2(-30, Game1.random.Next(maxY));
+				}
+			}
+			else if (CurrentWeather == BattleWeather.Snow)
+			{
+				p.Position += new Vector2((float)Math.Sin(_weatherAnimTimer * 2f + i) * 35f, 90f) * dt;
+				p.Rotation += dt * 1.2f;
+				if (p.Position.Y > maxY)
+				{
+					p.Position = new Vector2(Game1.random.Next(width), -15);
+				}
+			}
+			_weatherParticles[i] = p;
+		}
+	}
+
+	private void DrawWeatherEffects(SpriteBatch b, Rectangle arenaRect)
+	{
+		if (CurrentWeather == BattleWeather.None) return;
+
+		if (CurrentWeather == BattleWeather.HarshSun)
+		{
+			// Golden radiant warm ambient wash
+			float pulse = 0.08f + (float)Math.Sin(_weatherAnimTimer * 2.5f) * 0.03f;
+			b.Draw(Game1.staminaRect, arenaRect, Color.Gold * pulse);
+
+			// Radiant sunbeams across sky
+			int beamCount = 6;
+			for (int i = 0; i < beamCount; i++)
+			{
+				float beamX = (arenaRect.Width / (beamCount + 1)) * (i + 1) + (float)Math.Sin(_weatherAnimTimer + i) * 40f;
+				Rectangle beamRect = new Rectangle((int)beamX - 18, arenaRect.Y, 36, arenaRect.Height);
+				b.Draw(Game1.staminaRect, beamRect, Color.LightGoldenrodYellow * (pulse * 0.75f));
+			}
+		}
+		else if (CurrentWeather == BattleWeather.Rain)
+		{
+			// Subtle rain ambient tint
+			b.Draw(Game1.staminaRect, arenaRect, Color.MidnightBlue * 0.12f);
+
+			// Rain streaks
+			foreach (var p in _weatherParticles)
+			{
+				Rectangle dropRect = new Rectangle((int)p.Position.X, (int)p.Position.Y, 2, (int)(16 * p.Size));
+				b.Draw(Game1.staminaRect, dropRect, null, Color.LightSkyBlue * p.Alpha, -0.15f, Vector2.Zero, SpriteEffects.None, 0.95f);
+			}
+		}
+		else if (CurrentWeather == BattleWeather.Sandstorm)
+		{
+			// Sandy brown atmospheric haze
+			b.Draw(Game1.staminaRect, arenaRect, Color.SandyBrown * 0.18f);
+
+			// Swirling dust particles
+			foreach (var p in _weatherParticles)
+			{
+				Rectangle sandRect = new Rectangle((int)p.Position.X, (int)p.Position.Y, (int)(4 * p.Size), (int)(3 * p.Size));
+				b.Draw(Game1.staminaRect, sandRect, null, Color.BurlyWood * p.Alpha, p.Rotation, new Vector2(2, 2), SpriteEffects.None, 0.95f);
+			}
+		}
+		else if (CurrentWeather == BattleWeather.Snow)
+		{
+			// Cold blue-white mist
+			b.Draw(Game1.staminaRect, arenaRect, Color.LightCyan * 0.10f);
+
+			// Drifting snow crystals
+			foreach (var p in _weatherParticles)
+			{
+				Rectangle flakeRect = new Rectangle((int)p.Position.X, (int)p.Position.Y, (int)(5 * p.Size), (int)(5 * p.Size));
+				b.Draw(Game1.staminaRect, flakeRect, null, Color.White * p.Alpha, p.Rotation, new Vector2(2, 2), SpriteEffects.None, 0.95f);
+			}
+		}
+	}
+
 	private class AttackFx
 	{
 		public PokemonType Type;
@@ -696,6 +834,35 @@ private PokemonMove SelectEnemyMove()
 		_currentTheme = DetermineArenaTheme();
 		_displayPlayerHP = PlayerPokemon?.CurrentHP ?? 100;
 		_displayEnemyHP = EnemyPokemon?.CurrentHP ?? 100;
+
+		// Initialize starting battle weather based on location & world weather
+		if (Game1.isRaining || (Game1.currentLocation != null && Game1.currentLocation.IsRainingHere()))
+		{
+			CurrentWeather = BattleWeather.Rain;
+			WeatherTurns = 99;
+		}
+		else if (Game1.currentLocation is MineShaft msIce && msIce.mineLevel >= 40 && msIce.mineLevel <= 79)
+		{
+			CurrentWeather = BattleWeather.Snow;
+			WeatherTurns = 99;
+		}
+		else if ((Game1.currentLocation is MineShaft msFire && msFire.mineLevel >= 80) || (Game1.currentLocation?.Name?.Contains("Volcano") == true))
+		{
+			CurrentWeather = BattleWeather.HarshSun;
+			WeatherTurns = 99;
+		}
+		else if (Game1.currentLocation?.Name?.Contains("Desert") == true)
+		{
+			CurrentWeather = BattleWeather.Sandstorm;
+			WeatherTurns = 99;
+		}
+		else
+		{
+			CurrentWeather = BattleWeather.None;
+			WeatherTurns = 0;
+		}
+
+		InitWeatherParticles();
 
 		if (IsWild && EnemyPokemon?.Species != null)
 		{
@@ -2187,12 +2354,17 @@ private PokemonMove SelectEnemyMove()
 					itemDamageMult *= 1.10f;
 				}
 
-				// Weather multipliers
+				// Weather multipliers (Canonical Gen 3-8)
 				float weatherMult = 1.0f;
-				if (Game1.isRaining)
+				if (CurrentWeather == BattleWeather.Rain)
 				{
 					if (moveType == PokemonType.Water) weatherMult = 1.5f;
 					else if (moveType == PokemonType.Fire) weatherMult = 0.5f;
+				}
+				else if (CurrentWeather == BattleWeather.HarshSun)
+				{
+					if (moveType == PokemonType.Fire) weatherMult = 1.5f;
+					else if (moveType == PokemonType.Water) weatherMult = 0.5f;
 				}
 
 				bool isCrit = move.AlwaysCrit || Game1.random.NextDouble() < (move.HighCrit ? 0.125 : 0.0625);
@@ -2520,14 +2692,69 @@ private PokemonMove SelectEnemyMove()
 		}
 		else
 		{
-			int rewardGold = EnemyTeam.Count * 200;
+			string cleanName = TrainerName.Replace(" ", "").Replace("(", "").Replace(")", "");
+			Game1.player?.mailReceived?.Add("Poke_Defeated_" + cleanName);
+
+			int rewardGold = EnemyTeam.Count * 250;
+			string specialVictoryMsg = null;
+
+			if (cleanName.Equals("Red", StringComparison.OrdinalIgnoreCase))
+			{
+				rewardGold = 10000;
+				specialVictoryMsg = "Red: ...! ...!\n(Red acena em silêncio com profundo respeito e reconhece você como o novo Campeão Supremo!)";
+			}
+			else if (cleanName.Equals("Steven", StringComparison.OrdinalIgnoreCase))
+			{
+				rewardGold = 8000;
+				specialVictoryMsg = "Steven: Impressionante! Sua conexão com seus Pokémon brilha com mais intensidade que o mais raro dos meteoritos de Hoenn!";
+			}
+			else if (cleanName.Equals("Qi", StringComparison.OrdinalIgnoreCase))
+			{
+				rewardGold = 5000;
+				Game1.player.QiGems += 25;
+				specialVictoryMsg = "Sr. Qi: Extraordinário, garoto! Você superou todas as minhas expectativas calculadas. Pegue 25 Gemas Qi pelo espetáculo!";
+			}
+			else if (cleanName.Equals("Wizard", StringComparison.OrdinalIgnoreCase) || cleanName.Equals("Rasmodius", StringComparison.OrdinalIgnoreCase))
+			{
+				rewardGold = 3500;
+				specialVictoryMsg = "M. Rasmodius: Magnífico! As energias elementais do éter fluem em perfeita harmonia através do seu comando!";
+			}
+			else if (cleanName.Equals("Marlon", StringComparison.OrdinalIgnoreCase))
+			{
+				rewardGold = 3000;
+				specialVictoryMsg = "Marlon: Bom trabalho, aventureiro! Poucos guerreiros na guilda demonstraram tanta fibra e técnica em combate!";
+			}
+			else if (cleanName.Equals("Clint", StringComparison.OrdinalIgnoreCase))
+			{
+				rewardGold = 2500;
+				specialVictoryMsg = "Clint: Uau... Essa sua técnica foi tão pesada quanto uma bigorna de ferro. Belo combate!";
+			}
+			else if (cleanName.Equals("Willy", StringComparison.OrdinalIgnoreCase))
+			{
+				rewardGold = 2000;
+				specialVictoryMsg = "Willy: Pelas barbas de Netuno! Você comanda suas criaturas com a força e a astúcia de um velho capitão do mar!";
+			}
+
 			Game1.player.Money += rewardGold;
 			QueueMessage($"Você derrotou o Treinador {TrainerName}!", () =>
 			{
-				QueueMessage($"Você obteve {rewardGold} ouros pela vitória!", () =>
+				if (!string.IsNullOrEmpty(specialVictoryMsg))
 				{
-					exitThisMenuNoSound();
-				});
+					QueueMessage(specialVictoryMsg, () =>
+					{
+						QueueMessage($"Você obteve {rewardGold} ouros pela vitória!", () =>
+						{
+							exitThisMenuNoSound();
+						});
+					});
+				}
+				else
+				{
+					QueueMessage($"Você obteve {rewardGold} ouros pela vitória!", () =>
+					{
+						exitThisMenuNoSound();
+					});
+				}
 			});
 		}
 	}
@@ -2811,7 +3038,8 @@ private PokemonMove SelectEnemyMove()
 		// Drizzle
 		if (string.Equals(ab, "Drizzle", StringComparison.OrdinalIgnoreCase))
 		{
-			PokemonHUD.SetWorldWeather(true);
+			CurrentWeather = BattleWeather.Rain;
+			WeatherTurns = 5;
 			Game1.playSound("rainsound");
 			QueueMessage($"A habilidade Chuva Repentina (Drizzle) de {mon.Nickname} convocou uma tempestade!", onDone);
 			return;
@@ -2820,9 +3048,30 @@ private PokemonMove SelectEnemyMove()
 		// Drought
 		if (string.Equals(ab, "Drought", StringComparison.OrdinalIgnoreCase))
 		{
-			PokemonHUD.SetWorldWeather(false);
+			CurrentWeather = BattleWeather.HarshSun;
+			WeatherTurns = 5;
 			Game1.playSound("flameSpell");
 			QueueMessage($"A habilidade Seca Extrema (Drought) de {mon.Nickname} intensificou os raios solares!", onDone);
+			return;
+		}
+
+		// Sand Stream
+		if (string.Equals(ab, "SandStream", StringComparison.OrdinalIgnoreCase) || string.Equals(ab, "Sand Stream", StringComparison.OrdinalIgnoreCase))
+		{
+			CurrentWeather = BattleWeather.Sandstorm;
+			WeatherTurns = 5;
+			Game1.playSound("debrisHit");
+			QueueMessage($"A habilidade Fluxo de Areia (Sand Stream) de {mon.Nickname} levantou uma tempestade de areia!", onDone);
+			return;
+		}
+
+		// Snow Warning
+		if (string.Equals(ab, "SnowWarning", StringComparison.OrdinalIgnoreCase) || string.Equals(ab, "Snow Warning", StringComparison.OrdinalIgnoreCase))
+		{
+			CurrentWeather = BattleWeather.Snow;
+			WeatherTurns = 5;
+			Game1.playSound("freeze");
+			QueueMessage($"A habilidade Alerta de Neve (Snow Warning) de {mon.Nickname} trouxe uma nevasca sobre o campo!", onDone);
 			return;
 		}
 
@@ -3383,6 +3632,7 @@ private PokemonMove SelectEnemyMove()
 		PokemonMusicManager.TickLoop();
 
 		float dt = (float)time.ElapsedGameTime.TotalSeconds;
+		UpdateWeatherParticles(dt);
 
 		if (_startupTransitionTimer > 0f)
 		{
@@ -3797,6 +4047,10 @@ private PokemonMove SelectEnemyMove()
 		{
 			DrawAttackFx(b, _activeAttackFx);
 		}
+
+		// 4.6 Draw Weather Visual Effects
+		DrawWeatherEffects(b, arenaRect);
+		DrawWeatherBanner(b);
 
 		// 5. Draw Pokemon Status HUDs
 		DrawEnemyStatus(b);
@@ -4772,12 +5026,46 @@ private PokemonMove SelectEnemyMove()
 		PokemonUI.Text(b, Game1.tinyFont, hpStr, new Rectangle(sx + sw - 120, sy + 56, 106, 20), Color.DarkSlateGray, center: true, maxScale: 0.85f);
 	}
 
-	private void DrawWeatherBanner(SpriteBatch b)
+		private void DrawWeatherBanner(SpriteBatch b)
 	{
-		Rectangle bannerRect = new Rectangle(xPositionOnScreen + width / 2 - 170, yPositionOnScreen + 20, 340, 32);
-		b.Draw(Game1.staminaRect, bannerRect, Color.DarkSlateBlue * 0.85f);
-		DrawBorder(b, bannerRect, 1, Color.Cyan);
-		DrawCleanText(b, Game1.tinyFont, "[Chuva Ativa: Água x1.5 | Fogo x0.5]", new Vector2(bannerRect.X + 15, bannerRect.Y + 8), Color.LightCyan);
+		if (CurrentWeather == BattleWeather.None) return;
+
+		string weatherText = CurrentWeather switch
+		{
+			BattleWeather.Rain => "🌧️ Chuva Ativa (Água x1.5 | Fogo x0.5)",
+			BattleWeather.HarshSun => "☀️ Sol Escaldante (Fogo x1.5 | Água x0.5)",
+			BattleWeather.Sandstorm => "🌪️ Tempestade de Areia (Dano residual | Sp.Def Rocha +50%)",
+			BattleWeather.Snow => "❄️ Nevasca Ativa (Defesa Gelo +50%)",
+			_ => ""
+		};
+
+		if (WeatherTurns > 0 && WeatherTurns < 90)
+		{
+			weatherText += $" [{WeatherTurns}t]";
+		}
+
+		Color boxBg = CurrentWeather switch
+		{
+			BattleWeather.Rain => Color.DarkSlateBlue * 0.88f,
+			BattleWeather.HarshSun => new Color(130, 80, 20) * 0.88f,
+			BattleWeather.Sandstorm => new Color(120, 85, 40) * 0.88f,
+			BattleWeather.Snow => new Color(40, 90, 130) * 0.88f,
+			_ => Color.Black * 0.75f
+		};
+
+		Color borderColor = CurrentWeather switch
+		{
+			BattleWeather.Rain => Color.Cyan,
+			BattleWeather.HarshSun => Color.Gold,
+			BattleWeather.Sandstorm => Color.SandyBrown,
+			BattleWeather.Snow => Color.LightCyan,
+			_ => Color.White
+		};
+
+		Rectangle bannerRect = new Rectangle(xPositionOnScreen + width / 2 - 210, yPositionOnScreen + 16, 420, 32);
+		b.Draw(Game1.staminaRect, bannerRect, boxBg);
+		DrawBorder(b, bannerRect, 1, borderColor);
+		PokemonUI.Text(b, Game1.tinyFont, weatherText, bannerRect, Color.White, center: true, maxScale: 0.88f);
 	}
 
 	private void DrawMessagePanel(SpriteBatch b)

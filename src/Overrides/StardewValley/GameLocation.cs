@@ -9035,6 +9035,39 @@ public class GameLocation : INetObject<NetFields>, IEquatable<GameLocation>, IAn
 				Game1.activeClickableMenu = new ForgeMenu();
 				return true;
 			case "SummitBoulder":
+				if (StardewValley.Pokemon.PlayerParty.Instance.HasChosenStarter)
+				{
+					Response[] champResponses = new Response[]
+					{
+						new Response("Red", "Desafiar o Campeão Red (Kanto)"),
+						new Response("Steven", "Desafiar o Campeão Steven Stone (Hoenn)"),
+						new Response("Inspect", "Apenas ler as inscrições da pedra")
+					};
+					createQuestionDialogue("O vento gélido uiva no pico da montanha... A aura de lendários Campeões ecoa pelo horizonte:", champResponses, delegate(Farmer f, string whichAnswer)
+					{
+						if (whichAnswer == "Red")
+						{
+							var redTeam = StardewValley.Pokemon.NPCTeams.GetTeam("Red");
+							if (redTeam != null && redTeam.Count > 0)
+							{
+								Game1.activeClickableMenu = new StardewValley.Pokemon.PokemonBattleMenu("Red", redTeam);
+							}
+						}
+						else if (whichAnswer == "Steven")
+						{
+							var stevenTeam = StardewValley.Pokemon.NPCTeams.GetTeam("Steven");
+							if (stevenTeam != null && stevenTeam.Count > 0)
+							{
+								Game1.activeClickableMenu = new StardewValley.Pokemon.PokemonBattleMenu("Steven", stevenTeam);
+							}
+						}
+						else
+						{
+							Game1.drawObjectDialogue(Game1.content.LoadString("Strings\\Locations:SummitBoulder"));
+						}
+					});
+					return true;
+				}
 				Game1.drawObjectDialogue(Game1.content.LoadString("Strings\\Locations:SummitBoulder"));
 				break;
 			case "QiCat":

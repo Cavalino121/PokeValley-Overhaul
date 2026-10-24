@@ -3053,7 +3053,13 @@ public class NPC : Character, IComparable
 			else
 			{
 				grantConversationFriendship(who);
-				if (CurrentDialogue.Count > 0)
+				var activePoke = StardewValley.Pokemon.PlayerParty.Instance.ActivePokemon;
+				string customReaction = GetPokemonReactionDialogue(base.Name, activePoke);
+				if (!string.IsNullOrEmpty(customReaction) && Game1.random.NextDouble() < 0.65)
+				{
+					Game1.drawObjectDialogue($"{displayName}: {customReaction}");
+				}
+				else if (CurrentDialogue.Count > 0)
 				{
 					Game1.drawDialogue(this);
 				}
@@ -3065,6 +3071,89 @@ public class NPC : Character, IComparable
 		}, this);
 
 		return true;
+	}
+
+
+	private static string GetPokemonReactionDialogue(string npcName, StardewValley.Pokemon.PokemonInstance poke)
+	{
+		if (poke == null || poke.Species == null) return null;
+
+		string name = npcName?.Trim() ?? "";
+
+		// Shiny Special Reactions
+		if (poke.IsShiny)
+		{
+			if (name.Equals("Haley", StringComparison.OrdinalIgnoreCase))
+				return $"Espera... o seu {poke.Nickname} brilha com estrelas douradas?! Isso daria uma foto premiada de capa de revista!";
+			if (name.Equals("Emily", StringComparison.OrdinalIgnoreCase))
+				return $"Uau! O brilho prismático que emana de {poke.Nickname} tem uma vibração espiritual tão pura e luminosa!";
+		}
+
+		if (name.Equals("Clint", StringComparison.OrdinalIgnoreCase))
+		{
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Steel) || poke.HasType(StardewValley.Pokemon.PokemonType.Rock))
+				return $"Nossa, veja a têmpera metálica desse {poke.Nickname}! Essa blindagem parece mais densa e resistente que o próprio minério de irídio!";
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Fire))
+				return $"Esse calor vindo de {poke.Nickname}... se eu tivesse uma chama dessa na fornalha, derreteria barras de ferro em segundos.";
+		}
+		else if (name.Equals("Abigail", StringComparison.OrdinalIgnoreCase))
+		{
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Ghost) || poke.HasType(StardewValley.Pokemon.PokemonType.Dark))
+				return $"Uau! O seu {poke.Nickname} tem uma energia espectral fascinante... Ele gosta de explorar o cemitério à noite comigo?";
+		}
+		else if (name.Equals("Willy", StringComparison.OrdinalIgnoreCase))
+		{
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Water))
+				return $"Pelas barbas de Netuno! Que exemplar espetacular de {poke.Nickname}! Digno do orgulho de qualquer velho pescador!";
+		}
+		else if (name.Equals("Maru", StringComparison.OrdinalIgnoreCase))
+		{
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Electric) || poke.HasType(StardewValley.Pokemon.PokemonType.Steel))
+				return $"Incrível! As oscilações eletromagnéticas que o {poke.Nickname} emite geram uma voltagem perfeitamente limpa. Poderíamos alimentar telescópios inteiros com isso!";
+		}
+		else if (name.Equals("Demetrius", StringComparison.OrdinalIgnoreCase))
+		{
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Dragon) || poke.HasType(StardewValley.Pokemon.PokemonType.Grass))
+				return $"Fascinante! A morfologia celular e a biomecânica de {poke.Nickname} são uma verdadeira maravilha da biologia adaptativa do Vale.";
+		}
+		else if (name.Equals("Linus", StringComparison.OrdinalIgnoreCase))
+		{
+			return $"O seu {poke.Nickname} parece muito sereno e saudável ao ar livre. É bom ver alguém que trata as criaturas com o carinho que a natureza merece.";
+		}
+		else if (name.Equals("Wizard", StringComparison.OrdinalIgnoreCase) || name.Equals("Rasmodius", StringComparison.OrdinalIgnoreCase))
+		{
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Psychic) || poke.HasType(StardewValley.Pokemon.PokemonType.Fairy))
+				return $"Sinto as ressonâncias do plano etéreo convergindo no seu {poke.Nickname}... Os arcanos sussurram com grande respeito ao redor dele.";
+		}
+		else if (name.Equals("Krobus", StringComparison.OrdinalIgnoreCase))
+		{
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Ghost) || poke.HasType(StardewValley.Pokemon.PokemonType.Poison) || poke.HasType(StardewValley.Pokemon.PokemonType.Dark))
+				return $"O {poke.Nickname}... ele me olha sem medo no escuro. As criaturas do submundo acolhem seu parceiro com afeto.";
+		}
+		else if (name.Equals("Penny", StringComparison.OrdinalIgnoreCase))
+		{
+			return $"Oh, que doce! As crianças da escola com certeza iam adorar conhecer e fazer carinho no {poke.Nickname}!";
+		}
+		else if (name.Equals("Sebastian", StringComparison.OrdinalIgnoreCase))
+		{
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Dark) || poke.HasType(StardewValley.Pokemon.PokemonType.Ghost))
+				return $"Gostei do seu {poke.Nickname}. Calmo, discreto e combina perfeitamente com um dia chuvoso.";
+		}
+		else if (name.Equals("Alex", StringComparison.OrdinalIgnoreCase))
+		{
+			return $"Olha só o porte e a agilidade do seu {poke.Nickname}! Aposto que ele aguenta uma corrida de 10km na praia comigo.";
+		}
+		else if (name.Equals("Elliott", StringComparison.OrdinalIgnoreCase))
+		{
+			if (poke.HasType(StardewValley.Pokemon.PokemonType.Water) || poke.HasType(StardewValley.Pokemon.PokemonType.Dragon))
+				return $"Que criatura poética! A postura de {poke.Nickname} flui através do ar como a estrofe mais inspirada de uma balada marítima.";
+		}
+		else if (name.Equals("Harvey", StringComparison.OrdinalIgnoreCase))
+		{
+			return $"Fico muito feliz em ver seu {poke.Nickname} tão disposto e saudável. A prevenção é sempre o melhor cuidado médico!";
+		}
+
+		return null;
 	}
 
 	public void grantConversationFriendship(Farmer who, int amount = 20)
