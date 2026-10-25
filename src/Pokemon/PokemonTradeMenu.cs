@@ -54,6 +54,8 @@ public class PokemonTradeMenu : IClickableMenu
 	private readonly long _myPlayerId;
 	private TradeState _state = TradeState.WaitingForPartner;
 	private bool _isSoloNpcMode = false;
+	private volatile bool _partnerCancelled = false;
+	private string _partnerCancelMessage = "";
 	private long _partnerId = 0;
 	private string _partnerName = "";
 	private bool _myConfirmed = false;
@@ -359,8 +361,8 @@ public class PokemonTradeMenu : IClickableMenu
 				if (_partnerId == senderId || _state == TradeState.Selecting || _state == TradeState.WaitingForPartner)
 				{
 					string pName = !string.IsNullOrEmpty(_partnerName) ? _partnerName : "O outro jogador";
-					Game1.showRedMessage($"{pName} encerrou a sessão de troca.");
-					CloseAndCleanup(notifyPartner: false);
+					_partnerCancelled = true;
+					_partnerCancelMessage = $"{pName} cancelou a sessão de troca.";
 				}
 				break;
 		}
@@ -481,6 +483,18 @@ public class PokemonTradeMenu : IClickableMenu
 
 	public override void update(GameTime time)
 	{
+		if (_partnerCancelled)
+		{
+			CloseAndCleanup(notifyPartner: false);
+			Game1.playSound("cancel");
+			if (!string.IsNullOrEmpty(_partnerCancelMessage))
+			{
+				Game1.showRedMessage(_partnerCancelMessage);
+				Game1.addHUDMessage(new HUDMessage(_partnerCancelMessage, 3));
+			}
+			return;
+		}
+
 		base.update(time);
 		float dt = (float)time.ElapsedGameTime.TotalSeconds;
 
@@ -619,6 +633,13 @@ public class PokemonTradeMenu : IClickableMenu
 		base.receiveGamePadButton(button);
 
 		if (_state == TradeState.Transferring) return;
+
+		if (button == Buttons.B)
+		{
+			Game1.playSound("bigDeSelect");
+			CloseAndCleanup(notifyPartner: true);
+			return;
+		}
 
 		var party = PlayerParty.GetForFarmer(_myPlayerId).Team;
 

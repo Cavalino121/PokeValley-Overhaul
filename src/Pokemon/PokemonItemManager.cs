@@ -289,7 +289,23 @@ public static class PokemonItemManager
 		RegisterSimple(objectData, "PokemonDuskStone", "Pedra do Crepúsculo", "Uma pedra com sombras etéreas que induz evolução em certos Pokémon.", 3000, 84);
 		RegisterSimple(objectData, "PokemonDawnStone", "Pedra da Alvorada", "Uma pedra com brilho matinal que induz evolução em certos Pokémon.", 3000, 84);
 		RegisterSimple(objectData, "PokemonIceStone", "Pedra do Gelo", "Uma pedra cristalina congelante que induz evolução em certos Pokémon.", 3000, 84);
+		RegisterSimple(objectData, "PokemonOvalStone", "Pedra Oval", "Uma pedra redonda e lisa que induz evolução em certos Pokémon bebês.", 2000, 84);
 		RegisterSimple(objectData, "PokemonLinkCable", "Cabo de Ligação", "Dispositivo misterioso que emite energia de troca, permitindo evoluções de troca instantaneamente.", 3500, 84);
+		RegisterSimple(objectData, "PokemonLinkingCord", "Cabo de Ligação", "Dispositivo misterioso que emite energia de troca, permitindo evoluções de troca instantaneamente.", 3500, 84);
+		RegisterSimple(objectData, "PokemonMetalCoat", "Revestimento Metálico (Metal Coat)", "Película de aço especial que fortalece ataques de Aço e induz evolução em certos Pokémon como Onix e Scyther.", 4000, 84);
+		RegisterSimple(objectData, "PokemonKingsRock", "Pedra do Rei (King's Rock)", "Coroa misteriosa que pode fazer o oponente recuar e induz evolução em Poliwhirl e Slowpoke.", 4000, 84);
+		RegisterSimple(objectData, "PokemonProtector", "Protetor (Protector)", "Equipamento de proteção ultra pesado que induz evolução em Rhydon.", 4000, 84);
+		RegisterSimple(objectData, "PokemonElectirizer", "Eletrizador (Electirizer)", "Caixa cheia de tremenda energia elétrica que induz evolução em Electabuzz.", 4000, 84);
+		RegisterSimple(objectData, "PokemonMagmarizer", "Magmarizador (Magmarizer)", "Caixa cheia de calor magmático fervente que induz evolução em Magmar.", 4000, 84);
+		RegisterSimple(objectData, "PokemonUpGrade", "Upgrade (Up-Grade)", "Dispositivo de dados óticos transparente que induz evolução em Porygon.", 4000, 84);
+		RegisterSimple(objectData, "PokemonDubiousDisc", "Disco Duvidoso (Dubious Disc)", "Dispositivo de dados suspeito e misterioso que induz evolução em Porygon2.", 4000, 84);
+		RegisterSimple(objectData, "PokemonReaperCloth", "Manto da Noite (Reaper Cloth)", "Tecido impregnado com energia fantasmagórica que induz evolução em Dusclops.", 4000, 84);
+		RegisterSimple(objectData, "PokemonDragonScale", "Escama de Dragão (Dragon Scale)", "Escama grossa e brilhante que induz evolução em Seadra.", 4000, 84);
+		RegisterSimple(objectData, "PokemonPrismScale", "Escama de Prisma (Prism Scale)", "Escama misteriosa com o brilho do arco-íris que induz evolução em Feebas.", 4000, 84);
+		RegisterSimple(objectData, "PokemonWhippedDream", "Chantilly dos Sonhos (Whipped Dream)", "Doce espumoso e perfumado que induz evolução em Swirlix.", 4000, 84);
+		RegisterSimple(objectData, "PokemonSachet", "Sachê Aromático (Sachet)", "Bolsinha perfumada que induz evolução em Spritzee.", 4000, 84);
+		RegisterSimple(objectData, "PokemonRazorClaw", "Garra Navalha (Razor Claw)", "Garra afiada que eleva golpes críticos e induz evolução em Sneasel.", 4000, 84);
+		RegisterSimple(objectData, "PokemonRazorFang", "Presa Navalha (Razor Fang)", "Presa afiada que pode amedrontar oponentes e induz evolução em Gligar.", 4000, 84);
 
 		// Register Exp. Share & Gimmick Rings as Equippable Stardew Valley Rings (Category -96, Type "Ring")
 		RegisterRing(objectData, "PokemonExpShare", "Anel Exp. Share", "Equipamento especial na categoria Anel. Enquanto equipado no jogador, compartilha a experiência das batalhas Pokémon com toda a equipe (estilo Gen 6+).", 5000, 517);
@@ -1178,7 +1194,21 @@ public static class PokemonItemManager
 			"PokemonHealingMachine" or "HealingMachine" => "full_heal.png",
 			"PokemonPC" or "PC" => "pokemon_box_link.png",
 			"PokemonTradeTerminal" or "TradeTerminal" => "trade_terminal.png",
-			"PokemonLinkCable" or "LinkCable" => "linking_cord.png",
+			"PokemonLinkCable" or "LinkCable" or "PokemonLinkingCord" or "LinkingCord" => "linking_cord.png",
+			"PokemonProtector" or "Protector" => "protector.png",
+			"PokemonElectirizer" or "Electirizer" => "electirizer.png",
+			"PokemonMagmarizer" or "Magmarizer" => "magmarizer.png",
+			"PokemonUpGrade" or "UpGrade" or "Upgrade" => "upgrade.png",
+			"PokemonDubiousDisc" or "DubiousDisc" => "dubious_disc.png",
+			"PokemonReaperCloth" or "ReaperCloth" => "reaper_cloth.png",
+			"PokemonDragonScale" or "DragonScale" => "dragon_scale.png",
+			"PokemonPrismScale" or "PrismScale" => "prism_scale.png",
+			"PokemonWhippedDream" or "WhippedDream" => "whipped_dream.png",
+			"PokemonSachet" or "Sachet" => "sachet.png",
+			"PokemonRazorClaw" or "RazorClaw" => "razor_claw.png",
+			"PokemonRazorFang" or "RazorFang" => "razor_fang.png",
+			"PokemonKingsRock" or "KingsRock" => "kings_rock.png",
+			"PokemonMetalCoat" or "MetalCoat" => "metal_coat.png",
 
 			"PokemonAntidote" or "Antidote" => "antidote.png",
 			"PokemonParalyzeHeal" or "ParalyzeHeal" => "paralyze_heal.png",
@@ -1245,6 +1275,8 @@ public static class PokemonItemManager
 		string[] searchFolders = new[]
 		{
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Pokemon"),
+			@"D:\Projetos\Nova pasta\pokeemerald-expansion\graphics\items\icons",
+			@"D:\Projetos\Nova pasta\pokeemerald\graphics\items\icons",
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald-expansion", "graphics", "items", "icons"),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "items", "icons"),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeplatinum", "res", "items", "icons")

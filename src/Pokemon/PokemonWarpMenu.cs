@@ -121,8 +121,8 @@ public class PokemonWarpMenu : IClickableMenu
 				Name = "Montanhas & Minas",
 				Description = "Entrada das Minas, Carpintaria e Lago.",
 				TargetLocation = "Mountain",
-				TargetX = 31,
-				TargetY = 20,
+				TargetX = 54,
+				TargetY = 35,
 				MapCoord = new Vector2(mapX + (int)(mapW * 0.65f), mapY + (int)(mapH * 0.20f))
 			},
 			new WarpDestination

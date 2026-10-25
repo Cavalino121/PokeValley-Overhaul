@@ -13,7 +13,7 @@ public static class PokemonEncounterManager
 	private static readonly Dictionary<long, int> _lastEncounterTickByFarmer = new();
 	private static readonly Dictionary<long, Vector2> _lastEncounterTileByFarmer = new();
 
-	private class OverworldWildSpawn
+	public class OverworldWildSpawn
 	{
 		public PokemonInstance Instance;
 		public Vector2 Position;
@@ -22,6 +22,14 @@ public static class PokemonEncounterManager
 		public bool IsMoving;
 		public int FacingDir = 2;
 		public float WalkAnimTimer;
+		public float DespawnTimer = 300f;
+		public float ContactCooldown = 0f;
+		public bool MarkedForRemoval = false;
+
+		public void Remove()
+		{
+			MarkedForRemoval = true;
+		}
 	}
 
 	private class LocationSpawnState
@@ -168,18 +176,48 @@ public static class PokemonEncounterManager
 				}
 			}
 
+			if (s.ContactCooldown > 0f)
+			{
+				s.ContactCooldown = Math.Max(0f, s.ContactCooldown - dt);
+			}
+
+			// Despawn check when no farmers are within 15 tiles (960px)
+			bool anyFarmerNearby = false;
+			foreach (var f in loc.farmers)
+			{
+				if (Vector2.Distance(f.Position, s.Position) <= 960f)
+				{
+					anyFarmerNearby = true;
+					break;
+				}
+			}
+			if (!anyFarmerNearby)
+			{
+				s.DespawnTimer -= dt;
+				if (s.DespawnTimer <= 0f)
+				{
+					s.MarkedForRemoval = true;
+				}
+			}
+
+			if (s.MarkedForRemoval)
+			{
+				state.Spawns.RemoveAt(i);
+				continue;
+			}
+
 			// Trigger wild encounter on player contact
-			if (Game1.activeClickableMenu == null && (Game1.ticks - lastTick >= 150) && PokemonItemUse.RepelSteps <= 0)
+			if (Game1.activeClickableMenu == null && s.ContactCooldown <= 0f && (Game1.ticks - lastTick >= 150) && PokemonItemUse.RepelSteps <= 0)
 			{
 				Rectangle pBox = player.GetBoundingBox();
 				float dist = Vector2.Distance(new Vector2(pBox.Center.X, pBox.Center.Y), s.Position);
 				if (dist <= 48f)
 				{
 					var wildInst = s.Instance;
-					state.Spawns.RemoveAt(i);
+					s.ContactCooldown = 4.0f; // Keep spawn in world, with cooldown if fleeing
 					_lastEncounterTickByFarmer[fid] = Game1.ticks;
 					Game1.playSound("dwoop");
-					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
+					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true, sourceSpawn: s);
 					return;
 				}
 			}
@@ -328,6 +366,39 @@ public static class PokemonEncounterManager
 			Game1.playSound("dwoop");
 			Game1.activeClickableMenu = new PokemonBattleMenu(wildInstance, isWild: true);
 		}
+	}
+
+	public static OverworldWildSpawn SpawnWildAt(GameLocation loc, Point tile, string speciesName, int level = -1, bool? isShiny = null)
+	{
+		if (loc == null) loc = Game1.currentLocation;
+		if (loc == null) return null;
+
+		var species = PokemonSpecies.Get(speciesName);
+		if (species == null) return null;
+
+		string locKey = loc.NameOrUniqueName ?? loc.Name;
+		if (!_spawnsByLocation.TryGetValue(locKey, out var state))
+		{
+			state = new LocationSpawnState();
+			_spawnsByLocation[locKey] = state;
+		}
+
+		if (level <= 0) level = GetScaledWildLevel();
+		bool shiny = isShiny ?? RollWildShiny();
+
+		var inst = new PokemonInstance(species, level, isShiny: shiny);
+		Vector2 worldPos = new Vector2(tile.X * 64f + 32f, tile.Y * 64f + 32f);
+
+		var spawn = new OverworldWildSpawn
+		{
+			Instance = inst,
+			Position = worldPos,
+			MoveTimer = 0.5f,
+			FacingDir = Game1.random.Next(4),
+			DespawnTimer = 600f
+		};
+		state.Spawns.Add(spawn);
+		return spawn;
 	}
 
 	public static string GetWildSpeciesForLocation(GameLocation location, bool isNight, bool isRain)

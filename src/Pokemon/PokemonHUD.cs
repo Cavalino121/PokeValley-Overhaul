@@ -61,6 +61,8 @@ public class PokemonHUD
 	private static Texture2D _pokedexTex;
 	private static bool _triedLoadPokedexTex = false;
 
+	public static bool SuppressR3Chat = false;
+
 	public bool Visible { get; set; } = true;
 
 	private PokemonHUD(long farmerId)
@@ -203,9 +205,14 @@ public class PokemonHUD
 		// - Hold L3 + Y: Open Pokedex
 		if (gp.IsConnected)
 		{
-			if (gp.IsButtonDown(Buttons.RightStick) && !_previousGamePadState.IsButtonDown(Buttons.RightStick))
+			if (gp.IsButtonDown(Buttons.RightStick))
 			{
-				Party.CycleActive();
+				SuppressR3Chat = true;
+				Game1.rightStickHoldTime = 0;
+				if (!_previousGamePadState.IsButtonDown(Buttons.RightStick))
+				{
+					Party.CycleActive();
+				}
 			}
 
 			if (gp.IsButtonDown(Buttons.LeftStick))

@@ -19,7 +19,8 @@ public class PokemonDebugMenu : IClickableMenu
 		Battle,
 		Cheats,
 		Mechanics,
-		UpdatesV2
+		UpdatesV2,
+		Legendaries
 	}
 
 	private enum StyleFilter
@@ -34,6 +35,7 @@ public class PokemonDebugMenu : IClickableMenu
 	private int _selectedLevel = 25;
 	private int _speciesPage = 0;
 	private int _tmPage = 0;
+	private int _legendaryPage = 0;
 	private bool _filterFieldMovesOnly = false;
 	private bool _selectingWildBattleTarget = false;
 	private bool _spawnAsEgg = false;
@@ -61,6 +63,7 @@ public class PokemonDebugMenu : IClickableMenu
 	private readonly List<ClickableComponent> _cheatButtons = new();
 	private readonly List<ClickableComponent> _mechanicButtons = new();
 	private readonly List<ClickableComponent> _updateButtons = new();
+	private readonly List<ClickableComponent> _legendaryButtons = new();
 
 	private ClickableComponent _prevPageButton;
 	private ClickableComponent _nextPageButton;
@@ -72,9 +75,33 @@ public class PokemonDebugMenu : IClickableMenu
 	private ClickableComponent _giveAllTmsButton;
 	private ClickableComponent _tmPrevPageButton;
 	private ClickableComponent _tmNextPageButton;
+	private ClickableComponent _legPrevPageButton;
+	private ClickableComponent _legNextPageButton;
 	private ClickableTextureComponent _closeButton;
 
 	private static readonly int[] DebugLevels = new[] { 5, 15, 30, 50, 75, 100 };
+
+	private static readonly string[] AllLegendariesList = new[]
+	{
+		// Gen 1
+		"Articuno", "Zapdos", "Moltres", "Mewtwo", "Mew",
+		// Gen 2
+		"Raikou", "Entei", "Suicune", "Lugia", "Ho-Oh", "Celebi",
+		// Gen 3
+		"Regirock", "Regice", "Registeel", "Latias", "Latios", "Kyogre", "Groudon", "Rayquaza", "Jirachi", "Deoxys",
+		// Gen 4
+		"Uxie", "Mesprit", "Azelf", "Dialga", "Palkia", "Heatran", "Regigigas", "Giratina", "Cresselia", "Phione", "Manaphy", "Darkrai", "Shaymin", "Arceus",
+		// Gen 5
+		"Victini", "Cobalion", "Terrakion", "Virizion", "Tornadus", "Thundurus", "Reshiram", "Zekrom", "Landorus", "Kyurem", "Keldeo", "Meloetta", "Genesect",
+		// Gen 6
+		"Xerneas", "Yveltal", "Zygarde", "Diancie", "Hoopa", "Volcanion",
+		// Gen 7
+		"Type: Null", "Silvally", "Tapu Koko", "Tapu Lele", "Tapu Bulu", "Tapu Fini", "Cosmog", "Cosmoem", "Solgaleo", "Lunala", "Nihilego", "Buzzwole", "Pheromosa", "Xurkitree", "Celesteela", "Kartana", "Guzzlord", "Necrozma", "Magearna", "Marshadow", "Poipole", "Naganadel", "Stakataka", "Blacephalon", "Zeraora", "Meltan", "Melmetal",
+		// Gen 8
+		"Zacian", "Zamazenta", "Eternatus", "Kubfu", "Urshifu", "Zarude", "Regieleki", "Regidrago", "Glastrier", "Spectrier", "Calyrex", "Enamorus",
+		// Gen 9
+		"Wo-Chien", "Chien-Pao", "Ting-Lu", "Chi-Yu", "Roaring Moon", "Iron Valiant", "Koraidon", "Miraidon", "Walking Wake", "Iron Leaves", "Okidogi", "Munkidori", "Fezandipiti", "Ogerpon", "Gouging Fire", "Raging Bolt", "Iron Boulder", "Iron Crown", "Terapagos", "Pecharunt"
+	};
 
 	private static readonly string[] AllRegionsList = new[]
 	{
@@ -105,7 +132,7 @@ public class PokemonDebugMenu : IClickableMenu
 
 	public void SetDebugState(int tabIndex, int page = 0, bool fieldMovesOnly = false)
 	{
-		_currentTab = (Tab)Math.Clamp(tabIndex, 0, 6);
+		_currentTab = (Tab)Math.Clamp(tabIndex, 0, 7);
 		_speciesPage = page;
 		_tmPage = page;
 		_filterFieldMovesOnly = fieldMovesOnly;
@@ -149,12 +176,13 @@ public class PokemonDebugMenu : IClickableMenu
 		_cheatButtons.Clear();
 		_mechanicButtons.Clear();
 		_updateButtons.Clear();
+		_legendaryButtons.Clear();
 
 		int startX = xPositionOnScreen + 30;
 		int startY = yPositionOnScreen + 44;
 
-		// 7 Tabs across 840px (116px width + 4px gap)
-		int tabW = 116;
+		// 8 Tabs across 840px (101px width + 4px gap)
+		int tabW = 101;
 		int tabGap = 4;
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX, startY, tabW, 40), "Pokemon", "1. Pokémon"));
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap), startY, tabW, 40), "Items", "2. Itens"));
@@ -162,7 +190,8 @@ public class PokemonDebugMenu : IClickableMenu
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 3, startY, tabW, 40), "Battle", "4. Batalha"));
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 4, startY, tabW, 40), "Cheats", "5. Extras"));
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 5, startY, tabW, 40), "Mechanics", "6. Mecânicas"));
-		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 6, startY, tabW + 4, 40), "UpdatesV2", "7. v2.0 Novos"));
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 6, startY, tabW, 40), "UpdatesV2", "7. v2.0 Novos"));
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 7, startY, tabW, 40), "Legendaries", "8. Lendários"));
 
 		int contentY = startY + 50;
 
@@ -335,30 +364,74 @@ public class PokemonDebugMenu : IClickableMenu
 		_mechanicButtons.Add(new ClickableComponent(new Rectangle(startX, mStartY + 352, btnW * 2 + 16, 42), "mech_cycle_tera_type", "8. 💎 Ciclar Tera Type do Pokémon Ativo da Equipe"));
 
 		// 8. UpdatesV2 Buttons (Tab 7: Novidades v2.0, v1.4 e v1.3)
-		int uStartY = contentY + 10;
-		int uRowStep = 44;
-		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY, btnW, 40), "v2_battle_red", "🏔️ Batalhar vs Campeão Red (Cume - Nv. 50)"));
-		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY, btnW, 40), "v2_battle_steven", "💎 Batalhar vs Mestre Steven Stone (Cume - Nv. 40)"));
+		int uStartY = contentY + 2;
+		int uRowStep = 41;
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY, btnW, 38), "v2_battle_red", "🔴 Batalhar vs Campeão Red (Cume - Nv. 50)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY, btnW, 38), "v2_battle_steven", "💎 Batalhar vs Mestre Steven Stone (Cume - Nv. 40)"));
 
-		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep, btnW, 40), "v2_warp_summit", "🚀 Teleportar para o Cume da Montanha (Summit)"));
-		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep, btnW, 40), "v2_test_npc_reactions", "🗣️ Testar Reatividade dos Aldeões (Companheiro)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep, btnW, 38), "v2_warp_summit", "🚀 Teleportar para o Cume da Montanha (Summit)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep, btnW, 38), "v2_test_npc_reactions", "🗣️ Testar Reatividade dos Aldeões (Companheiro)"));
 
-		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 2, btnW, 40), "v2_battle_rain", "🌧️ Batalha com Clima: Chuva (Rain - 5 Turnos)"));
-		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 2, btnW, 40), "v2_battle_sun", "☀️ Batalha com Clima: Sol Forte (Harsh Sun - 5t)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 2, btnW, 38), "v2_battle_rain", "🌧️ Batalha com Clima: Chuva (Rain - 5 Turnos)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 2, btnW, 38), "v2_battle_sun", "☀️ Batalha com Clima: Sol Forte (Harsh Sun - 5t)"));
 
-		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 3, btnW, 40), "v2_battle_sandstorm", "🏜️ Batalha: Tempestade de Areia (Sandstorm - 5t)"));
-		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 3, btnW, 40), "v2_battle_snow", "❄️ Batalha com Clima: Nevasca (Snow - 5t)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 3, btnW, 38), "v2_give_incubator_egg", "🥚 Obter Chocadeira (Incubator) + Ovos"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 3, btnW, 38), "v2_warp_coop_incubator", "🏠 Teleportar p/ Chocadeira (Coop / Fazenda)"));
 
-		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 4, btnW, 40), "v2_give_linking_cord", "🔗 +5 Cabos de Ligação & 9 Itens de Troca"));
-		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 4, btnW, 40), "v2_test_solo_evo", "⚡ Testar Evolução Solo do Pokémon Ativo"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 4, btnW, 38), "v2_daycare_setup", "💞 Configurar Pais no Daycare (Pikachu F+M)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 4, btnW, 38), "v2_daycare_collect", "🧺 Gerar & Coletar Ovo Imediato do Daycare"));
 
-		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 5, btnW, 40), "v2_hatch_1_step", "🔥 Acelerar Ovos da Equipe (Falta 1 Passo)"));
-		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 5, btnW, 40), "v2_pc_full_restore", "🏥 Executar Rotina de Cura Total do PC Box"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 5, btnW, 38), "v2_warp_daycare", "🐎 Teleportar para o Daycare (Rancho Marnie)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 5, btnW, 38), "v2_hatch_1_step", "🔥 Acelerar Ovos da Equipe (Falta 1 Passo)"));
 
-		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 6, btnW, 40), "v2_inspect_rates", "📊 Inspecionar Catch Rate & EXP Canônico (Ativo)"));
-		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 6, btnW, 40), "v2_test_catch_formula", "🎯 Simular Equação Canônica de Captura (Gen 3-8)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 6, btnW, 38), "v2_give_linking_cord", "🔗 +5 Cabos de Ligação & 9 Itens de Troca"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 6, btnW, 38), "v2_test_solo_evo", "⚡ Testar Evolução Solo do Pokémon Ativo"));
 
-		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 7, btnW * 2 + 16, 42), "v2_test_all_gimmick_revert", "🔄 Reverter Todas as Gimmicks Ativas (Mega / Tera / Dynamax)"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 7, btnW, 38), "v2_pc_full_restore", "🏥 Executar Rotina de Cura Total do PC Box"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 7, btnW, 38), "v2_test_all_gimmick_revert", "🔄 Reverter Todas as Gimmicks Ativas"));
+
+		_updateButtons.Add(new ClickableComponent(new Rectangle(startX, uStartY + uRowStep * 8, btnW, 38), "v2_inspect_rates", "📊 Inspecionar Catch Rate & EXP Canônico"));
+		_updateButtons.Add(new ClickableComponent(new Rectangle(col2X, uStartY + uRowStep * 8, btnW, 38), "v2_test_catch_formula", "🎯 Simular Equação Canônica de Captura"));
+
+		// 9. Legendaries Buttons (Tab 8)
+		if (_currentTab == Tab.Legendaries)
+		{
+			int legCardsPerPage = 10;
+			int totalLegs = AllLegendariesList.Length;
+			int maxLegPages = Math.Max(0, (totalLegs - 1) / legCardsPerPage);
+			_legendaryPage = Math.Clamp(_legendaryPage, 0, maxLegPages);
+
+			int startLegIdx = _legendaryPage * legCardsPerPage;
+			int endLegIdx = Math.Min(totalLegs, startLegIdx + legCardsPerPage);
+
+			int lStartY = contentY + 2;
+			int cardH = 68;
+			int rowGap = 6;
+
+			for (int idx = startLegIdx; idx < endLegIdx; idx++)
+			{
+				int slot = idx - startLegIdx;
+				int col = slot % 2;
+				int row = slot / 2;
+				int cardX = (col == 0) ? startX : col2X;
+				int cardY = lStartY + row * (cardH + rowGap);
+
+				string legName = AllLegendariesList[idx];
+				_legendaryButtons.Add(new ClickableComponent(
+					new Rectangle(cardX + 228, cardY + 14, 86, 38),
+					"leg_boss_" + legName,
+					"⚔️ Boss"
+				));
+				_legendaryButtons.Add(new ClickableComponent(
+					new Rectangle(cardX + 318, cardY + 14, 86, 38),
+					"leg_spawn_" + legName,
+					"🌍 Spawn"
+				));
+			}
+
+			_legPrevPageButton = new ClickableComponent(new Rectangle(startX + 180, lStartY + 5 * (cardH + rowGap) + 8, 140, 36), "leg_prev", "◀ Anterior");
+			_legNextPageButton = new ClickableComponent(new Rectangle(startX + 520, lStartY + 5 * (cardH + rowGap) + 8, 140, 36), "leg_next", "Próximo ▶");
+		}
 	}
 
 	public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -672,6 +745,66 @@ public class PokemonDebugMenu : IClickableMenu
 				{
 					HandleUpdateV2Action(ub.name);
 					return;
+				}
+			}
+		}
+
+		// Tab 8: Legendaries
+		else if (_currentTab == Tab.Legendaries)
+		{
+			if (_legPrevPageButton != null && _legPrevPageButton.containsPoint(x, y))
+			{
+				int totalLegs = AllLegendariesList.Length;
+				int maxLegPages = Math.Max(0, (totalLegs - 1) / 10);
+				_legendaryPage = (_legendaryPage - 1 + (maxLegPages + 1)) % (maxLegPages + 1);
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+			if (_legNextPageButton != null && _legNextPageButton.containsPoint(x, y))
+			{
+				int totalLegs = AllLegendariesList.Length;
+				int maxLegPages = Math.Max(0, (totalLegs - 1) / 10);
+				_legendaryPage = (_legendaryPage + 1) % (maxLegPages + 1);
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+
+			foreach (var lb in _legendaryButtons)
+			{
+				if (lb.containsPoint(x, y))
+				{
+					if (lb.name.StartsWith("leg_boss_"))
+					{
+						string monName = lb.name.Substring("leg_boss_".Length);
+						var spec = PokemonSpecies.Get(monName);
+						if (spec != null)
+						{
+							var wildInst = new PokemonInstance(spec, 70, isShiny: PokemonEncounterManager.RollWildShiny());
+							Game1.playSound("thunder");
+							var battle = new PokemonBattleMenu(wildInst, isWild: true);
+							Game1.activeClickableMenu = battle;
+						}
+						return;
+					}
+					else if (lb.name.StartsWith("leg_spawn_"))
+					{
+						string monName = lb.name.Substring("leg_spawn_".Length);
+						Point pTile = Game1.player.TilePoint;
+						Point spawnTile = new Point(pTile.X + 2, pTile.Y);
+						var spawn = PokemonEncounterManager.SpawnWildAt(Game1.currentLocation, spawnTile, monName, level: 70);
+						if (spawn != null)
+						{
+							Game1.playSound("reward");
+							Game1.addHUDMessage(new HUDMessage($"✨ {monName} selvagem apareceu no mapa em ({spawnTile.X}, {spawnTile.Y})!", 2));
+						}
+						else
+						{
+							Game1.showRedMessage($"Não foi possível spawnar {monName}!");
+						}
+						return;
+					}
 				}
 			}
 		}
@@ -1695,6 +1828,117 @@ public class PokemonDebugMenu : IClickableMenu
 			Game1.addHUDMessage(new HUDMessage("Todas as transformações (Mega, Tera, Dynamax) foram revertidas!", 1));
 			return;
 		}
+
+		// 11. Chocadeira & Ovos
+		if (action == "v2_give_incubator_egg")
+		{
+			Item incubator = ItemRegistry.Create("(BC)101", 1, 0, allowNull: true);
+			if (incubator == null) incubator = new StardewValley.Object(Vector2.Zero, "101");
+			Game1.player.addItemToInventory(incubator);
+
+			Item eggItem = ItemRegistry.Create("(O)PokemonEgg", 1, 0, allowNull: true);
+			if (eggItem == null) eggItem = new StardewValley.Object("PokemonEgg", 1);
+			Game1.player.addItemToInventory(eggItem);
+
+			var partyEgg = new PokemonInstance(PokemonSpecies.Get("Eevee"), 1)
+			{
+				IsEgg = true,
+				EggSteps = 100,
+				Nickname = "Ovo Pokémon"
+			};
+			Party.AddPokemon(partyEgg);
+
+			Game1.playSound("coin");
+			Game1.addHUDMessage(new HUDMessage("Chocadeira + Ovo (Item) + Ovo (Equipe) adicionados!", 1));
+			return;
+		}
+
+		if (action == "v2_warp_coop_incubator")
+		{
+			GameLocation target = null;
+			foreach (var loc in Game1.locations)
+			{
+				if (loc is AnimalHouse ah && (ah.Name.Contains("Coop") || ah.NameOrUniqueName.Contains("Coop")))
+				{
+					target = loc;
+					break;
+				}
+			}
+			if (target != null)
+			{
+				Game1.playSound("wand");
+				Game1.warpFarmer(target.NameOrUniqueName ?? target.Name, 2, 3, 2);
+				Game1.exitActiveMenu();
+				Game1.addHUDMessage(new HUDMessage("Teleportado para a Chocadeira no Galinheiro (Coop)!", 2));
+			}
+			else
+			{
+				Game1.playSound("wand");
+				Game1.warpFarmer("Farm", 64, 15, 2);
+				Game1.exitActiveMenu();
+				Game1.addHUDMessage(new HUDMessage("Teleportado para a Fazenda (Local da Chocadeira)!", 2));
+			}
+			return;
+		}
+
+		// 12. Daycare & Breeding
+		if (action == "v2_daycare_setup")
+		{
+			var spec = PokemonSpecies.Get("Pikachu");
+			var p1 = new PokemonInstance(spec, 30);
+			p1.Gender = "Female";
+			p1.Nickname = "Pikachu Mãe";
+			var p2 = new PokemonInstance(spec, 30);
+			p2.Gender = "Male";
+			p2.Nickname = "Pikachu Pai";
+
+			PokemonBreeding.DaycareParent1 = p1;
+			PokemonBreeding.DaycareParent2 = p2;
+			PokemonBreeding.ReadyEgg = PokemonBreeding.ProduceEgg(p1, p2);
+
+			Game1.playSound("reward");
+			Game1.addHUDMessage(new HUDMessage("Pais (Pikachu F + M) configurados no Daycare e Ovo gerado!", 2));
+			return;
+		}
+
+		if (action == "v2_daycare_collect")
+		{
+			if (PokemonBreeding.ReadyEgg == null && PokemonBreeding.DaycareParent1 != null && PokemonBreeding.DaycareParent2 != null)
+			{
+				PokemonBreeding.ReadyEgg = PokemonBreeding.ProduceEgg(PokemonBreeding.DaycareParent1, PokemonBreeding.DaycareParent2);
+			}
+			if (PokemonBreeding.ReadyEgg != null)
+			{
+				var egg = PokemonBreeding.ReadyEgg;
+				PokemonBreeding.ReadyEgg = null;
+				egg.EggSteps = 5;
+				Party.AddPokemon(egg);
+				Game1.playSound("reward");
+				Game1.addHUDMessage(new HUDMessage($"Ovo de {egg.Species?.Name ?? "Bebê"} coletado do Daycare (5 passos p/ chocar)!", 1));
+			}
+			else
+			{
+				var pichuEgg = new PokemonInstance(PokemonSpecies.Get("Pichu"), 1)
+				{
+					IsEgg = true,
+					EggSteps = 5,
+					Nickname = "Ovo Pokémon"
+				};
+				Party.AddPokemon(pichuEgg);
+				Game1.playSound("reward");
+				Game1.addHUDMessage(new HUDMessage("Ovo de Pichu gerado e coletado (5 passos para chocar)!", 1));
+			}
+			return;
+		}
+
+		if (action == "v2_warp_daycare")
+		{
+			Game1.playSound("wand");
+			Game1.warpFarmer("AnimalShop", 12, 14, 0);
+			Game1.exitActiveMenu();
+			Game1.addHUDMessage(new HUDMessage("Teleportado para o Rancho da Marnie (Daycare)!", 2));
+			return;
+		}
 	}
 
 	public override void receiveKeyPress(Keys key)
@@ -2059,6 +2303,81 @@ public class PokemonDebugMenu : IClickableMenu
 				IClickableMenu.drawTextureBox(b, ub.bounds.X, ub.bounds.Y, ub.bounds.Width, ub.bounds.Height, hov ? Color.PaleGoldenrod : Color.White);
 				PokemonUI.Text(b, Game1.smallFont, ub.label, new Rectangle(ub.bounds.X + 8, ub.bounds.Y + 4, ub.bounds.Width - 16, ub.bounds.Height - 8), hov ? Color.DarkBlue : Game1.textColor, center: true, maxScale: 0.78f, shadow: false);
 			}
+		}
+
+		// Tab 8: Legendaries
+		else if (_currentTab == Tab.Legendaries)
+		{
+			int legCardsPerPage = 10;
+			int totalLegs = AllLegendariesList.Length;
+			int maxLegPages = Math.Max(0, (totalLegs - 1) / legCardsPerPage);
+			int startLegIdx = _legendaryPage * legCardsPerPage;
+			int endLegIdx = Math.Min(totalLegs, startLegIdx + legCardsPerPage);
+
+			int lStartY = contentY + 2;
+			int col2X = startX + 424;
+			int cardH = 68;
+			int cardW = 412;
+			int rowGap = 6;
+
+			for (int idx = startLegIdx; idx < endLegIdx; idx++)
+			{
+				int slot = idx - startLegIdx;
+				int col = slot % 2;
+				int row = slot / 2;
+				int cardX = (col == 0) ? startX : col2X;
+				int cardY = lStartY + row * (cardH + rowGap);
+
+				string legName = AllLegendariesList[idx];
+				var spec = PokemonSpecies.Get(legName);
+
+				// Draw card background
+				Rectangle cardBox = new Rectangle(cardX, cardY, cardW, cardH);
+				IClickableMenu.drawTextureBox(b, cardBox.X, cardBox.Y, cardBox.Width, cardBox.Height, Color.White);
+
+				if (spec != null)
+				{
+					// Draw icon
+					var inst = GetPreviewInstance(spec, false);
+					Texture2D icon = inst?.GetIconSprite(Game1.graphics.GraphicsDevice);
+					if (icon != null)
+					{
+						Rectangle srcRect = inst.GetIconSourceRect();
+						b.Draw(icon, new Vector2(cardX + 8, cardY + 12), srcRect, Color.White, 0f, Vector2.Zero, 1.2f, SpriteEffects.None, 0.86f);
+					}
+
+					// Draw texts
+					string typeStr = spec.SecondaryType.HasValue ? $"{spec.PrimaryType}/{spec.SecondaryType.Value}" : $"{spec.PrimaryType}";
+					PokemonUI.Text(b, Game1.smallFont, $"#{spec.DexNumber} {spec.Name}", new Rectangle(cardX + 54, cardY + 12, 170, 22), Game1.textColor, center: false, maxScale: 0.80f, shadow: false);
+					PokemonUI.Text(b, Game1.tinyFont, $"Tipo: {typeStr} | Nv. 70", new Rectangle(cardX + 54, cardY + 36, 170, 18), Color.DimGray, center: false, maxScale: 0.90f, shadow: false);
+				}
+			}
+
+			// Draw action buttons
+			foreach (var lb in _legendaryButtons)
+			{
+				bool hov = lb.containsPoint(mouseX, mouseY);
+				Color btnColor = lb.name.StartsWith("leg_boss_")
+					? (hov ? Color.OrangeRed : Color.MistyRose)
+					: (hov ? Color.LightSkyBlue : Color.AliceBlue);
+				IClickableMenu.drawTextureBox(b, lb.bounds.X, lb.bounds.Y, lb.bounds.Width, lb.bounds.Height, btnColor);
+				PokemonUI.Text(b, Game1.smallFont, lb.label, new Rectangle(lb.bounds.X + 4, lb.bounds.Y + 4, lb.bounds.Width - 8, lb.bounds.Height - 8), Color.Black, center: true, maxScale: 0.78f, shadow: false);
+			}
+
+			// Draw pagination buttons and page number
+			if (_legPrevPageButton != null)
+			{
+				bool hov = _legPrevPageButton.containsPoint(mouseX, mouseY);
+				IClickableMenu.drawTextureBox(b, _legPrevPageButton.bounds.X, _legPrevPageButton.bounds.Y, _legPrevPageButton.bounds.Width, _legPrevPageButton.bounds.Height, hov ? Color.PaleGoldenrod : Color.White);
+				PokemonUI.Text(b, Game1.smallFont, _legPrevPageButton.label, _legPrevPageButton.bounds, hov ? Color.DarkBlue : Game1.textColor, center: true, maxScale: 0.82f, shadow: false);
+			}
+			if (_legNextPageButton != null)
+			{
+				bool hov = _legNextPageButton.containsPoint(mouseX, mouseY);
+				IClickableMenu.drawTextureBox(b, _legNextPageButton.bounds.X, _legNextPageButton.bounds.Y, _legNextPageButton.bounds.Width, _legNextPageButton.bounds.Height, hov ? Color.PaleGoldenrod : Color.White);
+				PokemonUI.Text(b, Game1.smallFont, _legNextPageButton.label, _legNextPageButton.bounds, hov ? Color.DarkBlue : Game1.textColor, center: true, maxScale: 0.82f, shadow: false);
+			}
+			PokemonUI.Text(b, Game1.smallFont, $"Página {_legendaryPage + 1} de {maxLegPages + 1}", new Rectangle(startX + 330, lStartY + 5 * (cardH + rowGap) + 12, 180, 28), Game1.textColor, center: true, maxScale: 0.82f, shadow: false);
 		}
 
 		// Close Button

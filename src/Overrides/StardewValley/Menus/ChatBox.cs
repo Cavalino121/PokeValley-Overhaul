@@ -583,6 +583,11 @@ public class ChatBox : IClickableMenu
 			StardewValley.Pokemon.PokemonTradeMenu.HandleNetworkTradePacket(sourceFarmer, message.Substring("[POKE_TRADE]:".Length));
 			return;
 		}
+		if (message != null && message.StartsWith("[POKE_BATTLE]:"))
+		{
+			StardewValley.Pokemon.PokemonPvPManager.ReceiveBattlePacket(sourceFarmer, message.Substring("[POKE_BATTLE]:".Length));
+			return;
+		}
 
 		string text = formatMessage(sourceFarmer, chatKind, message);
 		ChatMessage chatMessage = new ChatMessage();

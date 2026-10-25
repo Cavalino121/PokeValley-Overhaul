@@ -12512,13 +12512,17 @@ public class Game1 : InstanceGame
 				oldKBState = keyboardState;
 			}
 		}
-		else if (keyboardDispatcher.Subscriber == null && ((isOneOfTheseKeysDown(keyboardState, options.chatButton) && game1.HasKeyboardFocus()) || (!gamePadState.IsButtonDown(Buttons.RightStick) && rightStickHoldTime > 0 && rightStickHoldTime < emoteMenuShowTime)))
+		else if (keyboardDispatcher.Subscriber == null && ((isOneOfTheseKeysDown(keyboardState, options.chatButton) && game1.HasKeyboardFocus()) || (!StardewValley.Pokemon.PokemonHUD.SuppressR3Chat && !gamePadState.IsButtonDown(Buttons.RightStick) && rightStickHoldTime > 0 && rightStickHoldTime < emoteMenuShowTime)))
 		{
 			chatBox.activate();
 			if (keyboardState.IsKeyDown(Keys.OemQuestion))
 			{
 				chatBox.setText("/");
 			}
+		}
+		if (!gamePadState.IsButtonDown(Buttons.RightStick))
+		{
+			StardewValley.Pokemon.PokemonHUD.SuppressR3Chat = false;
 		}
 	}
 

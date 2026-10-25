@@ -27,9 +27,9 @@ public class GameMenu : IClickableMenu
 
 	public static readonly int optionsTab = 8;
 
-	public static readonly int exitTab = 9;
+	public static readonly int pokemonTab = 9;
 
-	public static readonly int pokemonTab = 10;
+	public static readonly int exitTab = 10;
 
 	public const int region_inventoryTab = 12340;
 
@@ -49,11 +49,11 @@ public class GameMenu : IClickableMenu
 
 	public const int region_optionsTab = 12348;
 
-	public const int region_exitTab = 12349;
+	public const int region_pokemonTab = 12349;
 
-	public const int region_pokemonTab = 12350;
+	public const int region_exitTab = 12350;
 
-	public static readonly int numberOfTabs = 10;
+	public static readonly int numberOfTabs = 11;
 
 	public int currentTab;
 
@@ -82,9 +82,9 @@ public class GameMenu : IClickableMenu
 		[mapTab] = "Strings\\UI:GameMenu_Map",
 		[craftingTab] = "Strings\\UI:GameMenu_Crafting",
 		[powersTab] = "Strings\\1_6_Strings:GameMenu_Powers",
-		[exitTab] = "Strings\\UI:GameMenu_Exit",
 		[collectionsTab] = "Strings\\UI:GameMenu_Collections",
 		[optionsTab] = "Strings\\UI:GameMenu_Options",
+		[pokemonTab] = "Equipe Pokémon",
 		[exitTab] = "Strings\\UI:GameMenu_Exit"
 	};
 
@@ -181,25 +181,26 @@ public class GameMenu : IClickableMenu
 		});
 		int num = ((LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.ru) ? 96 : ((LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.tr || LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.fr) ? 192 : 0));
 		pages.Add(new OptionsPage(xPositionOnScreen, yPositionOnScreen, width + num, height));
-		tabs.Add(new ClickableComponent(new Rectangle(xPositionOnScreen + 640, yPositionOnScreen + IClickableMenu.tabYPositionRelativeToMenuY + 64, 64, 64), "exit", Game1.content.LoadString("Strings\\UI:GameMenu_Exit"))
+		tabs.Add(new ClickableComponent(new Rectangle(xPositionOnScreen + 640, yPositionOnScreen + IClickableMenu.tabYPositionRelativeToMenuY + 64, 64, 64), "pokemon", "Equipe Pokémon")
 		{
 			myID = 12349,
-			downNeighborID = 9,
+			downNeighborID = 10,
 			rightNeighborID = 12350,
 			leftNeighborID = 12348,
 			tryDefaultIfNoDownNeighborExists = true,
 			fullyImmutable = true
 		});
-		pages.Add(new ExitPage(xPositionOnScreen, yPositionOnScreen, width - 64 - 16, height));
-		tabs.Add(new ClickableComponent(new Rectangle(xPositionOnScreen + 704, yPositionOnScreen + IClickableMenu.tabYPositionRelativeToMenuY + 64, 64, 64), "pokemon", "Equipe Pokémon")
+		pages.Add(new StardewValley.Pokemon.PokemonPartyPage(xPositionOnScreen, yPositionOnScreen, width, height));
+		tabs.Add(new ClickableComponent(new Rectangle(xPositionOnScreen + 704, yPositionOnScreen + IClickableMenu.tabYPositionRelativeToMenuY + 64, 64, 64), "exit", Game1.content.LoadString("Strings\\UI:GameMenu_Exit"))
 		{
 			myID = 12350,
-			downNeighborID = 10,
+			downNeighborID = 535,
+			rightNeighborID = -99999,
 			leftNeighborID = 12349,
 			tryDefaultIfNoDownNeighborExists = true,
 			fullyImmutable = true
 		});
-		pages.Add(new StardewValley.Pokemon.PokemonPartyPage(xPositionOnScreen, yPositionOnScreen, width, height));
+		pages.Add(new ExitPage(xPositionOnScreen, yPositionOnScreen, width - 64 - 16, height));
 		if (Game1.activeClickableMenu == null && playOpeningSound)
 		{
 			Game1.playSound("bigSelect");
@@ -439,6 +440,8 @@ public class GameMenu : IClickableMenu
 
 	public void changeTab(int whichTab, bool playSound = true)
 	{
+		hoverText = "";
+		descriptionText = "";
 		currentTab = getTabNumberFromName(tabs[whichTab].name);
 		if (currentTab == mapTab)
 		{
@@ -482,6 +485,13 @@ public class GameMenu : IClickableMenu
 			for (int i = 0; i < tabs.Count; i++)
 			{
 				tabs[i].downNeighborID = i;
+			}
+		}
+		else if (currentTab == pokemonTab)
+		{
+			for (int p = 0; p < tabs.Count; p++)
+			{
+				tabs[p].downNeighborID = 10;
 			}
 		}
 		else if (currentTab == exitTab)

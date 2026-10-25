@@ -7518,6 +7518,13 @@ public class Farmer : Character, IComparable
 			playNearbySoundAll("dwop", null, SoundContext.NPC);
 			return true;
 		}
+		if (who != this)
+		{
+			if (StardewValley.Pokemon.PokemonPvPManager.HandleFarmerInteraction(who, this, location))
+			{
+				return true;
+			}
+		}
 		return false;
 	}
 

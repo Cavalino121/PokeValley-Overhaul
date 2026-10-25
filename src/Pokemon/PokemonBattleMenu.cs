@@ -53,9 +53,11 @@ public class PokemonBattleMenu : IClickableMenu
 	public int EnemyIndex { get; private set; } = 0;
 	public PokemonInstance EnemyPokemon => (EnemyIndex >= 0 && EnemyIndex < EnemyTeam.Count) ? EnemyTeam[EnemyIndex] : null;
 
-	public List<PokemonInstance> PlayerTeam => PlayerParty.Instance.Team;
+	public long BattlerFarmerId { get; private set; }
+	public List<PokemonInstance> PlayerTeam { get; private set; }
 	public int PlayerActiveIndex { get; private set; } = 0;
-	public PokemonInstance PlayerPokemon => (PlayerActiveIndex >= 0 && PlayerActiveIndex < PlayerTeam.Count) ? PlayerTeam[PlayerActiveIndex] : null;
+	public PokemonInstance PlayerPokemon => (PlayerActiveIndex >= 0 && PlayerTeam != null && PlayerActiveIndex < PlayerTeam.Count) ? PlayerTeam[PlayerActiveIndex] : null;
+	public PokemonEncounterManager.OverworldWildSpawn SourceWildSpawn { get; set; }
 
 	public BattlePhase Phase { get; private set; } = BattlePhase.Intro;
 
@@ -753,11 +755,12 @@ private PokemonMove SelectEnemyMove()
 	}
 
 	// Wild Pokemon Battle Constructor
-	public PokemonBattleMenu(PokemonInstance wildPokemon, bool isWild = true)
+	public PokemonBattleMenu(PokemonInstance wildPokemon, bool isWild = true, PokemonEncounterManager.OverworldWildSpawn sourceSpawn = null)
 		: base(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height)
 	{
 		IsWild = isWild;
 		TrainerName = "Selvagem";
+		SourceWildSpawn = sourceSpawn;
 		EnemyTeam = new List<PokemonInstance> { wildPokemon };
 		EnemyIndex = 0;
 
@@ -786,13 +789,21 @@ private PokemonMove SelectEnemyMove()
 	{
 		IsSpectator = true;
 		WatchedBattle = targetBattle;
+		BattlerFarmerId = targetBattle?.BattlerFarmerId ?? 0L;
+		PlayerTeam = targetBattle?.PlayerTeam ?? new List<PokemonInstance>();
 		EnemyTeam = targetBattle?.EnemyTeam ?? new List<PokemonInstance>();
 		IsWild = targetBattle?.IsWild ?? false;
 		TrainerName = targetBattle?.TrainerName ?? "Batalha";
+		if (targetBattle != null)
+		{
+			_currentTheme = targetBattle._currentTheme;
+			CurrentWeather = targetBattle.CurrentWeather;
+			WeatherTurns = targetBattle.WeatherTurns;
+		}
 		_spectatorExitBtn = new ClickableComponent(
 			new Rectangle(Game1.uiViewport.Width - 210, 16, 190, 44),
 			"spectator_exit",
-			"👁️ Sair da Luta");
+			"👁️ Sair da Luta (B)");
 	}
 
 	private void InitBattle()
@@ -818,6 +829,9 @@ private PokemonMove SelectEnemyMove()
 		_enemySpAtkStage = 0;
 		_enemySpDefStage = 0;
 		_enemySpeedStage = 0;
+
+		BattlerFarmerId = Game1.player?.UniqueMultiplayerID ?? 0L;
+		PlayerTeam = PlayerParty.GetForFarmer(BattlerFarmerId).Team;
 
 		if (Game1.player != null)
 		{
@@ -2774,6 +2788,10 @@ private PokemonMove SelectEnemyMove()
 			_enemyRetrieveTimer = 0f;
 			Game1.playSound("wand");
 		}
+		else
+		{
+			SourceWildSpawn?.Remove();
+		}
 
 		QueueMessage($"{EnemyPokemon.Nickname} adversário desmaiou!", () =>
 		{
@@ -4169,6 +4187,7 @@ private PokemonMove SelectEnemyMove()
 					_captureStage = CaptureStage.None;
 					if (_capturingBallId == "HealBall") EnemyPokemon.FullRestore();
 					EnemyPokemon.EndBattleGimmicks(revertMega: true);
+					SourceWildSpawn?.Remove();
 					if (EnemyPokemon.Species != null)
 					{
 						Game1.player?.mailReceived?.Add("Poke_Caught_" + EnemyPokemon.Species.InternalName.ToLowerInvariant());
@@ -4315,24 +4334,32 @@ private PokemonMove SelectEnemyMove()
 		IClickableMenu.drawTextureBox(b, _boxX, _boxY, _boxWidth, _boxHeight, Color.White);
 		b.Draw(Game1.staminaRect, new Rectangle(0, _boxY - 3, width, 4), new Color(60, 45, 35));
 
-		// 9. Draw Subpanels based on Phase
-		switch (Phase)
+		// 9. Draw Subpanels based on Phase (Spectator always sees clean message panel)
+		bool isSpectatorViewing = (Game1.activeClickableMenu is PokemonBattleMenu sm && sm.IsSpectator);
+		if (isSpectatorViewing)
 		{
-			case BattlePhase.ActionSelect:
-				DrawActionSelectPanel(b);
-				break;
-			case BattlePhase.MoveSelect:
-				DrawMoveSelectPanel(b);
-				break;
-			case BattlePhase.BagSelect:
-				DrawBagSelectPanel(b);
-				break;
-			case BattlePhase.SwitchSelect:
-				DrawSwitchSelectPanel(b);
-				break;
-			default:
-				DrawMessagePanel(b);
-				break;
+			DrawMessagePanel(b);
+		}
+		else
+		{
+			switch (Phase)
+			{
+				case BattlePhase.ActionSelect:
+					DrawActionSelectPanel(b);
+					break;
+				case BattlePhase.MoveSelect:
+					DrawMoveSelectPanel(b);
+					break;
+				case BattlePhase.BagSelect:
+					DrawBagSelectPanel(b);
+					break;
+				case BattlePhase.SwitchSelect:
+					DrawSwitchSelectPanel(b);
+					break;
+				default:
+					DrawMessagePanel(b);
+					break;
+			}
 		}
 
 		if (_startupTransitionTimer > 0f)
