@@ -21,7 +21,8 @@ public class PokemonDebugMenu : IClickableMenu
 		Cheats,
 		Mechanics,
 		UpdatesV2,
-		Legendaries
+		Legendaries,
+		FormsAndEvos
 	}
 
 	private enum StyleFilter
@@ -37,6 +38,7 @@ public class PokemonDebugMenu : IClickableMenu
 	private int _speciesPage = 0;
 	private int _tmPage = 0;
 	private int _legendaryPage = 0;
+	private int _formsEvosPage = 0;
 	private bool _filterFieldMovesOnly = false;
 	private bool _selectingWildBattleTarget = false;
 	private bool _spawnAsEgg = false;
@@ -65,6 +67,7 @@ public class PokemonDebugMenu : IClickableMenu
 	private readonly List<ClickableComponent> _mechanicButtons = new();
 	private readonly List<ClickableComponent> _updateButtons = new();
 	private readonly List<ClickableComponent> _legendaryButtons = new();
+	private readonly List<ClickableComponent> _formsEvosButtons = new();
 
 	private ClickableComponent _prevPageButton;
 	private ClickableComponent _nextPageButton;
@@ -78,7 +81,52 @@ public class PokemonDebugMenu : IClickableMenu
 	private ClickableComponent _tmNextPageButton;
 	private ClickableComponent _legPrevPageButton;
 	private ClickableComponent _legNextPageButton;
+	private ClickableComponent _fePrevPageButton;
+	private ClickableComponent _feNextPageButton;
+	private ClickableComponent _clearSpawnsBottomButton;
 	private ClickableTextureComponent _closeButton;
+
+	public record LegendaryFormEvoEntry(
+		string BaseName,
+		string PreviewKey,
+		string Title,
+		string Subtitle,
+		string[] ExtraItems,
+		int RareCandyCount = 0,
+		string PartnerSpecies = null
+	);
+
+	private static readonly LegendaryFormEvoEntry[] AllLegendaryFormEvoEntries = new[]
+	{
+		new LegendaryFormEvoEntry("Kyogre", "kyogre/primal", "Kyogre ➔ Primal Kyogre", "Item: Blue Orb (Reversão Primordial)", new[] { "Poke_BlueOrb", "Poke_MegaBracelet" }),
+		new LegendaryFormEvoEntry("Groudon", "groudon/primal", "Groudon ➔ Primal Groudon", "Item: Red Orb (Reversão Primordial)", new[] { "Poke_RedOrb", "Poke_MegaBracelet" }),
+		new LegendaryFormEvoEntry("Rayquaza", "rayquaza/mega", "Rayquaza ➔ Mega Rayquaza", "Golpe Dragon Ascent + Rayquazite", new[] { "Poke_Rayquazite", "Poke_MegaBracelet" }),
+		new LegendaryFormEvoEntry("Mewtwo", "mewtwo/mega_y", "Mewtwo ➔ Mega Mewtwo X & Y", "Itens: Mewtwonite X & Mewtwonite Y", new[] { "Poke_MewtwoniteX", "Poke_MewtwoniteY", "Poke_MegaBracelet" }),
+		new LegendaryFormEvoEntry("Latias", "latias/mega", "Latias & Latios ➔ Mega Eon Duo", "Itens: Latiasite & Latiosite", new[] { "Poke_Latiasite", "Poke_Latiosite", "Poke_MegaBracelet" }, 0, "Latios"),
+		new LegendaryFormEvoEntry("Deoxys", "deoxys/attack", "Deoxys (Normal / Atk / Def / Spe)", "Item: Pedaço de Meteorito (4 Formas)", new[] { "Poke_MeteoritePiece" }),
+		new LegendaryFormEvoEntry("Dialga", "dialga/origin", "Dialga ➔ Dialga Origin Forme", "Item: Adamant Crystal / Adamant Orb", new[] { "Poke_AdamantCrystal", "Poke_AdamantOrb" }),
+		new LegendaryFormEvoEntry("Palkia", "palkia/origin", "Palkia ➔ Palkia Origin Forme", "Item: Lustrous Globe / Lustrous Orb", new[] { "Poke_LustrousGlobe", "Poke_LustrousOrb" }),
+		new LegendaryFormEvoEntry("Giratina", "giratina/origin", "Giratina ➔ Giratina Origin Forme", "Item: Griseous Core & Griseous Orb", new[] { "Poke_GriseousCore", "Poke_GriseousOrb" }),
+		new LegendaryFormEvoEntry("Shaymin", "shaymin/sky", "Shaymin ➔ Shaymin Sky Forme", "Item: Flor Gracídea (Gracidea)", new[] { "Poke_Gracidea", "Poke_GracideaFlower" }),
+		new LegendaryFormEvoEntry("Tornadus", "tornadus/therian", "Tornadus ➔ Tornadus Therian", "Item: Espelho Revelador (Reveal Glass)", new[] { "Poke_RevealGlass", "Poke_CycloneMirror" }),
+		new LegendaryFormEvoEntry("Thundurus", "thundurus/therian", "Thundurus ➔ Thundurus Therian", "Item: Espelho Revelador (Reveal Glass)", new[] { "Poke_RevealGlass", "Poke_BoltMirror" }),
+		new LegendaryFormEvoEntry("Landorus", "landorus/therian", "Landorus ➔ Landorus Therian", "Item: Espelho Revelador (Reveal Glass)", new[] { "Poke_RevealGlass", "Poke_FertilityMirror" }),
+		new LegendaryFormEvoEntry("Enamorus", "enamorus/therian", "Enamorus ➔ Enamorus Therian", "Item: Espelho Revelador (Reveal Glass)", new[] { "Poke_RevealGlass", "Poke_RevealGlass_Love" }),
+		new LegendaryFormEvoEntry("Kyurem", "kyurem/white", "Kyurem + Reshiram/Zekrom (White/Black)", "Item: DNA Splicers + Reshiram/Zekrom", new[] { "Poke_DNASplicers", "Poke_DNA_Splicers", "Poke_LightStone", "Poke_DarkStone" }, 0, "Reshiram"),
+		new LegendaryFormEvoEntry("Zygarde", "zygarde/complete", "Zygarde (10% / 50% / 100% Complete)", "Item: Cubo de Zygarde (Zygarde Cube)", new[] { "Poke_ZygardeCube" }),
+		new LegendaryFormEvoEntry("Diancie", "diancie/mega", "Diancie ➔ Mega Diancie", "Item: Diancite + Mega Bracelete", new[] { "Poke_Diancite", "Poke_MegaBracelet" }),
+		new LegendaryFormEvoEntry("Hoopa", "hoopa/unbound", "Hoopa Confined ➔ Hoopa Unbound", "Item: Garrafa da Prisão (Prison Bottle)", new[] { "Poke_PrisonBottle" }),
+		new LegendaryFormEvoEntry("Type: Null", "Silvally", "Type: Null ➔ Silvally", "Evolução: Amizade / Rare Candy / RKS", new[] { "PokemonFriendshipCandy", "Poke_MemoryDrive_Normal" }, 30),
+		new LegendaryFormEvoEntry("Cosmog", "Solgaleo", "Cosmog ➔ Cosmoem ➔ Solgaleo / Lunala", "Evo Nv.43/53: +50 Rare Candy + Flautas", new[] { "Poke_SunFlute", "Poke_MoonFlute", "PokemonSunStone", "PokemonMoonStone" }, 50),
+		new LegendaryFormEvoEntry("Necrozma", "necrozma/ultra", "Necrozma ➔ Dusk Mane / Dawn Wings / Ultra", "N-Solarizer, N-Lunarizer & Ultranecrozium Z", new[] { "Poke_NSolarizer", "Poke_NLunarizer", "Poke_UltranecroziumZ" }, 0, "Solgaleo"),
+		new LegendaryFormEvoEntry("Poipole", "Naganadel", "Poipole ➔ Naganadel", "Evo Dragon Pulse: +30 Rare Candy + Ferrão", new[] { "Poke_DragonPoisonBarb" }, 30),
+		new LegendaryFormEvoEntry("Meltan", "Melmetal", "Meltan ➔ Melmetal", "Evo: Metal Coat / Gigantamax Nut + Candy", new[] { "PokemonMetalCoat", "Poke_GigantamaxNut" }, 40),
+		new LegendaryFormEvoEntry("Zacian", "zacian/crowned_sword", "Zacian & Zamazenta ➔ Crowned Forms", "Itens: Rusted Sword & Rusted Shield", new[] { "Poke_RustedSword", "Poke_RustedShield" }, 0, "Zamazenta"),
+		new LegendaryFormEvoEntry("Kubfu", "urshifu/rapid_strike", "Kubfu ➔ Urshifu (Single & Rapid Strike)", "Itens: Scroll of Darkness & Scroll of Waters", new[] { "Poke_ScrollOfDarkness", "Poke_ScrollOfWaters" }, 50),
+		new LegendaryFormEvoEntry("Calyrex", "calyrex/shadow", "Calyrex + Glastrier/Spectrier (Ice/Shadow)", "Item: Rédeas da Unidade + Corcéis", new[] { "Poke_ReinsOfUnity", "Poke_IcerootCarrot", "Poke_ShaderootCarrot" }, 0, "Spectrier"),
+		new LegendaryFormEvoEntry("Ogerpon", "ogerpon/hearthflame", "Ogerpon (4 Máscaras Elementais)", "Itens: Teal, Wellspring, Hearthflame & Cornerstone", new[] { "Poke_TealMask", "Poke_WellspringMask", "Poke_HearthflameMask", "Poke_CornerstoneMask" }),
+		new LegendaryFormEvoEntry("Terapagos", "terapagos/stellar", "Terapagos (Normal ➔ Terastal ➔ Stellar)", "Item: Disco Índigo (Indigo Disk) + Tera Orb", new[] { "Poke_IndigoDisk", "Poke_TeraOrb" })
+	};
 
 	private static readonly int[] DebugLevels = new[] { 5, 15, 30, 50, 75, 100 };
 
@@ -116,7 +164,7 @@ public class PokemonDebugMenu : IClickableMenu
 	};
 
 	public PokemonDebugMenu()
-		: base(0, 0, 900, 620)
+		: base(0, 0, 900, 648)
 	{
 		xPositionOnScreen = (Game1.uiViewport.Width - width) / 2;
 		yPositionOnScreen = (Game1.uiViewport.Height - height) / 2;
@@ -133,7 +181,7 @@ public class PokemonDebugMenu : IClickableMenu
 
 	public void SetDebugState(int tabIndex, int page = 0, bool fieldMovesOnly = false)
 	{
-		_currentTab = (Tab)Math.Clamp(tabIndex, 0, 7);
+		_currentTab = (Tab)Math.Clamp(tabIndex, 0, 8);
 		_speciesPage = page;
 		_tmPage = page;
 		_filterFieldMovesOnly = fieldMovesOnly;
@@ -178,11 +226,12 @@ public class PokemonDebugMenu : IClickableMenu
 		_mechanicButtons.Clear();
 		_updateButtons.Clear();
 		_legendaryButtons.Clear();
+		_formsEvosButtons.Clear();
 
 		int startX = xPositionOnScreen + 30;
 		int startY = yPositionOnScreen + 44;
 
-		// 8 Tabs across 840px (101px width + 4px gap)
+		// 8 Top Tabs across 840px (101px width + 4px gap)
 		int tabW = 101;
 		int tabGap = 4;
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX, startY, tabW, 40), "Pokemon", "1. Pokémon"));
@@ -193,6 +242,11 @@ public class PokemonDebugMenu : IClickableMenu
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 5, startY, tabW, 40), "Mechanics", "6. Mecânicas"));
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 6, startY, tabW, 40), "UpdatesV2", "7. v2.0 Novos"));
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 7, startY, tabW, 40), "Legendaries", "8. Lendários"));
+
+		// Lower Tab Bar (Abas Inferiores): Tab 9 (Formas & Evos Lendárias) + Reset Active Spawns Button
+		int bottomTabY = yPositionOnScreen + height - 46;
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX, bottomTabY, 412, 34), "FormsAndEvos", "9. 🧬 Formas, Evoluções & Fusões Lendárias"));
+		_clearSpawnsBottomButton = new ClickableComponent(new Rectangle(startX + 424, bottomTabY, 412, 34), "clear_active_spawns", "🧹 Resetar / Limpar Spawns Ativos nos Mapas");
 
 		int contentY = startY + 50;
 
@@ -433,6 +487,45 @@ public class PokemonDebugMenu : IClickableMenu
 			_legPrevPageButton = new ClickableComponent(new Rectangle(startX + 180, lStartY + 5 * (cardH + rowGap) + 8, 140, 36), "leg_prev", "◀ Anterior");
 			_legNextPageButton = new ClickableComponent(new Rectangle(startX + 520, lStartY + 5 * (cardH + rowGap) + 8, 140, 36), "leg_next", "Próximo ▶");
 		}
+
+		// 10. FormsAndEvos Buttons (Tab 9 - Abas Inferiores)
+		if (_currentTab == Tab.FormsAndEvos)
+		{
+			int feCardsPerPage = 10;
+			int totalFe = AllLegendaryFormEvoEntries.Length;
+			int maxFePages = Math.Max(0, (totalFe - 1) / feCardsPerPage);
+			_formsEvosPage = Math.Clamp(_formsEvosPage, 0, maxFePages);
+
+			int startFeIdx = _formsEvosPage * feCardsPerPage;
+			int endFeIdx = Math.Min(totalFe, startFeIdx + feCardsPerPage);
+
+			int fStartY = contentY + 2;
+			int cardH = 68;
+			int rowGap = 6;
+
+			for (int idx = startFeIdx; idx < endFeIdx; idx++)
+			{
+				int slot = idx - startFeIdx;
+				int col = slot % 2;
+				int row = slot / 2;
+				int cardX = (col == 0) ? startX : col2X;
+				int cardY = fStartY + row * (cardH + rowGap);
+
+				_formsEvosButtons.Add(new ClickableComponent(
+					new Rectangle(cardX + 234, cardY + 14, 84, 38),
+					"fe_give_" + idx,
+					"🎁 Dar+Kit"
+				));
+				_formsEvosButtons.Add(new ClickableComponent(
+					new Rectangle(cardX + 322, cardY + 14, 84, 38),
+					"fe_kit_" + idx,
+					"🧭 Habitat"
+				));
+			}
+
+			_fePrevPageButton = new ClickableComponent(new Rectangle(startX + 180, fStartY + 5 * (cardH + rowGap) + 8, 140, 36), "fe_prev", "◀ Anterior");
+			_feNextPageButton = new ClickableComponent(new Rectangle(startX + 520, fStartY + 5 * (cardH + rowGap) + 8, 140, 36), "fe_next", "Próximo ▶");
+		}
 	}
 
 	public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -443,6 +536,14 @@ public class PokemonDebugMenu : IClickableMenu
 		{
 			Game1.playSound("bigDeSelect");
 			Game1.exitActiveMenu();
+			return;
+		}
+
+		if (_clearSpawnsBottomButton != null && _clearSpawnsBottomButton.containsPoint(x, y))
+		{
+			int removed = PokemonEncounterManager.ClearAllActiveSpawns();
+			Game1.playSound("trashcan");
+			Game1.addHUDMessage(new HUDMessage($"🧹 {removed} instâncias ativas de Pokémon removidas de todos os mapas!", 2));
 			return;
 		}
 
@@ -831,10 +932,12 @@ public class PokemonDebugMenu : IClickableMenu
 							Game1.season = targetSeason.Value;
 						}
 
-						// Grant summon relic item
+						// Grant summon relic item (2 copies if also used for form change/evolution)
 						if (!string.IsNullOrEmpty(itemId))
 						{
-							Game1.player.addItemToInventory(ItemRegistry.Create<Object>("(O)" + itemId) ?? new Object(itemId, 1));
+							int qty = (PokemonItemUse.IsFormChangeItem(itemId) || PokemonItemUse.IsEvolutionItem(itemId)) ? 2 : 1;
+							Item relicItem = ItemRegistry.Create("(O)" + itemId, qty, 0, allowNull: true) ?? new Object(itemId, qty);
+							Game1.player.addItemToInventory(relicItem);
 						}
 
 						bool isFishingLeg = PokemonEncounterManager.IsFishingSummonRelic(itemId);
@@ -862,6 +965,147 @@ public class PokemonDebugMenu : IClickableMenu
 						return;
 					}
 				}
+			}
+		}
+
+		// Tab 9: FormsAndEvos (Evoluções, Formas & Fusões Lendárias)
+		else if (_currentTab == Tab.FormsAndEvos)
+		{
+			if (_fePrevPageButton != null && _fePrevPageButton.containsPoint(x, y))
+			{
+				int totalFe = AllLegendaryFormEvoEntries.Length;
+				int maxFePages = Math.Max(0, (totalFe - 1) / 10);
+				_formsEvosPage = (_formsEvosPage - 1 + (maxFePages + 1)) % (maxFePages + 1);
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+			if (_feNextPageButton != null && _feNextPageButton.containsPoint(x, y))
+			{
+				int totalFe = AllLegendaryFormEvoEntries.Length;
+				int maxFePages = Math.Max(0, (totalFe - 1) / 10);
+				_formsEvosPage = (_formsEvosPage + 1) % (maxFePages + 1);
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+
+			foreach (var fb in _formsEvosButtons)
+			{
+				if (!fb.containsPoint(x, y)) continue;
+
+				bool isGiveMon = fb.name.StartsWith("fe_give_");
+				bool isKitHabitat = fb.name.StartsWith("fe_kit_");
+				if (!isGiveMon && !isKitHabitat) continue;
+
+				string idxStr = fb.name.Substring(isGiveMon ? "fe_give_".Length : "fe_kit_".Length);
+				if (!int.TryParse(idxStr, out int entryIdx) || entryIdx < 0 || entryIdx >= AllLegendaryFormEvoEntries.Length)
+					return;
+
+				var entry = AllLegendaryFormEvoEntries[entryIdx];
+
+				// Grant MasterBalls + Evolution/Transformation/Fusion Items + Rare Candies
+				Game1.player.addItemToInventory(ItemRegistry.Create("(O)MasterBall", 10, 0, allowNull: true) ?? new Object("MasterBall", 10));
+
+				if (entry.ExtraItems != null)
+				{
+					foreach (string exId in entry.ExtraItems)
+					{
+						if (string.IsNullOrEmpty(exId)) continue;
+						if (exId is "Poke_MegaBracelet" or "Poke_ZRing" or "Poke_ZPowerRing" or "Poke_DynamaxBand" or "Poke_TeraOrb")
+						{
+							GiveEquipRing(exId);
+						}
+						else
+						{
+							Item it = ItemRegistry.Create("(O)" + exId, 1, 0, allowNull: true) ?? new Object(exId, 1);
+							if (it != null) Game1.player.addItemToInventory(it);
+						}
+					}
+				}
+
+				if (entry.RareCandyCount > 0)
+				{
+					Item candies = ItemRegistry.Create("(O)PokemonRareCandy", entry.RareCandyCount, 0, allowNull: true) ?? new Object("PokemonRareCandy", entry.RareCandyCount);
+					Game1.player.addItemToInventory(candies);
+				}
+
+				if (!string.IsNullOrEmpty(entry.PartnerSpecies))
+				{
+					var partnerSpec = PokemonSpecies.Get(entry.PartnerSpecies);
+					if (partnerSpec != null && !Party.Team.Exists(p => string.Equals(p.Species?.Name, partnerSpec.Name, StringComparison.OrdinalIgnoreCase)))
+					{
+						Party.AddPokemon(new PokemonInstance(partnerSpec, 70));
+					}
+				}
+
+				if (isGiveMon)
+				{
+					var baseSpec = PokemonSpecies.Get(entry.BaseName);
+					if (baseSpec != null)
+					{
+						int startLvl = entry.BaseName is "Cosmog" or "Kubfu" or "Meltan" or "Poipole" or "Type: Null" ? 20 : 70;
+						Party.AddPokemon(new PokemonInstance(baseSpec, startLvl));
+					}
+					Game1.playSound("reward");
+					Game1.addHUDMessage(new HUDMessage($"🎁 {entry.BaseName} + Kit de Evolução/Transformação entregues!", 2));
+					return;
+				}
+
+				// Kit + Habitat Teleport
+				var (loc, tx, ty, itemId, itemName, weather, targetTime, targetSeason) = GetLegendaryHabitat(entry.BaseName);
+
+				if (weather == "Tempestade" || weather == "Chuva" || weather == "Ensolarado")
+				{
+					bool isRain = weather == "Tempestade" || weather == "Chuva";
+					bool isStorm = weather == "Tempestade";
+					Game1.isRaining = isRain;
+					Game1.isLightning = isStorm;
+					if (isRain) Game1.isSnowing = false;
+					if (Game1.netWorldState?.Value != null)
+					{
+						foreach (string ctx in new[] { "Default", "Island", "Desert" })
+						{
+							var lw = Game1.netWorldState.Value.GetWeatherForLocation(ctx);
+							if (lw != null)
+							{
+								lw.IsRaining = isRain;
+								lw.IsLightning = isStorm;
+								if (isRain) lw.IsSnowing = false;
+								lw.Weather = isStorm ? "Storm" : (isRain ? "Rain" : "Sun");
+							}
+						}
+					}
+				}
+
+				if (targetTime > 0) Game1.timeOfDay = targetTime;
+				if (targetSeason.HasValue) Game1.season = targetSeason.Value;
+
+				if (!string.IsNullOrEmpty(itemId))
+				{
+					Item relicItem = ItemRegistry.Create("(O)" + itemId, 2, 0, allowNull: true) ?? new Object(itemId, 2);
+					Game1.player.addItemToInventory(relicItem);
+				}
+
+				bool isFishingLeg = PokemonEncounterManager.IsFishingSummonRelic(itemId);
+				if (isFishingLeg && !Game1.player.Items.Any(i => i is StardewValley.Tools.FishingRod))
+				{
+					Game1.player.addItemToInventory(ItemRegistry.Create("(T)PokemonSuperRod"));
+				}
+
+				if (loc.StartsWith("UndergroundMine", StringComparison.OrdinalIgnoreCase) &&
+				    int.TryParse(loc.Substring("UndergroundMine".Length), out int mineLvl))
+				{
+					Game1.enterMine(mineLvl);
+				}
+				else
+				{
+					Game1.warpFarmer(loc, tx, ty, 2);
+				}
+				Game1.playSound("wand");
+				exitThisMenuNoSound();
+				Game1.addHUDMessage(new HUDMessage($"🧪 Kit de {entry.Title} + 10 MasterBall entregues! Invoque {entry.BaseName} em {loc}!", 2));
+				return;
 			}
 		}
 	}
@@ -2075,7 +2319,7 @@ public class PokemonDebugMenu : IClickableMenu
 		int mouseX = Game1.getMouseX();
 		int mouseY = Game1.getMouseY();
 
-		// Draw Tab Buttons
+		// Draw Tab Buttons (Top + Bottom Abas Inferiores)
 		foreach (var tab in _tabButtons)
 		{
 			bool isCurrent = tab.name == _currentTab.ToString();
@@ -2083,6 +2327,14 @@ public class PokemonDebugMenu : IClickableMenu
 			Color col = isCurrent ? Color.LightGreen : (hovered ? Color.Wheat : Color.White);
 			IClickableMenu.drawTextureBox(b, tab.bounds.X, tab.bounds.Y, tab.bounds.Width, tab.bounds.Height, col);
 			PokemonUI.Text(b, Game1.smallFont, tab.label, tab.bounds, isCurrent ? Color.DarkGreen : Game1.textColor, center: true, maxScale: 0.78f, shadow: false);
+		}
+
+		if (_clearSpawnsBottomButton != null)
+		{
+			bool hovered = _clearSpawnsBottomButton.containsPoint(mouseX, mouseY);
+			Color col = hovered ? new Color(255, 200, 200) : new Color(255, 238, 238);
+			IClickableMenu.drawTextureBox(b, _clearSpawnsBottomButton.bounds.X, _clearSpawnsBottomButton.bounds.Y, _clearSpawnsBottomButton.bounds.Width, _clearSpawnsBottomButton.bounds.Height, col);
+			PokemonUI.Text(b, Game1.smallFont, _clearSpawnsBottomButton.label, _clearSpawnsBottomButton.bounds, hovered ? Color.DarkRed : new Color(140, 25, 25), center: true, maxScale: 0.76f, shadow: false);
 		}
 
 		int startX = xPositionOnScreen + 30;
@@ -2436,6 +2688,77 @@ public class PokemonDebugMenu : IClickableMenu
 			PokemonUI.Text(b, Game1.smallFont, $"Página {_legendaryPage + 1} de {maxLegPages + 1}", new Rectangle(startX + 330, lStartY + 5 * (cardH + rowGap) + 12, 180, 28), Game1.textColor, center: true, maxScale: 0.82f, shadow: false);
 		}
 
+		// Tab 9: FormsAndEvos (Evoluções, Formas & Fusões Lendárias)
+		else if (_currentTab == Tab.FormsAndEvos)
+		{
+			int feCardsPerPage = 10;
+			int totalFe = AllLegendaryFormEvoEntries.Length;
+			int maxFePages = Math.Max(0, (totalFe - 1) / feCardsPerPage);
+			int startFeIdx = _formsEvosPage * feCardsPerPage;
+			int endFeIdx = Math.Min(totalFe, startFeIdx + feCardsPerPage);
+
+			int fStartY = contentY + 2;
+			int col2X = startX + 424;
+			int cardH = 68;
+			int cardW = 412;
+			int rowGap = 6;
+
+			for (int idx = startFeIdx; idx < endFeIdx; idx++)
+			{
+				int slot = idx - startFeIdx;
+				int col = slot % 2;
+				int row = slot / 2;
+				int cardX = (col == 0) ? startX : col2X;
+				int cardY = fStartY + row * (cardH + rowGap);
+
+				var entry = AllLegendaryFormEvoEntries[idx];
+				var spec = PokemonSpecies.Get(entry.PreviewKey) ?? PokemonSpecies.Get(entry.BaseName);
+
+				Rectangle cardBox = new Rectangle(cardX, cardY, cardW, cardH);
+				IClickableMenu.drawTextureBox(b, cardBox.X, cardBox.Y, cardBox.Width, cardBox.Height, Color.White);
+
+				if (spec != null)
+				{
+					var inst = GetPreviewInstance(spec, false);
+					Texture2D icon = inst?.GetIconSprite(Game1.graphics.GraphicsDevice) ?? inst?.GetFrontSprite(Game1.graphics.GraphicsDevice);
+					if (icon != null)
+					{
+						bool isFront = icon == inst.GetFrontSprite(Game1.graphics.GraphicsDevice);
+						Rectangle srcRect = isFront ? inst.GetFrontSourceRect() : inst.GetIconSourceRect();
+						float scale = isFront ? (42f / Math.Max(1, srcRect.Width)) : 1.15f;
+						b.Draw(icon, new Vector2(cardX + 8, cardY + 12), srcRect, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0.86f);
+					}
+				}
+
+				PokemonUI.Text(b, Game1.smallFont, entry.Title, new Rectangle(cardX + 52, cardY + 10, 178, 22), Color.DarkSlateBlue, center: false, maxScale: 0.64f, shadow: false);
+				PokemonUI.Text(b, Game1.tinyFont, entry.Subtitle, new Rectangle(cardX + 52, cardY + 34, 178, 20), Color.DimGray, center: false, maxScale: 0.78f, shadow: false);
+			}
+
+			foreach (var fb in _formsEvosButtons)
+			{
+				bool hov = fb.containsPoint(mouseX, mouseY);
+				Color btnColor = fb.name.StartsWith("fe_give_")
+					? (hov ? Color.LightGreen : Color.Honeydew)
+					: (hov ? Color.LightSkyBlue : Color.AliceBlue);
+				IClickableMenu.drawTextureBox(b, fb.bounds.X, fb.bounds.Y, fb.bounds.Width, fb.bounds.Height, btnColor);
+				PokemonUI.Text(b, Game1.smallFont, fb.label, new Rectangle(fb.bounds.X + 4, fb.bounds.Y + 4, fb.bounds.Width - 8, fb.bounds.Height - 8), Color.Black, center: true, maxScale: 0.72f, shadow: false);
+			}
+
+			if (_fePrevPageButton != null)
+			{
+				bool hov = _fePrevPageButton.containsPoint(mouseX, mouseY);
+				IClickableMenu.drawTextureBox(b, _fePrevPageButton.bounds.X, _fePrevPageButton.bounds.Y, _fePrevPageButton.bounds.Width, _fePrevPageButton.bounds.Height, hov ? Color.PaleGoldenrod : Color.White);
+				PokemonUI.Text(b, Game1.smallFont, _fePrevPageButton.label, _fePrevPageButton.bounds, hov ? Color.DarkBlue : Game1.textColor, center: true, maxScale: 0.82f, shadow: false);
+			}
+			if (_feNextPageButton != null)
+			{
+				bool hov = _feNextPageButton.containsPoint(mouseX, mouseY);
+				IClickableMenu.drawTextureBox(b, _feNextPageButton.bounds.X, _feNextPageButton.bounds.Y, _feNextPageButton.bounds.Width, _feNextPageButton.bounds.Height, hov ? Color.PaleGoldenrod : Color.White);
+				PokemonUI.Text(b, Game1.smallFont, _feNextPageButton.label, _feNextPageButton.bounds, hov ? Color.DarkBlue : Game1.textColor, center: true, maxScale: 0.82f, shadow: false);
+			}
+			PokemonUI.Text(b, Game1.smallFont, $"Página {_formsEvosPage + 1} de {maxFePages + 1}", new Rectangle(startX + 330, fStartY + 5 * (cardH + rowGap) + 12, 180, 28), Game1.textColor, center: true, maxScale: 0.82f, shadow: false);
+		}
+
 		// Close Button
 		_closeButton.draw(b);
 
@@ -2525,7 +2848,7 @@ public class PokemonDebugMenu : IClickableMenu
 			"Raikou" => ("Woods", 25, 15, "Poke_RaikouBell", "Sino do Trovão", "Tempestade", 2200, null),
 			"Entei" => ("Mountain", 44, 30, "Poke_EnteiBell", "Sino do Magma", "Ensolarado", 1200, Season.Summer),
 			"Suicune" => ("Beach", 25, 34, "Poke_SuicuneBell", "Sino das Ondas", "Chuva", 2200, Season.Fall),
-			"Lugia" => ("Submarine", 13, 5, "Poke_TidalBell", "Sino das Marés", "Qualquer", 2200, Season.Winter),
+			"Lugia" => ("Beach", 28, 36, "Poke_TidalBell", "Sino das Marés", "Tempestade", 2200, Season.Winter),
 			"Ho-Oh" => ("Summit", 10, 22, "Poke_RainbowWing", "Asa do Arco-Íris", "Ensolarado", 1200, null),
 			"Celebi" => ("Woods", 12, 14, "Poke_GSBall", "GS Ball", "Ensolarado", 1200, Season.Spring),
 			"Regirock" => ("UndergroundMine20", 6, 12, "Poke_RelicRock", "Núcleo de Pedra Ancestral", "Qualquer", 0, null),

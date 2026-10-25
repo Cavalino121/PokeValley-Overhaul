@@ -409,6 +409,20 @@ public static class PokemonHeldItemManager
 		RegisterTypeBooster("BlackBelt", "Black Belt", PokemonType.Fighting);
 		RegisterTypeBooster("SilverPowder", "Silver Powder", PokemonType.Bug);
 		RegisterTypeBooster("MetalCoat", "Metal Coat", PokemonType.Steel);
+
+		// Legendary Form & Primal Hold Items
+		Register(new HeldItemDefinition { Id = "RustedSword", DisplayName = "Espada Enferrujada", Description = "Transforma Zacian em sua forma Crowned Sword e fortalece golpes de Aço/Fada.", BoostedType = PokemonType.Steel, DamageMultiplier = 1.20f, Price = 25000 });
+		Register(new HeldItemDefinition { Id = "RustedShield", DisplayName = "Escudo Enferrujado", Description = "Transforma Zamazenta em sua forma Crowned Shield e fortalece golpes de Aço/Lutador.", BoostedType = PokemonType.Steel, DamageMultiplier = 1.20f, Price = 25000 });
+		Register(new HeldItemDefinition { Id = "GriseousCore", DisplayName = "Núcleo Gris", Description = "Transforma Giratina na Forma Origem e fortalece golpes Fantasma/Dragão em 20%.", BoostedType = PokemonType.Ghost, DamageMultiplier = 1.20f, Price = 25000 });
+		Register(new HeldItemDefinition { Id = "GriseousOrb", DisplayName = "Orbe Gris", Description = "Transforma Giratina na Forma Origem e fortalece golpes Fantasma/Dragão em 20%.", BoostedType = PokemonType.Ghost, DamageMultiplier = 1.20f, Price = 25000 });
+		Register(new HeldItemDefinition { Id = "AdamantCrystal", DisplayName = "Cristal Diamante", Description = "Transforma Dialga na Forma Origem e fortalece golpes Aço/Dragão em 20%.", BoostedType = PokemonType.Dragon, DamageMultiplier = 1.20f, Price = 25000 });
+		Register(new HeldItemDefinition { Id = "AdamantOrb", DisplayName = "Orbe Diamante", Description = "Transforma Dialga na Forma Origem e fortalece golpes Aço/Dragão em 20%.", BoostedType = PokemonType.Dragon, DamageMultiplier = 1.20f, Price = 25000 });
+		Register(new HeldItemDefinition { Id = "LustrousGlobe", DisplayName = "Globo Lustroso", Description = "Transforma Palkia na Forma Origem e fortalece golpes Água/Dragão em 20%.", BoostedType = PokemonType.Water, DamageMultiplier = 1.20f, Price = 25000 });
+		Register(new HeldItemDefinition { Id = "LustrousOrb", DisplayName = "Orbe Lustroso", Description = "Transforma Palkia na Forma Origem e fortalece golpes Água/Dragão em 20%.", BoostedType = PokemonType.Water, DamageMultiplier = 1.20f, Price = 25000 });
+		Register(new HeldItemDefinition { Id = "TealMask", DisplayName = "Máscara Turquesa", Description = "Máscara sagrada de Ogerpon (Grass). Aumenta o dano de seus ataques em 20%.", BoostedType = PokemonType.Grass, DamageMultiplier = 1.20f, Price = 20000 });
+		Register(new HeldItemDefinition { Id = "WellspringMask", DisplayName = "Máscara da Fonte", Description = "Transforma Ogerpon na Forma Fonte (Grass/Water) e aumenta ataques em 20%.", BoostedType = PokemonType.Water, DamageMultiplier = 1.20f, Price = 20000 });
+		Register(new HeldItemDefinition { Id = "HearthflameMask", DisplayName = "Máscara da Chama", Description = "Transforma Ogerpon na Forma Chama (Grass/Fire) e aumenta ataques em 20%.", BoostedType = PokemonType.Fire, DamageMultiplier = 1.20f, Price = 20000 });
+		Register(new HeldItemDefinition { Id = "CornerstoneMask", DisplayName = "Máscara do Alicerce", Description = "Transforma Ogerpon na Forma Alicerce (Grass/Rock) e aumenta ataques em 20%.", BoostedType = PokemonType.Rock, DamageMultiplier = 1.20f, Price = 20000 });
 	}
 
 	private static void RegisterTypeBooster(string id, string name, PokemonType type)

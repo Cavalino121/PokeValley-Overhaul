@@ -129,7 +129,8 @@ public static class PokemonEncounterManager
 		RegisterSummon("Poke_RaikouBell", "RaikouBell", new LegendarySummonDef { SpeciesName = "Raikou", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_RaikouBell", RelicName = "Sino do Trovão", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
 		RegisterSummon("Poke_EnteiBell", "EnteiBell", new LegendarySummonDef { SpeciesName = "Entei", Location = "Mountain", TargetX = 44, TargetY = 30, RelicId = "Poke_EnteiBell", RelicName = "Sino do Magma", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
 		RegisterSummon("Poke_SuicuneBell", "SuicuneBell", new LegendarySummonDef { SpeciesName = "Suicune", Location = "Beach", TargetX = 25, TargetY = 34, RelicId = "Poke_SuicuneBell", RelicName = "Sino das Ondas", RequiresStorm = false, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall, IsFishing = false });
-		RegisterSummon("Poke_TidalBell", "TidalBell", new LegendarySummonDef { SpeciesName = "Lugia", Location = "Submarine", TargetX = 13, TargetY = 5, RelicId = "Poke_TidalBell", RelicName = "Sino das Marés", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Winter, IsFishing = true });
+		RegisterSummon("Poke_TidalBell", "TidalBell", new LegendarySummonDef { SpeciesName = "Lugia", Location = "Beach", TargetX = 28, TargetY = 36, RelicId = "Poke_TidalBell", RelicName = "Sino das Marés", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = true });
+		RegisterSummon("Poke_TidalBell", "TidalBell", new LegendarySummonDef { SpeciesName = "Lugia", Location = "Submarine", TargetX = 13, TargetY = 5, RelicId = "Poke_TidalBell", RelicName = "Sino das Marés", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = true });
 		RegisterSummon("Poke_RainbowWing", "RainbowWing", new LegendarySummonDef { SpeciesName = "Ho-Oh", Location = "Summit", TargetX = 10, TargetY = 22, RelicId = "Poke_RainbowWing", RelicName = "Asa do Arco-Íris", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
 		RegisterSummon("Poke_GSBall", "GSBall", new LegendarySummonDef { SpeciesName = "Celebi", Location = "Woods", TargetX = 12, TargetY = 14, RelicId = "Poke_GSBall", RelicName = "GS Ball", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
 		RegisterSummon("Poke_RelicRock", "RelicRock", new LegendarySummonDef { SpeciesName = "Regirock", Location = "UndergroundMine20", TargetX = 6, TargetY = 12, RelicId = "Poke_RelicRock", RelicName = "Núcleo de Pedra Ancestral", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
@@ -317,6 +318,12 @@ public static class PokemonEncounterManager
 		if (!LegendarySummonsByRelic.TryGetValue(itemId, out var summons) || summons.Count == 0)
 			return false;
 
+		if (PokemonItemUse.CanUseFormOrEvoItemOnParty(itemId))
+		{
+			PokemonItemUse.UseFormOrEvoItem(itemId);
+			return false;
+		}
+
 		var firstDef = summons[0];
 		if (firstDef.IsFishing)
 		{
@@ -393,6 +400,32 @@ public static class PokemonEncounterManager
 		return true;
 	}
 
+	public static int ClearAllActiveSpawns(GameLocation onlyLocation = null)
+	{
+		int removed = 0;
+		if (onlyLocation != null)
+		{
+			string k = onlyLocation.NameOrUniqueName ?? "";
+			if (_spawnsByLocation.TryGetValue(k, out var st) && st != null)
+			{
+				removed += st.Spawns.Count;
+				st.Spawns.Clear();
+			}
+			return removed;
+		}
+
+		foreach (var kv in _spawnsByLocation)
+		{
+			if (kv.Value?.Spawns != null)
+			{
+				removed += kv.Value.Spawns.Count;
+				kv.Value.Spawns.Clear();
+			}
+		}
+		_spawnsByLocation.Clear();
+		return removed;
+	}
+
 	public static bool IsValidWalkableSpawnTile(GameLocation loc, int tx, int ty, Point? reachableFrom = null)
 	{
 		if (loc == null) return false;
@@ -411,14 +444,7 @@ public static class PokemonEncounterManager
 			if (ms.getTileIndexAt(tx, ty, "Back") == 77) return false;
 		}
 
-		string locName = loc.NameOrUniqueName ?? "";
-		bool isCaveOrIndoor = !loc.IsOutdoors || loc is MineShaft || loc is VolcanoDungeon || loc is Sewer ||
-		                      locName.Contains("Cave", StringComparison.OrdinalIgnoreCase) ||
-		                      locName.Contains("Mine", StringComparison.OrdinalIgnoreCase) ||
-		                      locName.Contains("Caldera", StringComparison.OrdinalIgnoreCase) ||
-		                      locName.Contains("Submarine", StringComparison.OrdinalIgnoreCase);
-
-		if (isCaveOrIndoor && loc.hasTileAt(tx, ty, "Front"))
+		if (loc is MineShaft && loc.hasTileAt(tx, ty, "Front"))
 			return false;
 
 		Vector2 worldPos = new Vector2(tx * 64f + 32f, ty * 64f + 32f);
@@ -477,7 +503,17 @@ public static class PokemonEncounterManager
 		PokemonMusicManager.UpdateOverworldMusic(dt);
 		string locKey = loc.NameOrUniqueName;
 
-		bool validMap = loc.IsOutdoors || loc is MineShaft || loc is Sewer || loc is VolcanoDungeon || locKey.Contains("Cave") || locKey.Contains("Mine");
+		bool hasExistingSpawns = _spawnsByLocation.TryGetValue(locKey, out var existingState) && existingState.Spawns.Count > 0;
+		bool validMap = hasExistingSpawns || loc.IsOutdoors || loc is MineShaft || loc is Sewer || loc is VolcanoDungeon || loc is Caldera || loc is Summit || loc is BugLand || loc is IslandLocation ||
+		                locKey.Contains("Cave", StringComparison.OrdinalIgnoreCase) ||
+		                locKey.Contains("Mine", StringComparison.OrdinalIgnoreCase) ||
+		                locKey.Contains("Summit", StringComparison.OrdinalIgnoreCase) ||
+		                locKey.Contains("Caldera", StringComparison.OrdinalIgnoreCase) ||
+		                locKey.Contains("BugLand", StringComparison.OrdinalIgnoreCase) ||
+		                locKey.Contains("Submarine", StringComparison.OrdinalIgnoreCase) ||
+		                locKey.Contains("BathHouse", StringComparison.OrdinalIgnoreCase) ||
+		                locKey.Contains("Archaeology", StringComparison.OrdinalIgnoreCase) ||
+		                locKey.Contains("Witch", StringComparison.OrdinalIgnoreCase);
 		if (!validMap)
 		{
 			_spawnsByLocation.Remove(locKey);

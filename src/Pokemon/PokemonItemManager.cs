@@ -567,8 +567,34 @@ public static class PokemonItemManager
 		RegisterSimple(objectData, "ValorGem", "Gema da Bravura", "Gema radiante esculpida pela pura determinação e força de vontade. Coloque no chão na Floresta para despertar Azelf.", 15000, 74);
 		RegisterSimple(objectData, "Poke_WishingStar", "Estrela dos Desejos Corrompida", "Fragmento de meteoro carmesim que irradia energia Dynamax infinita. Coloque no chão no Summit para invocar Eternatus.", 15000, 74);
 		RegisterSimple(objectData, "WishingStar", "Estrela dos Desejos Corrompida", "Fragmento de meteoro carmesim que irradia energia Dynamax infinita. Coloque no chão no Summit para invocar Eternatus.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ZygardeCube", "Cubo de Zygarde", "Cubo tecnológico que reúne núcleos celulares ecológicos. Coloque no chão nas Minas para invocar Zygarde.", 15000, 74);
-		RegisterSimple(objectData, "ZygardeCube", "Cubo de Zygarde", "Cubo tecnológico que reúne núcleos celulares ecológicos. Coloque no chão nas Minas para invocar Zygarde.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ZygardeCube", "Cubo de Zygarde", "Cubo tecnológico que reúne núcleos celulares ecológicos. Coloque no chão nas Minas para invocar Zygarde, ou use para alternar entre as formas 10%, 50% e Complete.", 15000, 74);
+		RegisterSimple(objectData, "ZygardeCube", "Cubo de Zygarde", "Cubo tecnológico que reúne núcleos celulares ecológicos. Coloque no chão nas Minas para invocar Zygarde, ou use para alternar entre as formas 10%, 50% e Complete.", 15000, 74);
+
+		// Register Legendary Evolution, Form & Fusion Items
+		RegisterSimple(objectData, "Poke_ScrollOfWaters", "Pergaminho das Águas", "Pergaminho marcial secreto que ensina o Golpe Fluido Torrencial. Use em Kubfu para evoluí-lo para Urshifu (Rapid Strike).", 15000, 74);
+		RegisterSimple(objectData, "ScrollOfWaters", "Pergaminho das Águas", "Pergaminho marcial secreto que ensina o Golpe Fluido Torrencial. Use em Kubfu para evoluí-lo para Urshifu (Rapid Strike).", 15000, 74);
+		RegisterSimple(objectData, "Poke_NSolarizer", "N-Solarizer", "Dispositivo cósmico que funde ou separa Necrozma e Solgaleo na forma Necrozma Dusk Mane.", 15000, 74);
+		RegisterSimple(objectData, "NSolarizer", "N-Solarizer", "Dispositivo cósmico que funde ou separa Necrozma e Solgaleo na forma Necrozma Dusk Mane.", 15000, 74);
+		RegisterSimple(objectData, "Poke_NLunarizer", "N-Lunarizer", "Dispositivo cósmico que funde ou separa Necrozma e Lunala na forma Necrozma Dawn Wings.", 15000, 74);
+		RegisterSimple(objectData, "NLunarizer", "N-Lunarizer", "Dispositivo cósmico que funde ou separa Necrozma e Lunala na forma Necrozma Dawn Wings.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RevealGlass", "Espelho da Revelação", "Espelho místico que reflete a verdade, alternando Tornadus, Thundurus, Landorus e Enamorus entre as formas Incarnate e Therian.", 15000, 74);
+		RegisterSimple(objectData, "RevealGlass", "Espelho da Revelação", "Espelho místico que reflete a verdade, alternando Tornadus, Thundurus, Landorus e Enamorus entre as formas Incarnate e Therian.", 15000, 74);
+		RegisterSimple(objectData, "Poke_WellspringMask", "Máscara da Fonte (Wellspring Mask)", "Máscara esculpida com cristais aquáticos. Use em Ogerpon para assumir a forma Wellspring Mask (Grass/Water).", 15000, 74);
+		RegisterSimple(objectData, "WellspringMask", "Máscara da Fonte (Wellspring Mask)", "Máscara esculpida com cristais aquáticos. Use em Ogerpon para assumir a forma Wellspring Mask (Grass/Water).", 15000, 74);
+		RegisterSimple(objectData, "Poke_HearthflameMask", "Máscara da Fornalha (Hearthflame Mask)", "Máscara esculpida com cristais ígneos. Use em Ogerpon para assumir a forma Hearthflame Mask (Grass/Fire).", 15000, 74);
+		RegisterSimple(objectData, "HearthflameMask", "Máscara da Fornalha (Hearthflame Mask)", "Máscara esculpida com cristais ígneos. Use em Ogerpon para assumir a forma Hearthflame Mask (Grass/Fire).", 15000, 74);
+		RegisterSimple(objectData, "Poke_CornerstoneMask", "Máscara do Alicerce (Cornerstone Mask)", "Máscara esculpida com cristais rochosos. Use em Ogerpon para assumir a forma Cornerstone Mask (Grass/Rock).", 15000, 74);
+		RegisterSimple(objectData, "CornerstoneMask", "Máscara do Alicerce (Cornerstone Mask)", "Máscara esculpida com cristais rochosos. Use em Ogerpon para assumir a forma Cornerstone Mask (Grass/Rock).", 15000, 74);
+		RegisterSimple(objectData, "Poke_AdamantCrystal", "Adamant Crystal", "Cristal temporal radiante que desperta a Origin Forme de Dialga.", 15000, 74);
+		RegisterSimple(objectData, "AdamantCrystal", "Adamant Crystal", "Cristal temporal radiante que desperta a Origin Forme de Dialga.", 15000, 74);
+		RegisterSimple(objectData, "Poke_LustrousGlobe", "Lustrous Globe", "Globo espacial perolado que desperta a Origin Forme de Palkia.", 15000, 74);
+		RegisterSimple(objectData, "LustrousGlobe", "Lustrous Globe", "Globo espacial perolado que desperta a Origin Forme de Palkia.", 15000, 74);
+		RegisterSimple(objectData, "Poke_GriseousOrb", "Griseous Orb", "Esfera de antimatéria que desperta a Origin Forme de Giratina.", 15000, 74);
+		RegisterSimple(objectData, "GriseousOrb", "Griseous Orb", "Esfera de antimatéria que desperta a Origin Forme de Giratina.", 15000, 74);
+		RegisterSimple(objectData, "Poke_Gracidea", "Flor Gracídea", "Flor de gratidão que desperta a Sky Forme de Shaymin.", 15000, 74);
+		RegisterSimple(objectData, "Gracidea", "Flor Gracídea", "Flor de gratidão que desperta a Sky Forme de Shaymin.", 15000, 74);
+		RegisterSimple(objectData, "Poke_DNASplicers", "Fundidores de DNA", "Instrumento que funde ou separa Kyurem com Zekrom (Black Kyurem) ou Reshiram (White Kyurem).", 15000, 74);
+		RegisterSimple(objectData, "DNASplicers", "Fundidores de DNA", "Instrumento que funde ou separa Kyurem com Zekrom (Black Kyurem) ou Reshiram (White Kyurem).", 15000, 74);
 
 		// Register Berries as Items and Crops
 		// Register Berries as Items and Crops (Valid TileSheets\crops sprite rows and all 4 seasons)
@@ -1449,12 +1475,12 @@ public static class PokemonItemManager
 			"Poke_RaikouBell" or "RaikouBell" => "soothe_bell.png",
 			"Poke_RainbowWing" or "RainbowWing" => "pretty_feather.png",
 			"Poke_RedOrb" or "RedOrb" => "red_orb.png",
-			"Poke_ReinsOfUnity" or "ReinsOfUnity" => "soothe_bell.png",
+			"Poke_ReinsOfUnity" or "ReinsOfUnity" => "reins_of_unity.png",
 			"Poke_RelicIce" or "RelicIce" => "never_melt_ice.png",
 			"Poke_RelicRock" or "RelicRock" => "hard_stone.png",
 			"Poke_RelicSongSheet" or "RelicSongSheet" => "town_map.png",
 			"Poke_RelicSteel" or "RelicSteel" => "metal_coat.png",
-			"Poke_RevealGlass_Love" or "RevealGlass_Love" => "reveal_glass.png",
+			"Poke_RevealGlass_Love" or "RevealGlass_Love" or "Poke_RevealGlass" or "RevealGlass" => "reveal_glass.png",
 			"Poke_RuinousBeads" or "RuinousBeads" => "fire_stone.png",
 			"Poke_RuinousLeaves" or "RuinousLeaves" => "big_root.png",
 			"Poke_RuinousSword" or "RuinousSword" => "never_melt_ice.png",
@@ -1462,6 +1488,16 @@ public static class PokemonItemManager
 			"Poke_RustedShield" or "RustedShield" => "rusted_shield.png",
 			"Poke_RustedSword" or "RustedSword" => "rusted_sword.png",
 			"Poke_ScrollOfDarkness" or "ScrollOfDarkness" => "scroll_of_darkness.png",
+			"Poke_ScrollOfWaters" or "ScrollOfWaters" => "scroll_of_waters.png",
+			"Poke_NSolarizer" or "NSolarizer" or "Poke_DNASplicers" or "DNASplicers" => "dna_splicers.png",
+			"Poke_NLunarizer" or "NLunarizer" => "dna_splicers.png",
+			"Poke_WellspringMask" or "WellspringMask" => "wellspring_mask.png",
+			"Poke_HearthflameMask" or "HearthflameMask" => "hearthflame_mask.png",
+			"Poke_CornerstoneMask" or "CornerstoneMask" => "cornerstone_mask.png",
+			"Poke_AdamantCrystal" or "AdamantCrystal" => "adamant_crystal.png",
+			"Poke_LustrousGlobe" or "LustrousGlobe" => "lustrous_globe.png",
+			"Poke_GriseousOrb" or "GriseousOrb" => "griseous_orb.png",
+			"Poke_Gracidea" or "Gracidea" => "gracidea.png",
 			"Poke_SeaCrown" or "SeaCrown" => "relic_crown.png",
 			"Poke_SeaDriftTear" or "SeaDriftTear" => "mystic_water.png",
 			"Poke_SecretSwordRelic" or "SecretSwordRelic" => "water_stone.png",

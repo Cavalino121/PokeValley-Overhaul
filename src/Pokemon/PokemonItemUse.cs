@@ -59,17 +59,109 @@ public static class PokemonItemUse
 
 	public static bool IsMedicine(string localId) => localId == "PokemonPotion" || localId == "PokemonSuperPotion" || localId == "PokemonMaxPotion" || localId == "PokemonAntidote" || localId == "PokemonParalyzeHeal" || localId == "PokemonAwakening" || localId == "PokemonBurnHeal" || localId == "PokemonIceHeal" || localId == "PokemonFullHeal" || localId == "PokemonRevive" || localId == "PokemonRareCandy" || localId == "PokemonFriendshipCandy" || IsVitamin(localId);
 
-	public static bool IsEvolutionItem(string localId) => localId != null && (
-		localId == "PokemonWaterStone" || localId == "PokemonFireStone" || localId == "PokemonThunderStone" ||
-		localId == "PokemonLeafStone" || localId == "PokemonMoonStone" || localId == "PokemonSunStone" ||
-		localId == "PokemonShinyStone" || localId == "PokemonDuskStone" || localId == "PokemonDawnStone" ||
-		localId == "PokemonIceStone" || localId == "PokemonLinkCable" || localId == "LinkCable");
+	public static bool IsEvolutionItem(string localId)
+	{
+		if (string.IsNullOrEmpty(localId)) return false;
+		string id = LocalId(localId);
+		return id is "PokemonWaterStone" or "PokemonFireStone" or "PokemonThunderStone" or
+			"PokemonLeafStone" or "PokemonMoonStone" or "PokemonSunStone" or
+			"PokemonShinyStone" or "PokemonDuskStone" or "PokemonDawnStone" or
+			"PokemonIceStone" or "PokemonOvalStone" or "PokemonLinkCable" or "LinkCable" or
+			"PokemonLinkingCord" or "LinkingCord" or "PokemonMetalCoat" or "MetalCoat" or "Poke_MetalCoat" or
+			"PokemonKingsRock" or "PokemonProtector" or "PokemonElectirizer" or "PokemonMagmarizer" or
+			"PokemonUpGrade" or "PokemonDubiousDisc" or "PokemonReaperCloth" or "PokemonDragonScale" or
+			"PokemonPrismScale" or "PokemonWhippedDream" or "PokemonSachet" or "PokemonRazorClaw" or "PokemonRazorFang" or
+			"Poke_ScrollOfDarkness" or "ScrollOfDarkness" or "Poke_ScrollOfWaters" or "ScrollOfWaters" or
+			"Poke_GigantamaxNut" or "GigantamaxNut" or "Poke_SunFlute" or "SunFlute" or
+			"Poke_MoonFlute" or "MoonFlute" or "Poke_MemoryDrive_Normal" or "MemoryDrive_Normal" or
+			"Poke_DragonPoisonBarb" or "DragonPoisonBarb";
+	}
+
+	public static bool IsFormChangeItem(string localId)
+	{
+		if (string.IsNullOrEmpty(localId)) return false;
+		string id = LocalId(localId);
+		if (id.StartsWith("Poke_", StringComparison.OrdinalIgnoreCase)) id = id.Substring(5);
+		return id is "MeteoritePiece" or "Rayquazite" or
+			"PrisonBottle" or
+			"DNA_Splicers" or "DNASplicers" or
+			"NSolarizer" or "NLunarizer" or
+			"ReinsOfUnity" or
+			"RustedSword" or "RustedShield" or
+			"GriseousCore" or "GriseousOrb" or
+			"AdamantOrb" or "AdamantCrystal" or
+			"LustrousOrb" or "LustrousGlobe" or
+			"GracideaFlower" or "Gracidea" or
+			"RevealGlass" or "RevealGlass_Love" or "CycloneMirror" or "BoltMirror" or "FertilityMirror" or
+			"TealMask" or "WellspringMask" or "HearthflameMask" or "CornerstoneMask" or
+			"ZygardeCube" or "IndigoDisk";
+	}
+
+	public static bool CanSwitchFormInSummary(PokemonInstance p)
+	{
+		if (p?.Species == null) return false;
+		string baseSp = (p.Species.BaseSpeciesName ?? p.Species.InternalName ?? "").ToLowerInvariant();
+		return baseSp is "deoxys" or "hoopa" or "kyurem" or "necrozma" or "calyrex" or
+			"zacian" or "zamazenta" or "giratina" or "dialga" or "palkia" or "shaymin" or
+			"tornadus" or "thundurus" or "landorus" or "enamorus" or "ogerpon" or "zygarde" or
+			"terapagos" or "urshifu";
+	}
+
+	public static bool CanApplyFormChange(string localId, PokemonInstance p)
+	{
+		if (p?.Species == null || string.IsNullOrEmpty(localId)) return false;
+		string id = LocalId(localId);
+		if (id.StartsWith("Poke_", StringComparison.OrdinalIgnoreCase)) id = id.Substring(5);
+		string baseSp = (p.Species.BaseSpeciesName ?? p.Species.InternalName ?? "").ToLowerInvariant();
+
+		return id switch
+		{
+			"MeteoritePiece" or "Rayquazite" => baseSp == "deoxys",
+			"PrisonBottle" => baseSp == "hoopa",
+			"DNA_Splicers" or "DNASplicers" => baseSp == "kyurem",
+			"NSolarizer" or "NLunarizer" => baseSp == "necrozma",
+			"ReinsOfUnity" => baseSp == "calyrex",
+			"RustedSword" => baseSp == "zacian",
+			"RustedShield" => baseSp == "zamazenta",
+			"GriseousCore" or "GriseousOrb" => baseSp == "giratina",
+			"AdamantOrb" or "AdamantCrystal" => baseSp == "dialga",
+			"LustrousOrb" or "LustrousGlobe" => baseSp == "palkia",
+			"GracideaFlower" or "Gracidea" => baseSp == "shaymin",
+			"RevealGlass" or "RevealGlass_Love" or "CycloneMirror" or "BoltMirror" or "FertilityMirror" =>
+				baseSp is "tornadus" or "thundurus" or "landorus" or "enamorus",
+			"TealMask" or "WellspringMask" or "HearthflameMask" or "CornerstoneMask" => baseSp == "ogerpon",
+			"ZygardeCube" => baseSp == "zygarde",
+			"IndigoDisk" => baseSp == "terapagos",
+			_ => false
+		};
+	}
+
+	public static bool CanUseFormOrEvoItemOnParty(string localId)
+	{
+		var team = PlayerParty.Instance?.Team;
+		if (team == null || team.Count == 0) return false;
+		foreach (var p in team)
+		{
+			if (p == null) continue;
+			if (CanApplyFormChange(localId, p)) return true;
+			if (IsEvolutionItem(localId) && PokemonEvolution.CheckEvolution(p, EvolutionTrigger.UseItem, localId) != null)
+				return true;
+		}
+		return false;
+	}
+
+	public static bool UseFormOrEvoItem(string qualifiedId)
+	{
+		return Use(qualifiedId);
+	}
 
 	/// <summary>True for items whose use is handled by this class (and which must never be placed / eaten).</summary>
 	public static bool IsUsable(string qualifiedId)
 	{
 		string id = LocalId(qualifiedId);
-		return IsMedicine(id) || IsRepel(id) || IsTm(id) || IsEvolutionItem(id) || IsVitamin(id);
+		if (PokemonEncounterManager.IsSummonRelic(id) && !CanUseFormOrEvoItemOnParty(id))
+			return false;
+		return IsMedicine(id) || IsRepel(id) || IsTm(id) || IsEvolutionItem(id) || IsFormChangeItem(id) || IsVitamin(id);
 	}
 
 	public static string DisplayName(string localId)
@@ -86,6 +178,27 @@ public static class PokemonItemUse
 		if (clean is "Carbos") return "Carbos";
 		if (clean is "PPUp") return "PP Up";
 		if (clean is "PPMax") return "PP Max";
+		if (clean is "ScrollOfDarkness") return "Pergaminho da Escuridão";
+		if (clean is "ScrollOfWaters") return "Pergaminho das Águas";
+		if (clean is "MeteoritePiece") return "Fragmento de Meteorito";
+		if (clean is "PrisonBottle") return "Garrafa Prisão";
+		if (clean is "DNA_Splicers" or "DNASplicers") return "DNA Splicers";
+		if (clean is "NSolarizer") return "N-Solarizer";
+		if (clean is "NLunarizer") return "N-Lunarizer";
+		if (clean is "ReinsOfUnity") return "Rédeas da Unidade";
+		if (clean is "RustedSword") return "Espada Enferrujada";
+		if (clean is "RustedShield") return "Escudo Enferrujado";
+		if (clean is "GriseousCore" or "GriseousOrb") return "Orbe Gris";
+		if (clean is "AdamantOrb" or "AdamantCrystal") return "Cristal Diamante";
+		if (clean is "LustrousOrb" or "LustrousGlobe") return "Globo Lustroso";
+		if (clean is "GracideaFlower" or "Gracidea") return "Flor Gracídea";
+		if (clean is "RevealGlass" or "RevealGlass_Love" or "CycloneMirror" or "BoltMirror" or "FertilityMirror") return "Espelho Revelador";
+		if (clean is "TealMask") return "Máscara Turquesa";
+		if (clean is "WellspringMask") return "Máscara da Fonte";
+		if (clean is "HearthflameMask") return "Máscara da Chama";
+		if (clean is "CornerstoneMask") return "Máscara do Alicerce";
+		if (clean is "ZygardeCube") return "Cubo de Zygarde";
+		if (clean is "IndigoDisk") return "Disco Índigo";
 
 		return localId switch
 		{
@@ -123,6 +236,10 @@ public static class PokemonItemUse
 	public static bool CanApply(string localId, PokemonInstance p)
 	{
 		if (p == null) return false;
+		if (IsFormChangeItem(localId))
+		{
+			return CanApplyFormChange(localId, p);
+		}
 		if (IsEvolutionItem(localId))
 		{
 			return PokemonEvolution.CheckEvolution(p, EvolutionTrigger.UseItem, localId) != null;
@@ -444,6 +561,19 @@ public static class PokemonItemUse
 			return false;
 		}
 
+		if (IsFormChangeItem(id))
+		{
+			Game1.activeClickableMenu = new PokemonTargetMenu(
+				DisplayName(id),
+				p => CanApplyFormChange(id, p),
+				idx =>
+				{
+					var p = team[idx];
+					ApplyFormChangeOrMenu(p, id, null);
+				});
+			return false;
+		}
+
 		if (IsEvolutionItem(id))
 		{
 			Game1.activeClickableMenu = new PokemonTargetMenu(
@@ -479,6 +609,46 @@ public static class PokemonItemUse
 				idx =>
 				{
 					var p = team[idx];
+					string cleanMed = id;
+					if (cleanMed.StartsWith("Pokemon")) cleanMed = cleanMed.Substring(7);
+					if (cleanMed.StartsWith("Poke_")) cleanMed = cleanMed.Substring(5);
+
+					if (cleanMed is "PPUp" or "PPMax")
+					{
+						if (p.Moves.Count == 0)
+						{
+							Game1.playSound("cancel");
+							Game1.addHUDMessage(new HUDMessage($"{p.Nickname} não possui movimentos!", 3));
+							return;
+						}
+						Game1.activeClickableMenu = new PokemonTargetMenu(p, isPpBoost: true, DisplayName(id), moveIdx =>
+						{
+							if (moveIdx < 0 || moveIdx >= p.Moves.Count)
+							{
+								Game1.exitActiveMenu();
+								return;
+							}
+							var m = p.Moves[moveIdx];
+							int oldMax = m.MaxPP;
+							if (cleanMed == "PPUp")
+							{
+								m.MaxPP = Math.Max(oldMax + 1, (int)Math.Round(oldMax * 1.2f));
+								m.CurrentPP = Math.Min(m.CurrentPP + (m.MaxPP - oldMax), m.MaxPP);
+							}
+							else
+							{
+								m.MaxPP = Math.Max(oldMax + 3, (int)Math.Round(oldMax * 1.6f));
+								m.CurrentPP = m.MaxPP;
+							}
+							Game1.player.Items.ReduceId("(O)" + id, 1);
+							PlayerParty.Instance.SaveParty();
+							Game1.playSound("reward");
+							Game1.addHUDMessage(new HUDMessage($"O PP máximo de {m.Name} ({p.Nickname}) subiu de {oldMax} para {m.MaxPP}!", 2));
+							Game1.exitActiveMenu();
+						});
+						return;
+					}
+
 					if (id == "PokemonRareCandy")
 					{
 						if (!p.GainLevel())
@@ -538,6 +708,246 @@ public static class PokemonItemUse
 		return false;
 	}
 
+	public static void OpenFormSwitchFromSummary(PokemonInstance p, IClickableMenu returnMenu = null)
+	{
+		ApplyFormChangeOrMenu(p, "SummarySwitch", returnMenu);
+	}
+
+	public static void ApplyFormChangeOrMenu(PokemonInstance p, string itemId, IClickableMenu returnMenu = null)
+	{
+		if (p?.Species == null) return;
+		string baseSp = (p.Species.BaseSpeciesName ?? p.Species.InternalName ?? "").ToLowerInvariant();
+		string curSp = (p.Species.InternalName ?? "").ToLowerInvariant();
+		string cleanItem = LocalId(itemId ?? "");
+		if (cleanItem.StartsWith("Poke_", StringComparison.OrdinalIgnoreCase)) cleanItem = cleanItem.Substring(5);
+
+		void FinishTransform(string targetSpeciesKey, string signatureMove = null)
+		{
+			var targetSp = PokemonSpecies.Get(targetSpeciesKey);
+			if (targetSp == null)
+			{
+				Game1.playSound("cancel");
+				Game1.addHUDMessage(new HUDMessage($"Forma '{targetSpeciesKey}' não encontrada!", 3));
+				return;
+			}
+			if (p.ChangeForm(targetSp, signatureMove))
+			{
+				PlayerParty.Instance.SaveParty();
+				Game1.playSound("wand");
+				Game1.addHUDMessage(new HUDMessage($"✨ {p.Nickname} assumiu a forma {targetSp.Name}!", 2));
+			}
+			else
+			{
+				Game1.playSound("smallSelect");
+				Game1.addHUDMessage(new HUDMessage($"{p.Nickname} já está na forma {targetSp.Name}.", 2));
+			}
+			if (returnMenu != null)
+				Game1.activeClickableMenu = returnMenu;
+			else
+				Game1.exitActiveMenu();
+		}
+
+		void ShowFormMenu(string title, (string Label, string Key, string Move)[] choices)
+		{
+			var labels = new List<string>(choices.Length);
+			foreach (var c in choices) labels.Add(c.Label);
+			Game1.activeClickableMenu = new PokemonTargetMenu(title, labels, pickIdx =>
+			{
+				if (pickIdx < 0 || pickIdx >= choices.Length)
+				{
+					if (returnMenu != null) Game1.activeClickableMenu = returnMenu;
+					else Game1.exitActiveMenu();
+					return;
+				}
+				var chosen = choices[pickIdx];
+				FinishTransform(chosen.Key, chosen.Move);
+			});
+		}
+
+		switch (baseSp)
+		{
+			case "deoxys":
+				ShowFormMenu($"Escolha a Forma de {p.Nickname}", new[]
+				{
+					("Deoxys (Forma Normal - Equilibrada)", "deoxys", "Psycho Boost"),
+					("Deoxys (Forma Ataque - 180 Atk/SpA)", "deoxys/attack", "Psycho Boost"),
+					("Deoxys (Forma Defesa - 160 Def/SpD)", "deoxys/defense", "Psycho Boost"),
+					("Deoxys (Forma Velocidade - 180 Spe)", "deoxys/speed", "Psycho Boost")
+				});
+				return;
+
+			case "hoopa":
+				if (curSp == "hoopa/unbound")
+					FinishTransform("hoopa", "Hyperspace Hole");
+				else
+					FinishTransform("hoopa/unbound", "Hyperspace Fury");
+				return;
+
+			case "zacian":
+				if (curSp == "zacian/crowned_sword")
+					FinishTransform("zacian", "Play Rough");
+				else
+					FinishTransform("zacian/crowned_sword", "Behemoth Blade");
+				return;
+
+			case "zamazenta":
+				if (curSp == "zamazenta/crowned_shield")
+					FinishTransform("zamazenta", "Close Combat");
+				else
+					FinishTransform("zamazenta/crowned_shield", "Behemoth Bash");
+				return;
+
+			case "giratina":
+				if (curSp == "giratina/origin")
+					FinishTransform("giratina", "Shadow Force");
+				else
+					FinishTransform("giratina/origin", "Shadow Force");
+				return;
+
+			case "dialga":
+				if (curSp == "dialga/origin")
+					FinishTransform("dialga", "Roar of Time");
+				else
+					FinishTransform("dialga/origin", "Roar of Time");
+				return;
+
+			case "palkia":
+				if (curSp == "palkia/origin")
+					FinishTransform("palkia", "Spacial Rend");
+				else
+					FinishTransform("palkia/origin", "Spacial Rend");
+				return;
+
+			case "shaymin":
+				if (curSp == "shaymin/sky")
+					FinishTransform("shaymin", "Seed Flare");
+				else
+					FinishTransform("shaymin/sky", "Air Slash");
+				return;
+
+			case "tornadus":
+				if (curSp == "tornadus/therian")
+					FinishTransform("tornadus", "Bleakwind Storm");
+				else
+					FinishTransform("tornadus/therian", "Bleakwind Storm");
+				return;
+
+			case "thundurus":
+				if (curSp == "thundurus/therian")
+					FinishTransform("thundurus", "Wildbolt Storm");
+				else
+					FinishTransform("thundurus/therian", "Wildbolt Storm");
+				return;
+
+			case "landorus":
+				if (curSp == "landorus/therian")
+					FinishTransform("landorus", "Sandsear Storm");
+				else
+					FinishTransform("landorus/therian", "Sandsear Storm");
+				return;
+
+			case "enamorus":
+				if (curSp == "enamorus/therian")
+					FinishTransform("enamorus", "Springtide Storm");
+				else
+					FinishTransform("enamorus/therian", "Springtide Storm");
+				return;
+
+			case "urshifu":
+				if (curSp == "urshifu/rapid_strike")
+					FinishTransform("urshifu", "Wicked Blow");
+				else
+					FinishTransform("urshifu/rapid_strike", "Surging Strikes");
+				return;
+
+			case "kyurem":
+				ShowFormMenu($"DNA Splicers: Escolha a Fusão de {p.Nickname}", new[]
+				{
+					("Kyurem (Forma Base - Dragon/Ice)", "kyurem", "Glaciate"),
+					("White Kyurem (Fusão Reshiram - 170 SpA)", "kyurem/white", "Ice Burn"),
+					("Black Kyurem (Fusão Zekrom - 170 Atk)", "kyurem/black", "Freeze Shock")
+				});
+				return;
+
+			case "necrozma":
+				if (cleanItem == "NSolarizer")
+				{
+					if (curSp == "necrozma/dusk_mane")
+						FinishTransform("necrozma", "Photon Geyser");
+					else
+						FinishTransform("necrozma/dusk_mane", "Sunsteel Strike");
+					return;
+				}
+				if (cleanItem == "NLunarizer")
+				{
+					if (curSp == "necrozma/dawn_wings")
+						FinishTransform("necrozma", "Photon Geyser");
+					else
+						FinishTransform("necrozma/dawn_wings", "Moongeist Beam");
+					return;
+				}
+				ShowFormMenu($"Escolha a Fusão de {p.Nickname}", new[]
+				{
+					("Necrozma (Forma Base - Psychic)", "necrozma", "Photon Geyser"),
+					("Dusk Mane Necrozma (Fusão Solgaleo - Psychic/Steel)", "necrozma/dusk_mane", "Sunsteel Strike"),
+					("Dawn Wings Necrozma (Fusão Lunala - Psychic/Ghost)", "necrozma/dawn_wings", "Moongeist Beam")
+				});
+				return;
+
+			case "calyrex":
+				ShowFormMenu($"Rédeas da Unidade: Escolha a Montaria de {p.Nickname}", new[]
+				{
+					("Calyrex (Forma Base - Psychic/Grass)", "calyrex", "Energy Ball"),
+					("Ice Rider Calyrex (Montaria Glastrier - 165 Atk)", "calyrex/ice", "Glacial Lance"),
+					("Shadow Rider Calyrex (Montaria Spectrier - 165 SpA)", "calyrex/shadow", "Astral Barrage")
+				});
+				return;
+
+			case "ogerpon":
+				if (cleanItem == "WellspringMask" && curSp != "ogerpon/wellspring")
+				{
+					FinishTransform("ogerpon/wellspring", "Ivy Cudgel");
+					return;
+				}
+				if (cleanItem == "HearthflameMask" && curSp != "ogerpon/hearthflame")
+				{
+					FinishTransform("ogerpon/hearthflame", "Ivy Cudgel");
+					return;
+				}
+				if (cleanItem == "CornerstoneMask" && curSp != "ogerpon/cornerstone")
+				{
+					FinishTransform("ogerpon/cornerstone", "Ivy Cudgel");
+					return;
+				}
+				ShowFormMenu($"Escolha a Máscara de {p.Nickname}", new[]
+				{
+					("Máscara Turquesa (Grass)", "ogerpon", "Ivy Cudgel"),
+					("Máscara da Fonte (Grass / Water)", "ogerpon/wellspring", "Ivy Cudgel"),
+					("Máscara da Chama (Grass / Fire)", "ogerpon/hearthflame", "Ivy Cudgel"),
+					("Máscara do Alicerce (Grass / Rock)", "ogerpon/cornerstone", "Ivy Cudgel")
+				});
+				return;
+
+			case "zygarde":
+				ShowFormMenu($"Cubo de Zygarde: Escolha a Forma de {p.Nickname}", new[]
+				{
+					("Zygarde 10% (Forma Canina - 115 Spe)", "zygarde/10_percent", "Thousand Arrows"),
+					("Zygarde 50% (Forma Guardião - Equilibrada)", "zygarde", "Thousand Arrows"),
+					("Zygarde 100% (Forma Completa - 216 HP)", "zygarde/complete", "Core Enforcer")
+				});
+				return;
+
+			case "terapagos":
+				ShowFormMenu($"Disco Índigo: Escolha a Forma de {p.Nickname}", new[]
+				{
+					("Terapagos (Forma Normal)", "terapagos", "Tera Starstorm"),
+					("Terapagos (Forma Terastal)", "terapagos/terastal", "Tera Starstorm"),
+					("Terapagos (Forma Stellar)", "terapagos/stellar", "Tera Starstorm")
+				});
+				return;
+		}
+	}
+
 	private static void TeachTm(string id, string moveName, PokemonInstance p)
 	{
 		if (!PokemonMove.CanLearn(p?.Species, moveName))
@@ -587,7 +997,7 @@ public static class PokemonItemUse
 	}
 }
 
-/// <summary>Menu used to pick a target Pokémon (or the move to replace when learning a TM).</summary>
+/// <summary>Menu used to pick a target Pokémon (or a move/option).</summary>
 public class PokemonTargetMenu : IClickableMenu
 {
 	private readonly string _title;
@@ -597,6 +1007,9 @@ public class PokemonTargetMenu : IClickableMenu
 	private readonly PokemonInstance _learner;
 	private readonly string _newMove;
 	private readonly bool _moveMode;
+	private readonly bool _isPpBoost;
+	private readonly IList<string> _options;
+	private readonly bool _optionMode;
 
 	private readonly List<ClickableComponent> _rows = new();
 	private ClickableComponent _cancel;
@@ -659,17 +1072,42 @@ public class PokemonTargetMenu : IClickableMenu
 		Layout();
 	}
 
+	/// <summary>PP Boost move selection mode: choose which move of the Pokémon receives PP Up / PP Max.</summary>
+	public PokemonTargetMenu(PokemonInstance learner, bool isPpBoost, string itemLabel, Action<int> onChoice)
+		: base(0, 0, 560, 100 + 4 * 58 + 80)
+	{
+		_moveMode = true;
+		_isPpBoost = isPpBoost;
+		_learner = learner;
+		_newMove = itemLabel;
+		_title = $"{itemLabel}: Escolha o golpe de {learner.Nickname}";
+		_onPick = onChoice;
+		Layout();
+	}
+
+	/// <summary>Custom option list mode (used for multi-form/fusion selection).</summary>
+	public PokemonTargetMenu(string title, IList<string> options, Action<int> onPickOption)
+		: base(0, 0, 620, 100 + Math.Max(2, options?.Count ?? 2) * 58 + 80)
+	{
+		_optionMode = true;
+		_options = options ?? Array.Empty<string>();
+		_title = title;
+		_onPick = onPickOption;
+		Layout();
+	}
+
 	private void Layout()
 	{
 		xPositionOnScreen = (Game1.uiViewport.Width - width) / 2;
 		yPositionOnScreen = (Game1.uiViewport.Height - height) / 2;
 		_rows.Clear();
-		int count = _moveMode ? 4 : Math.Min(6, PlayerParty.Instance.Team.Count);
+		int count = _optionMode ? _options.Count : (_moveMode ? 4 : Math.Min(6, PlayerParty.Instance.Team.Count));
 		for (int i = 0; i < count; i++)
 		{
 			_rows.Add(new ClickableComponent(new Rectangle(xPositionOnScreen + 28, yPositionOnScreen + 86 + i * 58, width - 56, 52), i.ToString()));
 		}
-		_cancel = new ClickableComponent(new Rectangle(xPositionOnScreen + width - 190, yPositionOnScreen + height - 66, 160, 42), "cancel", _moveMode ? "Não aprender" : "Cancelar");
+		string cancelLabel = (_moveMode && !_isPpBoost) ? "Não aprender" : "Cancelar";
+		_cancel = new ClickableComponent(new Rectangle(xPositionOnScreen + width - 190, yPositionOnScreen + height - 66, 160, 42), "cancel", cancelLabel);
 	}
 
 	public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
@@ -691,7 +1129,7 @@ public class PokemonTargetMenu : IClickableMenu
 	private void Cancel()
 	{
 		Game1.playSound("bigDeSelect");
-		if (_moveMode) _onPick(-1);
+		if (_moveMode || _optionMode) _onPick(-1);
 		else Game1.exitActiveMenu();
 	}
 
@@ -705,6 +1143,15 @@ public class PokemonTargetMenu : IClickableMenu
 		for (int i = 0; i < _rows.Count; i++)
 		{
 			if (!_rows[i].containsPoint(x, y)) continue;
+			if (_optionMode)
+			{
+				if (i < _options.Count)
+				{
+					Game1.playSound("smallSelect");
+					_onPick(i);
+				}
+				return;
+			}
 			if (_moveMode)
 			{
 				if (i < _learner.Moves.Count)
@@ -744,13 +1191,22 @@ public class PokemonTargetMenu : IClickableMenu
 			Rectangle r = _rows[i].bounds;
 			bool hov = r.Contains(mx, my) || (isGamepad && _gamepadIndex == i);
 
+			if (_optionMode)
+			{
+				IClickableMenu.drawTextureBox(b, r.X, r.Y, r.Width, r.Height, hov ? Color.LemonChiffon : Color.White);
+				PokemonUI.Text(b, Game1.smallFont, _options[i], new Rectangle(r.X + 16, r.Y + 10, r.Width - 32, 32), hov ? Color.DarkSlateBlue : Game1.textColor, maxScale: 0.88f);
+				continue;
+			}
+
 			if (_moveMode)
 			{
 				bool has = i < _learner.Moves.Count;
 				IClickableMenu.drawTextureBox(b, r.X, r.Y, r.Width, r.Height, has ? (hov ? Color.LemonChiffon : Color.White) : Color.Gray * 0.4f);
 				if (!has) continue;
 				var m = _learner.Moves[i];
-				PokemonUI.Text(b, Game1.smallFont, $"Esquecer: {m.Name}", new Rectangle(r.X + 16, r.Y + 6, r.Width - 190, 26), hov ? Color.DarkRed : Game1.textColor, maxScale: 0.9f);
+				string prefix = _isPpBoost ? "Aumentar PP" : "Esquecer";
+				Color textCol = hov ? (_isPpBoost ? Color.DarkGreen : Color.DarkRed) : Game1.textColor;
+				PokemonUI.Text(b, Game1.smallFont, $"{prefix}: {m.Name}", new Rectangle(r.X + 16, r.Y + 6, r.Width - 190, 26), textCol, maxScale: 0.9f);
 				PokemonUI.Text(b, Game1.tinyFont, $"{m.Type}  Pwr {m.Power}  PP {m.CurrentPP}/{m.MaxPP}", new Rectangle(r.X + 16, r.Y + 30, r.Width - 190, 18), Color.DimGray, maxScale: 0.9f);
 				DrawTypePill(b, m.Type, r.Right - 112, r.Y + 17);
 				continue;

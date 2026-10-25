@@ -75,6 +75,13 @@ public static class PokemonEvolution
 				{
 					if (trigger == EvolutionTrigger.LevelUp && mon.Level >= evo.Level)
 					{
+						if (string.Equals(species, "cosmoem", StringComparison.OrdinalIgnoreCase))
+						{
+							if (isDay && string.Equals(evo.TargetSpecies, "lunala", StringComparison.OrdinalIgnoreCase))
+								continue;
+							if (isNight && string.Equals(evo.TargetSpecies, "solgaleo", StringComparison.OrdinalIgnoreCase))
+								continue;
+						}
 						if (!string.IsNullOrEmpty(evo.Move))
 						{
 							if (mon.Moves.Exists(m => string.Equals(m.Name, evo.Move, StringComparison.OrdinalIgnoreCase)))
@@ -114,7 +121,13 @@ public static class PokemonEvolution
 		{
 			if (trigger == EvolutionTrigger.UseItem)
 			{
-				if (evo.Trigger == EvolutionTrigger.UseItem && string.Equals(evo.Item, itemOrArg, StringComparison.OrdinalIgnoreCase))
+				string cleanArg = itemOrArg ?? "";
+				if (cleanArg.StartsWith("(O)")) cleanArg = cleanArg.Substring(3);
+				if (evo.Trigger == EvolutionTrigger.UseItem &&
+				    (string.Equals(evo.Item, itemOrArg, StringComparison.OrdinalIgnoreCase) ||
+				     string.Equals(evo.Item, cleanArg, StringComparison.OrdinalIgnoreCase) ||
+				     string.Equals(evo.Item, "Poke_" + cleanArg, StringComparison.OrdinalIgnoreCase) ||
+				     string.Equals(evo.Item, "Pokemon" + cleanArg, StringComparison.OrdinalIgnoreCase)))
 					return evo;
 
 				// Generic Link Cable triggers Trade Evolutions as well!
@@ -167,10 +180,32 @@ public static class PokemonEvolution
 		bool updateNickname = string.Equals(mon.Nickname, mon.Species.Name, StringComparison.OrdinalIgnoreCase);
 		mon.Species = targetSpecies;
 		if (updateNickname) mon.Nickname = targetSpecies.Name;
+		mon.Ability = PokemonAbility.GetDefaultAbility(targetSpecies, isMega: false);
 
 		mon.RecalculateStats();
 		mon.InvalidateSpriteCache();
 		mon.CurrentHP = Math.Min(mon.MaxHP, mon.CurrentHP + 15);
+
+		string sigMove = targetSpecies.InternalName?.ToLowerInvariant() switch
+		{
+			"solgaleo" => "Sunsteel Strike",
+			"lunala" => "Moongeist Beam",
+			"urshifu" => "Wicked Blow",
+			"urshifu/rapid_strike" => "Surging Strikes",
+			"melmetal" => "Double Iron Bash",
+			"naganadel" => "Dragon Pulse",
+			_ => null
+		};
+		if (!string.IsNullOrEmpty(sigMove))
+		{
+			var mv = PokemonMove.Get(sigMove);
+			if (mv != null && !mon.Moves.Exists(m => string.Equals(m.Name, mv.Name, StringComparison.OrdinalIgnoreCase)))
+			{
+				if (mon.Moves.Count < 4) mon.Moves.Insert(0, mv.Clone());
+				else mon.Moves[0] = mv.Clone();
+			}
+		}
+
 		PlayerParty.Instance.SaveParty();
 	}
 
@@ -459,13 +494,28 @@ public static class PokemonEvolution
 		Register("steenee", "tsareena", EvolutionTrigger.LevelUp, 0);
 		Register("wimpod", "golisopod", EvolutionTrigger.LevelUp, 30);
 		Register("sandygast", "palossand", EvolutionTrigger.LevelUp, 42);
-		Register("type_null", "silvally_normal", EvolutionTrigger.LevelUp, 0);
+		Register("type_null", "silvally", EvolutionTrigger.Friendship);
+		Register("type_null", "silvally", EvolutionTrigger.LevelUp, 40);
+		Register("type_null", "silvally", EvolutionTrigger.UseItem, 0, "Poke_MemoryDrive_Normal");
 		Register("jangmo_o", "hakamo_o", EvolutionTrigger.LevelUp, 35);
 		Register("hakamo_o", "kommo_o", EvolutionTrigger.LevelUp, 45);
 		Register("cosmog", "cosmoem", EvolutionTrigger.LevelUp, 43);
 		Register("cosmoem", "solgaleo", EvolutionTrigger.LevelUp, 53);
 		Register("cosmoem", "lunala", EvolutionTrigger.LevelUp, 53);
-		Register("poipole", "naganadel", EvolutionTrigger.LevelUp, 0);
+		Register("cosmoem", "solgaleo", EvolutionTrigger.UseItem, 0, "PokemonSunStone");
+		Register("cosmoem", "solgaleo", EvolutionTrigger.UseItem, 0, "Poke_SunFlute");
+		Register("cosmoem", "lunala", EvolutionTrigger.UseItem, 0, "PokemonMoonStone");
+		Register("cosmoem", "lunala", EvolutionTrigger.UseItem, 0, "Poke_MoonFlute");
+		Register("poipole", "naganadel", EvolutionTrigger.LevelUp, 0, null, "Dragon Pulse");
+		Register("poipole", "naganadel", EvolutionTrigger.LevelUp, 40);
+		Register("poipole", "naganadel", EvolutionTrigger.UseItem, 0, "Poke_DragonPoisonBarb");
+		Register("meltan", "melmetal", EvolutionTrigger.UseItem, 0, "PokemonMetalCoat");
+		Register("meltan", "melmetal", EvolutionTrigger.UseItem, 0, "Poke_MetalCoat");
+		Register("meltan", "melmetal", EvolutionTrigger.UseItem, 0, "Poke_GigantamaxNut");
+		Register("meltan", "melmetal", EvolutionTrigger.LevelUp, 40);
+		Register("kubfu", "urshifu", EvolutionTrigger.UseItem, 0, "Poke_ScrollOfDarkness");
+		Register("kubfu", "urshifu/rapid_strike", EvolutionTrigger.UseItem, 0, "Poke_ScrollOfWaters");
+		Register("kubfu", "urshifu", EvolutionTrigger.LevelUp, 70);
 		Register("grookey", "thwackey", EvolutionTrigger.LevelUp, 16);
 		Register("thwackey", "rillaboom", EvolutionTrigger.LevelUp, 35);
 		Register("scorbunny", "raboot", EvolutionTrigger.LevelUp, 16);

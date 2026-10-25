@@ -358,7 +358,7 @@ public class PokemonInstance
 	public bool CanMegaEvolve()
 	{
 		if (IsMegaEvolved || Species == null || Species.IsMega) return false;
-		var forms = PokemonSpecies.GetMegaForms(Species.InternalName);
+		var forms = PokemonSpecies.GetMegaForms(Species.BaseSpeciesName ?? Species.InternalName);
 		return forms != null && forms.Count > 0;
 	}
 
@@ -373,7 +373,7 @@ public class PokemonInstance
 		if (IsMegaEvolved || Species == null) return false;
 		if (megaTarget == null)
 		{
-			var forms = PokemonSpecies.GetMegaForms(Species.InternalName);
+			var forms = PokemonSpecies.GetMegaForms(Species.BaseSpeciesName ?? Species.InternalName);
 			if (forms == null || forms.Count == 0) return false;
 			megaTarget = forms[0];
 		}
@@ -427,6 +427,43 @@ public class PokemonInstance
 		float ratio = HpRatio;
 		RecalculateStats();
 		CurrentHP = Math.Clamp((int)Math.Round(MaxHP * ratio), IsFainted ? 0 : 1, MaxHP);
+		InvalidateSpriteCache();
+		return true;
+	}
+
+	public bool ChangeForm(PokemonSpecies targetForm, string signatureMove = null)
+	{
+		if (targetForm == null || Species == null || targetForm == Species)
+			return false;
+
+		string oldBaseName = !string.IsNullOrEmpty(Species.BaseSpeciesName) ? Species.BaseSpeciesName : Species.Name;
+		bool updateNick = string.IsNullOrWhiteSpace(Nickname) ||
+		                  string.Equals(Nickname, Species.Name, StringComparison.OrdinalIgnoreCase) ||
+		                  string.Equals(Nickname, oldBaseName, StringComparison.OrdinalIgnoreCase);
+
+		Species = targetForm;
+		if (updateNick) Nickname = targetForm.Name;
+		IsMegaEvolved = false;
+		IsBattleOnlyMega = false;
+		PreMegaSpecies = null;
+		Ability = PokemonAbility.GetDefaultAbility(targetForm, isMega: false);
+
+		float ratio = HpRatio;
+		RecalculateStats();
+		CurrentHP = Math.Clamp((int)Math.Round(MaxHP * ratio), IsFainted ? 0 : 1, MaxHP);
+
+		if (!string.IsNullOrWhiteSpace(signatureMove))
+		{
+			var sigMoveObj = PokemonMove.Get(signatureMove);
+			if (sigMoveObj != null && !Moves.Exists(m => string.Equals(m.Name, sigMoveObj.Name, StringComparison.OrdinalIgnoreCase)))
+			{
+				if (Moves.Count < 4)
+					Moves.Insert(0, sigMoveObj.Clone());
+				else
+					Moves[0] = sigMoveObj.Clone();
+			}
+		}
+
 		InvalidateSpriteCache();
 		return true;
 	}

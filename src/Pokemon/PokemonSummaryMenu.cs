@@ -77,18 +77,36 @@ public class PokemonSummaryMenu : IClickableMenu
 		if (_mon?.Species == null) return false;
 		if (_returnMenu is PokemonBattleMenu) return false;
 		if (_mon.IsMegaEvolved || _mon.Species.IsMega) return false;
-		if (!PokemonItemManager.IsWearingMegaBracelet(Game1.player)) return false;
 
-		var megaForms = PokemonSpecies.GetMegaForms(_mon.Species.InternalName);
+		string baseKey = _mon.Species.BaseSpeciesName ?? _mon.Species.InternalName;
+		var megaForms = PokemonSpecies.GetMegaForms(baseKey);
 		if (megaForms == null || megaForms.Count == 0) return false;
+
+		string normHeld = PokemonHeldItemManager.NormalizeId(_mon.HeldItem);
 
 		foreach (var mf in megaForms)
 		{
 			string reqStone = PokemonItemManager.GetMegaStoneIdForMegaForm(mf.InternalName);
-			if (!string.IsNullOrEmpty(reqStone) && string.Equals(_mon.HeldItem, reqStone, StringComparison.OrdinalIgnoreCase))
+			string normReq = PokemonHeldItemManager.NormalizeId(reqStone);
+			bool hasMatchingStone = !string.IsNullOrEmpty(normReq) && string.Equals(normHeld, normReq, StringComparison.OrdinalIgnoreCase);
+			bool isUltraNecrozma = mf.InternalName.Equals("necrozma/ultra", StringComparison.OrdinalIgnoreCase) &&
+			                       string.Equals(normHeld, "UltranecroziumZ", StringComparison.OrdinalIgnoreCase);
+			bool isRayquazaDragonAscent = mf.InternalName.Equals("rayquaza/mega", StringComparison.OrdinalIgnoreCase) &&
+			                              _mon.Moves != null &&
+			                              _mon.Moves.Exists(m => string.Equals(m.Name, "Dragon Ascent", StringComparison.OrdinalIgnoreCase));
+
+			if (hasMatchingStone || isUltraNecrozma || isRayquazaDragonAscent)
 			{
+				bool isPrimalOrUltraOrRay = baseKey.Equals("kyogre", StringComparison.OrdinalIgnoreCase) ||
+				                            baseKey.Equals("groudon", StringComparison.OrdinalIgnoreCase) ||
+				                            baseKey.Equals("rayquaza", StringComparison.OrdinalIgnoreCase) ||
+				                            baseKey.Equals("necrozma", StringComparison.OrdinalIgnoreCase);
+				if (!isPrimalOrUltraOrRay && !PokemonItemManager.IsWearingMegaBracelet(Game1.player))
+				{
+					// Still allow if holding the exact Mega Stone so the player can test/transform cleanly
+				}
 				targetMega = mf;
-				stoneId = reqStone;
+				stoneId = !string.IsNullOrEmpty(_mon.HeldItem) ? _mon.HeldItem : reqStone;
 				return true;
 			}
 		}
@@ -172,6 +190,10 @@ public class PokemonSummaryMenu : IClickableMenu
 			PlayerParty.GetForFarmer(_farmer).SaveParty();
 			Game1.playSound("reward");
 			Game1.addHUDMessage(new HUDMessage($"✨ {_mon.Nickname} Mega Evoluiu para {targetMega.Name}!", 2));
+		}
+		else if (PokemonItemUse.CanSwitchFormInSummary(_mon))
+		{
+			PokemonItemUse.OpenFormSwitchFromSummary(_mon, this);
 		}
 	}
 
@@ -426,7 +448,7 @@ public class PokemonSummaryMenu : IClickableMenu
 			HandleHeldItemClick();
 			return;
 		}
-		if ((CanRevertMegaOutOfBattle() || CanMegaEvolveOutOfBattle(out _, out _)) && _revertMegaBtn != null && _revertMegaBtn.containsPoint(x, y))
+		if ((CanRevertMegaOutOfBattle() || CanMegaEvolveOutOfBattle(out _, out _) || PokemonItemUse.CanSwitchFormInSummary(_mon)) && _revertMegaBtn != null && _revertMegaBtn.containsPoint(x, y))
 		{
 			HandleMegaAction();
 			return;
@@ -714,16 +736,17 @@ public class PokemonSummaryMenu : IClickableMenu
 			PokemonUI.Text(b, Game1.smallFont, $"🎒 {heldName}", new Rectangle(_heldItemBtn.bounds.X + 8, _heldItemBtn.bounds.Y + 6, _heldItemBtn.bounds.Width - 16, 22), heldColor, center: true, maxScale: 0.60f, shadow: false);
 		}
 
-		// Mega Evolution / Revert Button
+		// Mega Evolution / Revert / Form Switch Button
 		bool isRevert = CanRevertMegaOutOfBattle();
 		bool isMegaEvolve = !isRevert && CanMegaEvolveOutOfBattle(out _, out _);
-		bool showMegaBtn = isRevert || isMegaEvolve;
+		bool isFormSwitch = !isRevert && !isMegaEvolve && PokemonItemUse.CanSwitchFormInSummary(_mon);
+		bool showMegaBtn = isRevert || isMegaEvolve || isFormSwitch;
 
 		if (showMegaBtn && _revertMegaBtn != null)
 		{
 			int megaBtnY = _heldItemBtn != null ? _heldItemBtn.bounds.Bottom + 6 : quickBox.Bottom + 8;
 			_revertMegaBtn.bounds = new Rectangle(leftX + 12, megaBtnY, leftW - 24, 34);
-			_revertMegaBtn.label = isRevert ? "🧬 Destransformar Mega" : "🧬 Mega Evoluir";
+			_revertMegaBtn.label = isRevert ? "🧬 Destransformar Mega" : (isMegaEvolve ? "🧬 Mega Evoluir" : "🧬 Alternar Forma");
 			bool revHov = _revertMegaBtn.containsPoint(mx, my);
 			Color boxTint = isRevert
 				? (revHov ? new Color(255, 210, 245) : Color.White)
