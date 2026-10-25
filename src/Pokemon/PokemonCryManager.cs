@@ -263,7 +263,7 @@ public static class PokemonCryManager
 			{
 				float baseVol = Game1.options?.soundVolumeLevel ?? 0.7f;
 				// Master gain calibrado para alinhar perfeitamente com os SFX originais do Stardew Valley
-				const float CryMasterGain = 0.38f;
+				const float CryMasterGain = 0.22f;
 				float finalVol = Math.Clamp(baseVol * volumeMult * CryMasterGain, 0f, 1f);
 				if (finalVol > 0.005f)
 				{

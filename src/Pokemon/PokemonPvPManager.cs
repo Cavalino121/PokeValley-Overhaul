@@ -50,13 +50,16 @@ public static class PokemonPvPManager
 				if (answer == "Yes")
 				{
 					_lastChallengeTime = now;
-					SendBattlePacket($"CHALLENGE|{who.UniqueMultiplayerID}|{who.Name}|{target.UniqueMultiplayerID}", target.UniqueMultiplayerID);
+					int myLead = myParty.ActiveIndex;
+					string mySkin = PokemonUI.TrainerSkin;
+					string payload = $"CHALLENGE|{who.UniqueMultiplayerID}|{who.Name}|{target.UniqueMultiplayerID}|{mySkin}|{myLead}";
+					SendBattlePacket(payload, target.UniqueMultiplayerID);
 					Game1.addHUDMessage(new HUDMessage($"Desafio enviado para {target.Name}!", 2));
 
 					// In local split-screen immediate dispatch:
 					if (LocalMultiplayer.IsLocalMultiplayer())
 					{
-						ReceiveBattlePacket(who.UniqueMultiplayerID, $"CHALLENGE|{who.UniqueMultiplayerID}|{who.Name}|{target.UniqueMultiplayerID}");
+						ReceiveBattlePacket(who.UniqueMultiplayerID, payload);
 					}
 				}
 			});
@@ -91,6 +94,8 @@ public static class PokemonPvPManager
 					if (Game1.player?.UniqueMultiplayerID == targetId)
 					{
 						string challengerName = parts[2];
+						string challengerSkin = (parts.Length >= 5) ? parts[4] : "Brendan";
+						int challengerLead = (parts.Length >= 6 && int.TryParse(parts[5], out int cl)) ? cl : 0;
 						var targetParty = PlayerParty.GetForFarmer(targetId);
 						if (targetParty.Team.Count == 0 || !targetParty.Team.Exists(p => !p.IsFainted))
 						{
@@ -103,13 +108,16 @@ public static class PokemonPvPManager
 						{
 							if (answer == "Yes")
 							{
-								SendBattlePacket($"ACCEPT|{targetId}|{challengerId}", challengerId);
+								int myLead = targetParty.ActiveIndex;
+								string mySkin = PokemonUI.TrainerSkin;
+								string acceptPayload = $"ACCEPT|{targetId}|{challengerId}|{mySkin}|{myLead}";
+								SendBattlePacket(acceptPayload, challengerId);
 								if (LocalMultiplayer.IsLocalMultiplayer())
 								{
-									ReceiveBattlePacket(targetId, $"ACCEPT|{targetId}|{challengerId}");
+									ReceiveBattlePacket(targetId, acceptPayload);
 								}
 								var challengerParty = PlayerParty.GetForFarmer(challengerId);
-								Game1.activeClickableMenu = new PokemonBattleMenu(challengerId, challengerName, challengerParty.Team);
+								Game1.activeClickableMenu = new PokemonBattleMenu(challengerId, challengerName, challengerParty.Team, challengerLead, challengerSkin);
 							}
 							else
 							{
@@ -129,11 +137,13 @@ public static class PokemonPvPManager
 				{
 					if (Game1.player?.UniqueMultiplayerID == origChallengerId)
 					{
+						string acceptorSkin = (parts.Length >= 4) ? parts[3] : "Brendan";
+						int acceptorLead = (parts.Length >= 5 && int.TryParse(parts[4], out int al)) ? al : 0;
 						var acceptorFarmer = Game1.getFarmerMaybeOffline(acceptorId);
 						string targetName = acceptorFarmer?.Name ?? "Treinador";
 						var targetParty = PlayerParty.GetForFarmer(acceptorId);
 						Game1.playSound("reward");
-						Game1.activeClickableMenu = new PokemonBattleMenu(acceptorId, targetName, targetParty.Team);
+						Game1.activeClickableMenu = new PokemonBattleMenu(acceptorId, targetName, targetParty.Team, acceptorLead, acceptorSkin);
 					}
 				}
 				break;

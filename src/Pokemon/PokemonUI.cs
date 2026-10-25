@@ -374,6 +374,10 @@ public static class PokemonUI
 	{
 		get
 		{
+			if (Game1.player?.modData != null && Game1.player.modData.TryGetValue("PokeValley.TrainerSkin", out var val) && !string.IsNullOrWhiteSpace(val))
+			{
+				return val;
+			}
 			if (_trainerSkin == null)
 			{
 				try
@@ -389,7 +393,12 @@ public static class PokemonUI
 		set
 		{
 			_trainerSkin = value;
+			if (Game1.player?.modData != null)
+			{
+				Game1.player.modData["PokeValley.TrainerSkin"] = value;
+			}
 			_trainerBackCache.Clear();
+			_trainerFrontCache.Clear();
 			try { File.WriteAllText(SettingsPath(), value); } catch { }
 		}
 	}

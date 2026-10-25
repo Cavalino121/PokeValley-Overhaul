@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Xna.Framework.Audio;
 
 namespace StardewValley.Pokemon;
@@ -16,14 +19,19 @@ public enum PokemonMusicTrack
 }
 
 /// <summary>
-/// Synthesizes authentic GBA-style Pokémon chiptune battle, victory & route overworld tracks in-memory using MonoGame SoundEffect
-/// <summary>
 /// Gerencia a reprodução das trilhas sonoras autênticas de batalha, vitória e rotas de Pokémon,
-/// pausando a música do Stardew Valley durante as batalhas e integrando-se nativamente ao SoundEffect do MonoGame.
-/// Respeita estritamente as opções de volume de música do jogo.
+/// suportando reprodução direta de MIDI oficial (.mid via winmm MCI), arquivos de áudio .ogg/.wav,
+/// e fallback para síntese procedural em memória.
+/// Respeita rigorosamente o volume configurado nas opções do Stardew Valley.
 /// </summary>
 public static class PokemonMusicManager
 {
+	private const string MidiAlias = "poke_bgm";
+	private static bool _midiPlaying = false;
+
+	[DllImport("winmm.dll", EntryPoint = "mciSendStringA", CharSet = CharSet.Ansi)]
+	private static extern int mciSendString(string command, StringBuilder buffer, int bufferSize, IntPtr hwndCallback);
+
 	private static readonly Dictionary<PokemonMusicTrack, SoundEffect> _cachedEffects = new();
 	private static SoundEffectInstance _activeInstance;
 	private static PokemonMusicTrack _currentTrack = PokemonMusicTrack.None;
@@ -38,10 +46,17 @@ public static class PokemonMusicManager
 	{
 		try
 		{
+			float volMult = (_currentTrack == PokemonMusicTrack.RouteOverworld) ? 0.35f : 0.65f;
+			float targetVol = Math.Clamp(Game1.options?.musicVolumeLevel ?? 0.7f, 0f, 1f) * volMult;
+
+			if (_midiPlaying)
+			{
+				int vol1000 = (int)Math.Clamp(targetVol * 1000f, 0f, 1000f);
+				mciSendString($"setaudio {MidiAlias} volume to {vol1000}", null, 0, IntPtr.Zero);
+			}
+
 			if (_activeInstance != null && !_activeInstance.IsDisposed && _currentTrack != PokemonMusicTrack.None)
 			{
-				float volMult = (_currentTrack == PokemonMusicTrack.RouteOverworld) ? 0.28f : 0.42f;
-				float targetVol = Math.Clamp(Game1.options?.musicVolumeLevel ?? 0.7f, 0f, 1f) * volMult;
 				_activeInstance.Volume = targetVol;
 
 				if (_currentTrackLooped && _activeInstance.State == SoundState.Stopped)
@@ -59,7 +74,7 @@ public static class PokemonMusicManager
 		{
 			TickLoop();
 
-			// Do not interfere while a battle menu is active
+			// Não interfere se estiver dentro de uma batalha
 			if (Game1.activeClickableMenu is PokemonBattleMenu)
 				return;
 
@@ -74,8 +89,8 @@ public static class PokemonMusicManager
 				return;
 			}
 
-			// Stardew's song finished naturally and the overworld is currently silent
-			if (_currentTrack == PokemonMusicTrack.RouteOverworld && (_activeInstance != null && !_activeInstance.IsDisposed && _activeInstance.State == SoundState.Playing))
+			// Se já estiver tocando RouteOverworld, mantém
+			if (_currentTrack == PokemonMusicTrack.RouteOverworld && (_midiPlaying || (_activeInstance != null && !_activeInstance.IsDisposed && _activeInstance.State == SoundState.Playing)))
 			{
 				return;
 			}
@@ -97,6 +112,7 @@ public static class PokemonMusicManager
 			PauseStardewMusic();
 			StopActivePokemonTrackOnly();
 
+			string specificName = null;
 			PokemonMusicTrack track = isWild ? PokemonMusicTrack.WildBattle : PokemonMusicTrack.TrainerBattle;
 			if (!isWild)
 			{
@@ -109,21 +125,48 @@ public static class PokemonMusicManager
 					trainerName.Contains("Magma", StringComparison.OrdinalIgnoreCase) ||
 					trainerName.Equals("Wizard", StringComparison.OrdinalIgnoreCase) ||
 					trainerName.Equals("Qi", StringComparison.OrdinalIgnoreCase));
-				if (isSpecial) track = PokemonMusicTrack.MegaBossBattle;
+				if (isSpecial)
+				{
+					track = PokemonMusicTrack.MegaBossBattle;
+					specificName = (trainerName.Equals("Champion", StringComparison.OrdinalIgnoreCase) || trainerName.Equals("Steven", StringComparison.OrdinalIgnoreCase))
+						? "champion" : "gym_leader";
+				}
+				else
+				{
+					// Alterna aleatoriamente entre Emerald Trainer e Red/Blue Trainer
+					specificName = (Game1.random.Next(2) == 0) ? "emerald_trainer" : "rb_trainer";
+				}
 			}
 			else if (enemyMon?.Species != null)
 			{
 				string monName = enemyMon.Species.Name;
-				var entry = PokemonPokedex.Instance?.GetEntry(monName);
-				bool isLegendary = (entry != null && (entry.Tier == "Legendary" || entry.Tier == "Mythical"))
-					|| monName is "Rayquaza" or "Groudon" or "Kyogre" or "Mewtwo" or "Mew" or "Deoxys" or "Arceus" or "Giratina" or "Dialga" or "Palkia";
-				if (isLegendary)
+				if (monName.Equals("Rayquaza", StringComparison.OrdinalIgnoreCase)) specificName = "rayquaza";
+				else if (monName.Equals("Kyogre", StringComparison.OrdinalIgnoreCase) || monName.Equals("Groudon", StringComparison.OrdinalIgnoreCase)) specificName = "primal";
+				else if (monName.Equals("Mewtwo", StringComparison.OrdinalIgnoreCase)) specificName = "mewtwo";
+				else if (monName.Equals("Deoxys", StringComparison.OrdinalIgnoreCase)) specificName = "deoxys";
+				else
 				{
-					track = PokemonMusicTrack.LegendaryBattle;
+					var entry = PokemonPokedex.Instance?.GetEntry(monName);
+					bool isLegendary = (entry != null && (entry.Tier == "Legendary" || entry.Tier == "Mythical"))
+						|| monName is "Arceus" or "Giratina" or "Dialga" or "Palkia" or "Mew" or "Celebi" or "Lugia" or "Ho-Oh";
+					if (isLegendary)
+					{
+						track = PokemonMusicTrack.LegendaryBattle;
+						specificName = "champion";
+					}
+					else if (Game1.currentLocation is Locations.MineShaft || (enemyMon.HasType(PokemonType.Ghost) && Game1.isDarkOut(Game1.currentLocation)))
+					{
+						specificName = "lavender_town";
+					}
+					else
+					{
+						// Alterna aleatoriamente entre Emerald Wild e Red/Blue Wild
+						specificName = (Game1.random.Next(2) == 0) ? "emerald_wild" : "rb_wild";
+					}
 				}
 			}
 
-			PlayTrack(track, loop: true, pauseStardew: true);
+			PlayTrack(track, loop: true, pauseStardew: true, specificFile: specificName);
 		}
 		catch (Exception ex)
 		{
@@ -144,22 +187,59 @@ public static class PokemonMusicManager
 
 	public static void PlayMidiFile(string fileName, bool loop = true)
 	{
-		string lower = (fileName ?? "").ToLowerInvariant();
-		PokemonMusicTrack track = lower switch
+		try
 		{
-			var s when s.Contains("wild") => PokemonMusicTrack.WildBattle,
-			var s when s.Contains("trainer") => PokemonMusicTrack.TrainerBattle,
-			var s when s.Contains("gym") => PokemonMusicTrack.MegaBossBattle,
-			var s when s.Contains("champion") || s.Contains("steven") => PokemonMusicTrack.MegaBossBattle,
-			var s when s.Contains("kyogre") || s.Contains("groudon") || s.Contains("rayquaza") || s.Contains("regi") || s.Contains("deoxys") || s.Contains("mewtwo") => PokemonMusicTrack.LegendaryBattle,
-			var s when s.Contains("route") => PokemonMusicTrack.RouteOverworld,
-			var s when s.Contains("victory") => PokemonMusicTrack.VictoryFanfare,
-			_ => PokemonMusicTrack.WildBattle
-		};
-		PlayTrack(track, loop);
+			PauseStardewMusic();
+			StopActivePokemonTrackOnly();
+			PlayTrack(PokemonMusicTrack.WildBattle, loop: loop, pauseStardew: true, specificFile: fileName);
+		}
+		catch { }
 	}
 
-	public static void PlayTrack(PokemonMusicTrack track, bool loop, bool pauseStardew = true)
+	private static string ResolveMusicFilePath(string baseName, string ext)
+	{
+		if (string.IsNullOrWhiteSpace(baseName)) return null;
+		string nameWithExt = baseName.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? baseName : (baseName + ext);
+		string[] searchDirs = new[]
+		{
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Pokemon", "Audio", "music"),
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "sound", "songs", "midi"),
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "sound", "songs")
+		};
+		foreach (var dir in searchDirs)
+		{
+			if (Directory.Exists(dir))
+			{
+				string p = Path.Combine(dir, nameWithExt);
+				if (File.Exists(p)) return p;
+			}
+		}
+		return null;
+	}
+
+	private static bool PlayMidiDirect(string path, bool loop, float volume)
+	{
+		try
+		{
+			mciSendString($"close {MidiAlias}", null, 0, IntPtr.Zero);
+			int openRes = mciSendString($"open \"{path}\" type sequencer alias {MidiAlias}", null, 0, IntPtr.Zero);
+			if (openRes != 0) return false;
+
+			int vol1000 = (int)Math.Clamp(volume * 1000f, 0f, 1000f);
+			mciSendString($"setaudio {MidiAlias} volume to {vol1000}", null, 0, IntPtr.Zero);
+
+			string playCmd = loop ? $"play {MidiAlias} repeat" : $"play {MidiAlias}";
+			int playRes = mciSendString(playCmd, null, 0, IntPtr.Zero);
+			_midiPlaying = (playRes == 0);
+			return _midiPlaying;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	public static void PlayTrack(PokemonMusicTrack track, bool loop, bool pauseStardew = true, string specificFile = null)
 	{
 		try
 		{
@@ -169,7 +249,7 @@ public static class PokemonMusicManager
 			}
 			StopActivePokemonTrackOnly();
 
-			float volMult = (track == PokemonMusicTrack.RouteOverworld) ? 0.28f : 0.42f;
+			float volMult = (track == PokemonMusicTrack.RouteOverworld) ? 0.35f : 0.65f;
 			float vol = Math.Clamp(Game1.options?.musicVolumeLevel ?? 0.7f, 0f, 1f) * volMult;
 			if (vol <= 0.005f)
 			{
@@ -178,16 +258,61 @@ public static class PokemonMusicManager
 				return;
 			}
 
-			if (!_cachedEffects.TryGetValue(track, out var sfx) || sfx == null || sfx.IsDisposed)
+			string trackName = specificFile ?? track switch
 			{
-				sfx = BuildTrackSoundEffect(track);
-				_cachedEffects[track] = sfx;
+				PokemonMusicTrack.WildBattle => (Game1.random.Next(2) == 0 ? "emerald_wild" : "rb_wild"),
+				PokemonMusicTrack.TrainerBattle => (Game1.random.Next(2) == 0 ? "emerald_trainer" : "rb_trainer"),
+				PokemonMusicTrack.MegaBossBattle => "gym_leader",
+				PokemonMusicTrack.LegendaryBattle => "champion",
+				PokemonMusicTrack.RouteOverworld => "mus_cycling",
+				PokemonMusicTrack.VictoryFanfare => "mus_caught",
+				_ => "emerald_wild"
+			};
+
+			// 1. Tenta carregar e tocar MIDI original via MCI nativo
+			string midPath = ResolveMusicFilePath(trackName, ".mid");
+			if (!string.IsNullOrEmpty(midPath) && File.Exists(midPath))
+			{
+				if (PlayMidiDirect(midPath, loop, vol))
+				{
+					_currentTrack = track;
+					_currentTrackLooped = loop;
+					return;
+				}
 			}
 
-			if (sfx != null)
+			// 2. Tenta carregar stream de arquivo OGG ou WAV
+			string oggPath = ResolveMusicFilePath(trackName, ".ogg") ?? ResolveMusicFilePath(trackName, ".wav");
+			if (!string.IsNullOrEmpty(oggPath) && File.Exists(oggPath))
 			{
-				_activeInstance = sfx.CreateInstance();
-				_activeInstance.Volume = vol;
+				try
+				{
+					using var stream = File.OpenRead(oggPath);
+					var sfx = SoundEffect.FromStream(stream);
+					if (sfx != null)
+					{
+						_activeInstance = sfx.CreateInstance();
+						_activeInstance.Volume = vol;
+						_activeInstance.Play();
+						_currentTrack = track;
+						_currentTrackLooped = loop;
+						return;
+					}
+				}
+				catch { }
+			}
+
+			// 3. Fallback: síntese procedural nostálgica
+			if (!_cachedEffects.TryGetValue(track, out var fallbackSfx) || fallbackSfx == null || fallbackSfx.IsDisposed)
+			{
+				fallbackSfx = BuildTrackSoundEffect(track);
+				_cachedEffects[track] = fallbackSfx;
+			}
+
+			if (fallbackSfx != null)
+			{
+				_activeInstance = fallbackSfx.CreateInstance();
+				_activeInstance.Volume = vol * 0.45f;
 				_activeInstance.Play();
 				_currentTrack = track;
 				_currentTrackLooped = loop;
@@ -213,6 +338,12 @@ public static class PokemonMusicManager
 	{
 		try
 		{
+			if (_midiPlaying)
+			{
+				mciSendString($"stop {MidiAlias}", null, 0, IntPtr.Zero);
+				mciSendString($"close {MidiAlias}", null, 0, IntPtr.Zero);
+				_midiPlaying = false;
+			}
 			if (_activeInstance != null)
 			{
 				if (!_activeInstance.IsDisposed)
@@ -256,7 +387,6 @@ public static class PokemonMusicManager
 	private static SoundEffect BuildTrackSoundEffect(PokemonMusicTrack track)
 	{
 		const int sampleRate = 22050;
-		// Each note is (leadFreqHz, bassFreqHz, durationSeconds)
 		List<(float lead, float bass, float dur)> seq = track switch
 		{
 			PokemonMusicTrack.WildBattle      => BuildWildBattleSequence(),
@@ -294,7 +424,6 @@ public static class PokemonMusicManager
 				{
 					leadPhase += n.lead / sampleRate;
 					if (leadPhase >= 1.0) leadPhase -= 1.0;
-					// GBA 25% pulse wave + soft triangle harmonic
 					float pulse = (leadPhase < 0.25) ? 0.55f : -0.25f;
 					float tri = (float)(Math.Sin(leadPhase * Math.PI * 2.0) * 0.35);
 					leadSample = (pulse + tri) * env;
@@ -305,15 +434,14 @@ public static class PokemonMusicManager
 				{
 					bassPhase += n.bass / sampleRate;
 					if (bassPhase >= 1.0) bassPhase -= 1.0;
-					// 50% square bass wave
-					float sq = (bassPhase < 0.5) ? 0.45f : -0.45f;
-					bassSample = sq * Math.Min(1f, env * 1.1f);
+					float triangle = (float)(Math.Abs((bassPhase * 4.0) - 2.0) - 1.0);
+					bassSample = triangle * 0.65f * env;
 				}
 
-				float mixed = Math.Clamp((leadSample * 0.65f + bassSample * 0.35f) * 0.65f, -0.95f, 0.95f);
-				short s16 = (short)(mixed * short.MaxValue);
+				float mixed = (leadSample * 0.55f) + (bassSample * 0.45f);
+				short s16 = (short)Math.Clamp((int)(mixed * 16000f), -32767, 32767);
 				pcm16[sampleIdx * 2] = (byte)(s16 & 0xFF);
-				pcm16[sampleIdx * 2 + 1] = (byte)((s16 >> 8) & 0xFF);
+				pcm16[(sampleIdx * 2) + 1] = (byte)((s16 >> 8) & 0xFF);
 				sampleIdx++;
 			}
 		}
@@ -323,121 +451,74 @@ public static class PokemonMusicManager
 
 	private static List<(float lead, float bass, float dur)> BuildWildBattleSequence()
 	{
-		// Authentic Pokémon Emerald (Hoenn) Wild Battle Theme with classic trumpet hooks & syncopated bassline
 		var s = new List<(float, float, float)>();
-
-		// Intro: Rapid Hoenn chromatic trumpet fanfare
-		float[] introNotes = { 587.33f, 554.37f, 523.25f, 493.88f, 466.16f, 440.00f, 415.30f, 392.00f, 440.00f, 493.88f, 523.25f, 587.33f, 659.25f, 698.46f, 783.99f, 880.00f };
-		foreach (float f in introNotes)
+		float[] introNotes = { 440f, 493.88f, 523.25f, 587.33f, 659.25f, 698.46f, 783.99f, 880f };
+		foreach (var n in introNotes) s.Add((n, n * 0.5f, 0.06f));
+		float[] riff = { 587.33f, 587.33f, 659.25f, 587.33f, 698.46f, 659.25f, 587.33f, 523.25f };
+		float[] bass = { 146.83f, 146.83f, 164.81f, 146.83f, 174.61f, 164.81f, 146.83f, 130.81f };
+		for (int rep = 0; rep < 4; rep++)
 		{
-			s.Add((f, 146.83f, 0.065f));
+			for (int i = 0; i < riff.Length; i++) s.Add((riff[i], bass[i], 0.12f));
 		}
-
-		// Section 1: Main Driving Trumpet Hook (D minor / F major)
-		(float l, float b, float d)[] sec1 =
-		{
-			(587.33f, 146.83f, 0.14f), (587.33f, 146.83f, 0.14f), (698.46f, 174.61f, 0.14f), (587.33f, 146.83f, 0.14f),
-			(523.25f, 130.81f, 0.18f), (587.33f, 146.83f, 0.18f), (659.25f, 164.81f, 0.18f), (698.46f, 174.61f, 0.18f),
-			(783.99f, 196.00f, 0.28f), (698.46f, 174.61f, 0.14f), (659.25f, 164.81f, 0.18f), (523.25f, 130.81f, 0.18f),
-			(587.33f, 146.83f, 0.28f), (440.00f, 110.00f, 0.14f), (523.25f, 130.81f, 0.14f), (587.33f, 146.83f, 0.24f),
-			(659.25f, 164.81f, 0.14f), (698.46f, 174.61f, 0.14f), (783.99f, 196.00f, 0.20f), (880.00f, 220.00f, 0.20f),
-			(783.99f, 196.00f, 0.20f), (698.46f, 174.61f, 0.20f), (659.25f, 164.81f, 0.28f), (587.33f, 146.83f, 0.28f)
-		};
-		s.AddRange(sec1);
-
-		// Section 2: Hoenn Emerald Counter-melody with walking syncopated bass
-		(float l, float b, float d)[] sec2 =
-		{
-			(698.46f, 174.61f, 0.16f), (783.99f, 196.00f, 0.16f), (880.00f, 220.00f, 0.24f), (932.33f, 233.08f, 0.24f),
-			(880.00f, 220.00f, 0.16f), (783.99f, 196.00f, 0.16f), (698.46f, 174.61f, 0.20f), (659.25f, 164.81f, 0.20f),
-			(587.33f, 146.83f, 0.24f), (554.37f, 138.59f, 0.16f), (587.33f, 146.83f, 0.20f), (659.25f, 164.81f, 0.20f),
-			(698.46f, 174.61f, 0.28f), (783.99f, 196.00f, 0.16f), (880.00f, 220.00f, 0.24f), (1046.50f, 261.63f, 0.32f),
-			(932.33f, 233.08f, 0.18f), (880.00f, 220.00f, 0.18f), (783.99f, 196.00f, 0.22f), (698.46f, 174.61f, 0.22f),
-			(659.25f, 164.81f, 0.24f), (587.33f, 146.83f, 0.36f)
-		};
-		s.AddRange(sec2);
-
-		// Section 3: Climax Brass Arpeggio & Loop Turnaround
-		(float l, float b, float d)[] sec3 =
-		{
-			(880.00f, 220.00f, 0.14f), (783.99f, 196.00f, 0.14f), (698.46f, 174.61f, 0.18f), (659.25f, 164.81f, 0.18f),
-			(587.33f, 146.83f, 0.22f), (698.46f, 174.61f, 0.18f), (659.25f, 164.81f, 0.18f), (587.33f, 146.83f, 0.22f),
-			(523.25f, 130.81f, 0.18f), (466.16f, 116.54f, 0.18f), (440.00f, 110.00f, 0.28f), (587.33f, 146.83f, 0.36f)
-		};
-		s.AddRange(sec3);
-
 		return s;
 	}
 
 	private static List<(float lead, float bass, float dur)> BuildTrainerBattleSequence()
 	{
-		// Authentic Pokémon Emerald Trainer Battle Theme (Intense brass triplets & driving baseline)
 		var s = new List<(float, float, float)>();
-
-		// Intro: Emerald Trainer battle alert cadence
-		float[] intro = { 659.25f, 622.25f, 659.25f, 739.99f, 659.25f, 587.33f, 493.88f, 587.33f };
-		foreach (float f in intro) s.Add((f, 164.81f, 0.10f));
-
-		(float l, float b, float d)[] body =
+		for (int i = 0; i < 4; i++) { s.Add((523.25f, 130.81f, 0.07f)); s.Add((0f, 130.81f, 0.05f)); }
+		float[] lead = { 659.25f, 659.25f, 698.46f, 783.99f, 698.46f, 659.25f, 587.33f, 523.25f };
+		float[] bass = { 164.81f, 164.81f, 174.61f, 196.00f, 174.61f, 164.81f, 146.83f, 130.81f };
+		for (int rep = 0; rep < 4; rep++)
 		{
-			(659.25f, 164.81f, 0.16f), (739.99f, 185.00f, 0.16f), (783.99f, 196.00f, 0.20f), (880.00f, 220.00f, 0.26f),
-			(783.99f, 196.00f, 0.16f), (739.99f, 185.00f, 0.16f), (659.25f, 164.81f, 0.24f), (493.88f, 123.47f, 0.18f),
-			(523.25f, 130.81f, 0.18f), (587.33f, 146.83f, 0.18f), (659.25f, 164.81f, 0.26f), (587.33f, 146.83f, 0.18f),
-			(523.25f, 130.81f, 0.18f), (493.88f, 123.47f, 0.30f),
-			// Secondary development
-			(783.99f, 196.00f, 0.16f), (880.00f, 220.00f, 0.16f), (987.77f, 246.94f, 0.24f), (1046.50f, 261.63f, 0.28f),
-			(987.77f, 246.94f, 0.16f), (880.00f, 220.00f, 0.16f), (783.99f, 196.00f, 0.24f), (659.25f, 164.81f, 0.20f),
-			(739.99f, 185.00f, 0.20f), (783.99f, 196.00f, 0.24f), (880.00f, 220.00f, 0.32f), (659.25f, 164.81f, 0.36f)
-		};
-		s.AddRange(body);
+			for (int i = 0; i < lead.Length; i++) s.Add((lead[i], bass[i], 0.11f));
+		}
 		return s;
 	}
 
 	private static List<(float lead, float bass, float dur)> BuildMegaBossSequence()
 	{
-		// Intense Gym Leader / Mega Evolution Boss Battle theme
-		return new List<(float, float, float)>
+		var s = new List<(float, float, float)>();
+		float[] intro = { 220f, 246.94f, 261.63f, 293.66f, 329.63f, 349.23f, 392f, 440f };
+		foreach (var n in intro) s.Add((n * 2f, n, 0.05f));
+		float[] lead = { 440f, 440f, 523.25f, 440f, 587.33f, 523.25f, 440f, 392f };
+		float[] bass = { 110f, 110f, 130.81f, 110f, 146.83f, 130.81f, 110f, 98f };
+		for (int rep = 0; rep < 4; rep++)
 		{
-			(440.00f, 110.00f, 0.14f), (523.25f, 130.81f, 0.14f), (659.25f, 164.81f, 0.14f), (880.00f, 220.00f, 0.28f),
-			(830.61f, 207.65f, 0.18f), (880.00f, 220.00f, 0.18f), (987.77f, 246.94f, 0.28f), (880.00f, 220.00f, 0.22f),
-			(783.99f, 196.00f, 0.22f), (698.46f, 174.61f, 0.22f), (659.25f, 164.81f, 0.32f), (523.25f, 130.81f, 0.22f),
-			(587.33f, 146.83f, 0.22f), (659.25f, 164.81f, 0.22f), (698.46f, 174.61f, 0.22f), (783.99f, 196.00f, 0.32f),
-			(880.00f, 220.00f, 0.36f), (659.25f, 164.81f, 0.28f)
-		};
+			for (int i = 0; i < lead.Length; i++) s.Add((lead[i] * 1.5f, bass[i], 0.10f));
+		}
+		return s;
 	}
 
 	private static List<(float lead, float bass, float dur)> BuildLegendarySequence()
 	{
-		// Dramatic Legendary Pokémon Encounter theme
-		return new List<(float, float, float)>
+		var s = new List<(float, float, float)>();
+		float[] intro = { 130.81f, 146.83f, 164.81f, 174.61f, 196.00f, 220.00f, 246.94f, 261.63f };
+		foreach (var n in intro) s.Add((n * 2.5f, n, 0.07f));
+		float[] lead = { 523.25f, 493.88f, 523.25f, 587.33f, 659.25f, 587.33f, 523.25f, 440f };
+		float[] bass = { 130.81f, 123.47f, 130.81f, 146.83f, 164.81f, 146.83f, 130.81f, 110f };
+		for (int rep = 0; rep < 4; rep++)
 		{
-			(329.63f, 82.41f, 0.16f), (349.23f, 87.31f, 0.16f), (329.63f, 82.41f, 0.16f), (493.88f, 123.47f, 0.32f),
-			(466.16f, 116.54f, 0.24f), (440.00f, 110.00f, 0.24f), (392.00f, 98.00f, 0.24f), (349.23f, 87.31f, 0.24f),
-			(329.63f, 82.41f, 0.36f), (659.25f, 164.81f, 0.20f), (698.46f, 174.61f, 0.20f), (783.99f, 196.00f, 0.32f),
-			(739.99f, 185.00f, 0.24f), (659.25f, 164.81f, 0.36f)
-		};
+			for (int i = 0; i < lead.Length; i++) s.Add((lead[i], bass[i], 0.13f));
+		}
+		return s;
 	}
 
 	private static List<(float lead, float bass, float dur)> BuildVictorySequence()
 	{
-		// Classic Pokémon Victory Fanfare (da-da-da-daaa!)
-		return new List<(float, float, float)>
-		{
-			(523.25f, 130.81f, 0.13f), (523.25f, 130.81f, 0.13f), (523.25f, 130.81f, 0.13f), (523.25f, 261.63f, 0.42f),
-			(415.30f, 207.65f, 0.36f), (466.16f, 233.08f, 0.36f), (523.25f, 261.63f, 0.24f), (466.16f, 233.08f, 0.14f),
-			(523.25f, 261.63f, 0.70f)
-		};
+		var s = new List<(float, float, float)>();
+		float[] fan = { 523.25f, 523.25f, 523.25f, 659.25f, 783.99f, 659.25f, 783.99f, 1046.50f };
+		float[] dur = { 0.12f, 0.12f, 0.12f, 0.24f, 0.18f, 0.12f, 0.18f, 0.60f };
+		for (int i = 0; i < fan.Length; i++) s.Add((fan[i], fan[i] * 0.5f, dur[i]));
+		return s;
 	}
 
 	private static List<(float lead, float bass, float dur)> BuildRouteOverworldSequence()
 	{
-		// Cheerful, breezy GBA Route 101 / Littleroot-inspired overworld melody
-		return new List<(float, float, float)>
-		{
-			(523.25f, 130.81f, 0.26f), (587.33f, 146.83f, 0.26f), (659.25f, 164.81f, 0.38f), (783.99f, 196.00f, 0.38f),
-			(698.46f, 174.61f, 0.26f), (659.25f, 164.81f, 0.26f), (587.33f, 146.83f, 0.52f),
-			(523.25f, 130.81f, 0.26f), (659.25f, 164.81f, 0.26f), (783.99f, 196.00f, 0.38f), (880.00f, 220.00f, 0.38f),
-			(783.99f, 196.00f, 0.52f), (659.25f, 164.81f, 0.38f)
-		};
+		var s = new List<(float, float, float)>();
+		float[] notes = { 329.63f, 392f, 440f, 493.88f, 523.25f, 493.88f, 440f, 392f, 329.63f, 293.66f, 329.63f, 392f, 440f, 392f, 329.63f, 293.66f };
+		float[] bass = { 164.81f, 196f, 220f, 246.94f, 261.63f, 246.94f, 220f, 196f, 164.81f, 146.83f, 164.81f, 196f, 220f, 196f, 164.81f, 146.83f };
+		for (int i = 0; i < notes.Length; i++) s.Add((notes[i], bass[i], 0.22f));
+		return s;
 	}
 }

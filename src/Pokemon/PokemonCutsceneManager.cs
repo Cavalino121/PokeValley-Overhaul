@@ -240,4 +240,98 @@ public static class PokemonCutsceneManager
 			_ => "O DESPERTAR DO TITÃ ANCESTRAL"
 		};
 	}
+
+	public static string GetCustomSummonMessage(string playerName, string name)
+	{
+		string p = playerName ?? "Alguém";
+		string n = name ?? "Lendário";
+		return n switch
+		{
+			"Mewtwo" => $"✦ {p} rompeu os selos psíquicos! Mewtwo despertou com fúria telecinética!",
+			"Mew" => $"✦ {p} tocou uma flauta suave... Mew surgiu entre as pétalas flutuantes!",
+			"Articuno" => $"✦ {p} ergueu a pena congelada! O bater de asas gélido de Articuno sopra no vale!",
+			"Zapdos" => $"✦ {p} canalizou alta voltagem! Trovões estrondosos anunciam a chegada de Zapdos!",
+			"Moltres" => $"✦ {p} acendeu as cinzas sagradas! Labaredas escarlates cobrem os céus com Moltres!",
+			"Raikou" => $"✦ {p} ouviu o trovão rugir! Raikou corre veloz como uma tempestade de raios!",
+			"Entei" => $"✦ {p} atiçou as brasas vulcânicas! O rugido de magma de Entei ecoa pela terra!",
+			"Suicune" => $"✦ {p} purificou as correntes d'água! As brisas serenas de Suicune tocam as águas!",
+			"Lugia" => $"✦ {p} tocou a Silver Feather! O Guardião dos Mares, Lugia, emergiu das profundezas!",
+			"Ho-Oh" => $"✦ {p} ergueu a Rainbow Wing! O arco-íris eterno resplandece com as asas de Ho-Oh!",
+			"Celebi" => $"✦ {p} tocou o altar antigo! Ondulações no próprio tempo revelam Celebi!",
+			"Kyogre" => $"✦ {p} ergueu a Blue Orb! Chuvas torrenciais inundam a terra com a fúria de Kyogre!",
+			"Groudon" => $"✦ {p} ergueu a Red Orb! O magma racha o chão sob os passos de Groudon!",
+			"Rayquaza" => $"✦ {p} libertou o meteorito! O soberano dos céus, Rayquaza, desce da estratosfera!",
+			"Jirachi" => $"✦ {p} encontrou a estrela cadente! O realizador de desejos, Jirachi, despertou!",
+			"Deoxys" => $"✦ {p} decodificou o sinal alienígena! A forma de Deoxys se materializou!",
+			"Dialga" => $"✦ {p} ativou a Adamant Orb! As engrenagens do Tempo pararam sob o olhar de Dialga!",
+			"Palkia" => $"✦ {p} ativou a Lustrous Orb! As fronteiras do Espaço se curvam diante de Palkia!",
+			"Giratina" => $"✦ {p} abriu o portal da Griseous Orb! As sombras do Distortion World trazem Giratina!",
+			"Darkrai" => $"✦ {p} tocou a pena do pesadelo! Sombras eternas engolem a luz com Darkrai!",
+			"Cresselia" => $"✦ {p} ergueu a Lunar Feather! A luz prateada dos sonhos desce com Cresselia!",
+			"Reshiram" => $"✦ {p} acendeu a Light Stone! As chamas da Verdade de Reshiram iluminam o mundo!",
+			"Zekrom" => $"✦ {p} canalizou a Dark Stone! Os raios dos Ideais de Zekrom estalam nos céus!",
+			"Kyurem" => $"✦ {p} utilizou o DNA Splicers! O frio absoluto de Kyurem congela o ambiente!",
+			"Xerneas" => $"✦ {p} tocou a raiz sagrada! A árvore da Vida renasce com os chifres de Xerneas!",
+			"Yveltal" => $"✦ {p} despertou o casulo da destruição! As asas da Morte de Yveltal cobrem o horizonte!",
+			"Zygarde" => $"✦ {p} reuniu os núcleos de Zygarde! A ordem do ecossistema se manifesta!",
+			"Solgaleo" => $"✦ {p} canalizou a luz solar! O leão Solgaleo ruge com o brilho de supernovas!",
+			"Lunala" => $"✦ {p} ergueu o espelho lunar! A emissária da lua, Lunala, abre suas asas astrais!",
+			"Necrozma" => $"✦ {p} libertou o devorador de luz! O prisma sombrio de Necrozma absorve a luminosidade!",
+			"Zacian" => $"✦ {p} cravou a Rusted Sword! A espada lendária de Zacian corta o próprio ar!",
+			"Zamazenta" => $"✦ {p} empunhou o Rusted Shield! O escudo inabalável de Zamazenta defende a terra!",
+			"Eternatus" => $"✦ {p} tocou o núcleo Dynamax! O dragão alienígena Eternatus escurece a estratosfera!",
+			"Koraidon" => $"✦ {p} abriu a fenda do passado ancestral! O rei escarlate Koraidon ruge com poder primordial!",
+			"Miraidon" => $"✦ {p} sintonizou a frequência do futuro! O dragão de ferro Miraidon acelera com pura energia!",
+			"Terapagos" => $"✦ {p} revelou a coroa estelar! A tartaruga celestial Terapagos brilha com o poder Tera!",
+			"Arceus" => $"✦ {p} reuniu as placas cósmicas! O Criador do Universo, Arceus, desceu ao Vale!",
+			_ => $"✦ {p} realizou o ritual ancestral e invocou {n}!"
+		};
+	}
+
+	public static string GetCustomWildSpawnMessage(string name)
+	{
+		string n = name ?? "Lendário";
+		return n switch
+		{
+			"Mewtwo" => "✦ Uma tempestade psíquica distorce o ar em algum lugar isolado do vale...",
+			"Mew" => "✦ Um brilho rosado e brincalhão foi avistado cruzando as árvores do vale...",
+			"Articuno" => "✦ Uma nevasca repentina e cortante se formou em algum pico montanhoso do vale...",
+			"Zapdos" => "✦ Relâmpagos dourados rasgam os céus nublados de alguma área do vale...",
+			"Moltres" => "✦ Um calor sufocante e brasas incandescentes surgem em algum canto remoto do vale...",
+			"Raikou" => "✦ O rugido de um trovão terrestre ecoou pelas terras do vale...",
+			"Entei" => "✦ A terra treme como se um vulcão estivesse despertando em algum lugar do vale...",
+			"Suicune" => "✦ As águas de um lago distante tornaram-se puras e brilhantes como cristal...",
+			"Lugia" => "✦ Grandes ondas e uma canção marinha ecoam de algum abismo aquático do vale...",
+			"Ho-Oh" => "✦ Um arco-íris radiante se projeta no céu em algum lugar sagrado do vale...",
+			"Celebi" => "✦ Uma brisa com perfume de séculos passados viajou por algum bosque do vale...",
+			"Kyogre" => "✦ Nuvens densas e uma chuva sem fim começam a cair em alguma depressão do vale...",
+			"Groudon" => "✦ O solo ferve e o calor atinge níveis extremos em alguma fenda do vale...",
+			"Rayquaza" => "✦ Uma serpente esmeralda cortou a alta atmosfera sobre algum cume do vale...",
+			"Jirachi" => "✦ Uma estrela cadente tocou a terra suavemente em algum recanto do vale...",
+			"Deoxys" => "✦ Uma estranha aurora cósmica pulsou em padrões digitais em algum local do vale...",
+			"Dialga" => "✦ O fluxo dos segundos parece desacelerar estranhamente em algum ponto do vale...",
+			"Palkia" => "✦ Fendas dimensionais misteriosas distorcem a gravidade em algum lugar do vale...",
+			"Giratina" => "✦ A sombra do vale escureceu e a gravidade parece falhar em algum abismo...",
+			"Darkrai" => "✦ Pesadelos profundos e névoa escura se acumulam em algum recanto escuro do vale...",
+			"Cresselia" => "✦ Uma aura de luar puro e sonhos tranquilos ilumina um ponto distante do vale...",
+			"Reshiram" => "✦ Labaredas brancas e puras foram vistas queimando os céus em algum lugar do vale...",
+			"Zekrom" => "✦ Trovões negros e azulados eletrizam o horizonte em algum ponto ermo do vale...",
+			"Kyurem" => "✦ Uma camada de gelo seco e ar estático congelou tudo ao redor em algum ponto do vale...",
+			"Xerneas" => "✦ Flores silvestres desabrocham instantaneamente em um bosque secreto do vale...",
+			"Yveltal" => "✦ As folhas secam e a vitalidade esvai-se misteriosamente em alguma clareira do vale...",
+			"Zygarde" => "✦ O equilíbrio natural do ecossistema foi abalado em alguma caverna do vale...",
+			"Solgaleo" => "✦ Uma luz dourada tão intensa quanto o sol do meio-dia surgiu em algum pico do vale...",
+			"Lunala" => "✦ Uma noite sem estrelas e asas translúcidas cobriram o céu em algum recanto do vale...",
+			"Necrozma" => "✦ Toda a luz ambiente foi repentinamente drenada em algum local desolado do vale...",
+			"Zacian" => "✦ O som de uma lâmina celestial cortando o vento ecoou por alguma campina do vale...",
+			"Zamazenta" => "✦ Um impacto titânico de defesa fez a terra vibrar em algum planalto do vale...",
+			"Eternatus" => "✦ Um feixe de energia púrpura e instável disparou em direção aos céus em algum lugar do vale...",
+			"Koraidon" => "✦ Pegadas titânicas pré-históricas foram sentidas abalando o solo em algum local do vale...",
+			"Miraidon" => "✦ Zumbidos de plasma e circuitos futuristas foram ouvidos em alguma área isolada do vale...",
+			"Terapagos" => "✦ Cristais cintilantes multicoloridos brotaram do chão em alguma ravina do vale...",
+			"Arceus" => "✦ Um silêncio cósmico e solene pairou sobre todo o Vale...",
+			_ => $"✦ Um {n} ancestral surgiu em algum lugar do vale..."
+		};
+	}
+
 }

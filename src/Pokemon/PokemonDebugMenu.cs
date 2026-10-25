@@ -3112,11 +3112,11 @@ public class PokemonDebugMenu : IClickableMenu
 		int bgmStartY = contentY + 286;
 		(string tag, string label)[] bgmCol1 =
 		{
-			("bgm_wild", "Selvagem (Wild)"),
-			("bgm_trainer", "Treinador (Trainer)"),
-			("bgm_gym", "Ginasio (Hoenn)"),
-			("bgm_champion", "Campeao Steven"),
-			("bgm_kyogre_groudon", "Kyogre / Groudon")
+			("bgm_wild", "Emerald Wild"),
+			("bgm_rb_wild", "Red/Blue Wild"),
+			("bgm_trainer", "Emerald Treinador"),
+			("bgm_rb_trainer", "Red/Blue Treinador"),
+			("bgm_lavender", "Lavender Town")
 		};
 		for (int i = 0; i < bgmCol1.Length; i++)
 		{
@@ -3124,11 +3124,11 @@ public class PokemonDebugMenu : IClickableMenu
 		}
 		(string tag, string label)[] bgmCol2 =
 		{
-			("bgm_rayquaza", "Batalha Rayquaza"),
-			("bgm_regis", "Trio Regis"),
-			("bgm_deoxys", "Deoxys (FRLG)"),
-			("bgm_mewtwo", "Mewtwo (FRLG)"),
-			("bgm_route101", "Rota 101 Overworld")
+			("bgm_gym", "Ginasio"),
+			("bgm_champion", "Campeao"),
+			("bgm_rayquaza", "Rayquaza"),
+			("bgm_kyogre_groudon", "Primal Kyogre/Groudon"),
+			("bgm_mewtwo", "Mewtwo")
 		};
 		for (int i = 0; i < bgmCol2.Length; i++)
 		{
@@ -3218,16 +3218,16 @@ public class PokemonDebugMenu : IClickableMenu
 			if (btn.name == "vfx_protect") { _activeVfxAnim = "Protect"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("reward"); return; }
 
 			// BGM
-			if (btn.name == "bgm_wild") { PokemonMusicManager.PlayMidiFile("mus_vs_wild.mid", loop: true); return; }
-			if (btn.name == "bgm_trainer") { PokemonMusicManager.PlayMidiFile("mus_vs_trainer.mid", loop: true); return; }
-			if (btn.name == "bgm_gym") { PokemonMusicManager.PlayMidiFile("mus_vs_gym_leader.mid", loop: true); return; }
-			if (btn.name == "bgm_champion") { PokemonMusicManager.PlayMidiFile("mus_vs_champion.mid", loop: true); return; }
-			if (btn.name == "bgm_kyogre_groudon") { PokemonMusicManager.PlayMidiFile("mus_vs_kyogre_groudon.mid", loop: true); return; }
-			if (btn.name == "bgm_rayquaza") { PokemonMusicManager.PlayMidiFile("mus_vs_rayquaza.mid", loop: true); return; }
-			if (btn.name == "bgm_regis") { PokemonMusicManager.PlayMidiFile("mus_vs_regi.mid", loop: true); return; }
-			if (btn.name == "bgm_deoxys") { PokemonMusicManager.PlayMidiFile("mus_rg_vs_deoxys.mid", loop: true); return; }
-			if (btn.name == "bgm_mewtwo") { PokemonMusicManager.PlayMidiFile("mus_rg_vs_mewtwo.mid", loop: true); return; }
-			if (btn.name == "bgm_route101") { PokemonMusicManager.PlayMidiFile("mus_route101.mid", loop: true); return; }
+			if (btn.name == "bgm_wild") { PokemonMusicManager.PlayMidiFile("emerald_wild.mid", loop: true); return; }
+			if (btn.name == "bgm_rb_wild") { PokemonMusicManager.PlayMidiFile("rb_wild.mid", loop: true); return; }
+			if (btn.name == "bgm_trainer") { PokemonMusicManager.PlayMidiFile("emerald_trainer.mid", loop: true); return; }
+			if (btn.name == "bgm_rb_trainer") { PokemonMusicManager.PlayMidiFile("rb_trainer.mid", loop: true); return; }
+			if (btn.name == "bgm_lavender") { PokemonMusicManager.PlayMidiFile("lavender_town.mid", loop: true); return; }
+			if (btn.name == "bgm_gym") { PokemonMusicManager.PlayMidiFile("gym_leader.mid", loop: true); return; }
+			if (btn.name == "bgm_champion") { PokemonMusicManager.PlayMidiFile("champion.mid", loop: true); return; }
+			if (btn.name == "bgm_rayquaza") { PokemonMusicManager.PlayMidiFile("rayquaza.mid", loop: true); return; }
+			if (btn.name == "bgm_kyogre_groudon") { PokemonMusicManager.PlayMidiFile("primal.mid", loop: true); return; }
+			if (btn.name == "bgm_mewtwo") { PokemonMusicManager.PlayMidiFile("mewtwo.mid", loop: true); return; }
 			if (btn.name == "bgm_stop") { PokemonMusicManager.StopAndRestoreStardewMusic(); Game1.playSound("bigDeSelect"); return; }
 
 			// Cutscenes

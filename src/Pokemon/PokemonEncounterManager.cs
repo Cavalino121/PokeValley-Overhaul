@@ -80,7 +80,7 @@ public static class PokemonEncounterManager
 		if (spawned != null)
 		{
 			Color chatCol = PokemonCutsceneManager.DetermineElementalColor(spec);
-			Game1.chatBox?.addMessage($"★ Um {spec.Name} ancestral surgiu em algum lugar do vale...", chatCol);
+			Game1.chatBox?.addMessage(PokemonCutsceneManager.GetCustomWildSpawnMessage(spec.Name), chatCol);
 		}
 	}
 
@@ -465,7 +465,7 @@ public static class PokemonEncounterManager
 				int spawnLv = GetCanonicalLegendaryEncounterLevel(spec.Name);
 				var spawn = SpawnWildAt(loc, new Point(tileX, tileY), spec.InternalName, level: spawnLv, isShiny: RollWildShiny());
 				Color chatColor = PokemonCutsceneManager.DetermineElementalColor(spec);
-				Game1.chatBox?.addMessage($"★ {who.Name} invocou o lendário {spec.Name}!", chatColor);
+				Game1.chatBox?.addMessage(PokemonCutsceneManager.GetCustomSummonMessage(who.Name, spec.Name), chatColor);
 				if (spawn != null)
 				{
 					spawn.ContactCooldown = 1.2f;

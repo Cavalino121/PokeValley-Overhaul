@@ -690,6 +690,7 @@ private PokemonMove SelectEnemyMove()
 	private static Texture2D _ballOpenTex;
 	private Texture2D _playerTrainerTex;
 	private Texture2D _enemyTrainerTex;
+	public string EnemyTrainerSkin { get; set; }
 	private float _cloudOffset = 0f;
 
 	// Pokeball Capture Animation State
@@ -754,6 +755,10 @@ private PokemonMove SelectEnemyMove()
 		{
 			return;
 		}
+		if (IsPvP && OpponentFarmerId != 0L)
+		{
+			PokemonPvPManager.SendPvPBattleEnd(OpponentFarmerId);
+		}
 		if (Game1.player != null)
 		{
 			ActiveBattles.Remove(Game1.player.UniqueMultiplayerID);
@@ -774,10 +779,6 @@ private PokemonMove SelectEnemyMove()
 			EnemyPokemon.EndBattleGimmicks(revertMega: true);
 		}
 
-		if (IsPvP && OpponentFarmerId != 0L)
-		{
-			PokemonPvPManager.SendPvPBattleEnd(OpponentFarmerId);
-		}
 
 		if (PlayerTeam != null)
 		{
@@ -831,7 +832,7 @@ private PokemonMove SelectEnemyMove()
 	}
 
 	// PvP Battle Constructor
-	public PokemonBattleMenu(long opponentFarmerId, string opponentName, List<PokemonInstance> opponentTeam)
+	public PokemonBattleMenu(long opponentFarmerId, string opponentName, List<PokemonInstance> opponentTeam, int opponentActiveIndex = 0, string opponentSkin = null)
 		: base(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height)
 	{
 		IsWild = false;
@@ -839,7 +840,8 @@ private PokemonMove SelectEnemyMove()
 		OpponentFarmerId = opponentFarmerId;
 		TrainerName = opponentName;
 		EnemyTeam = opponentTeam ?? new List<PokemonInstance>();
-		EnemyIndex = 0;
+		EnemyIndex = Math.Clamp(opponentActiveIndex, 0, Math.Max(0, EnemyTeam.Count - 1));
+		EnemyTrainerSkin = opponentSkin;
 
 		InitBattle();
 		if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name);
@@ -1093,6 +1095,11 @@ private PokemonMove SelectEnemyMove()
 
 			if (!IsWild)
 			{
+				if (IsPvP && !string.IsNullOrEmpty(EnemyTrainerSkin))
+				{
+					_enemyTrainerTex = PokemonUI.GetTrainerFrontTexture(EnemyTrainerSkin);
+				}
+
 				// 1. Check if TrainerName corresponds to a Valley NPC Portrait (Abigail, Pierre, Shane, Harvey, Morris, etc.)
 				if (!string.IsNullOrEmpty(TrainerName))
 				{
@@ -1509,18 +1516,7 @@ private PokemonMove SelectEnemyMove()
 			{
 				if (_moveButtons[i].containsPoint(x, y))
 				{
-					PokemonMove move = PlayerPokemon.Moves[i];
-					if (move.CurrentPP > 0)
-					{
-						Game1.playSound("select");
-						ExecuteTurn(move);
-					}
-					else
-					{
-						Game1.playSound("cancel");
-						QueueMessage("Não há mais PP para este golpe!", () => Phase = BattlePhase.MoveSelect);
-					}
-					return;
+					TrySelectMove(i);
 				}
 			}
 		}
@@ -1685,17 +1681,7 @@ private PokemonMove SelectEnemyMove()
 					case Buttons.Start:
 						if (_gamepadMoveIndex >= 0 && _gamepadMoveIndex < moveCount)
 						{
-							PokemonMove move = PlayerPokemon.Moves[_gamepadMoveIndex];
-							if (move.CurrentPP > 0)
-							{
-								Game1.playSound("select");
-								ExecuteTurn(move);
-							}
-							else
-							{
-								Game1.playSound("cancel");
-								QueueMessage("Não há mais PP para este golpe!", () => Phase = BattlePhase.MoveSelect);
-							}
+							TrySelectMove(_gamepadMoveIndex);
 						}
 						break;
 				}
@@ -3738,6 +3724,15 @@ private PokemonMove SelectEnemyMove()
 
 		if (IsPvP)
 		{
+			if (PlayerPokemon != null && !PlayerPokemon.IsFainted)
+			{
+				SubmitPvPAction(new PvPAction
+				{
+					ActionType = PvPActionType.Switch,
+					SwitchSlot = targetIndex
+				});
+				return;
+			}
 			PokemonPvPManager.SendPvPSwitch(OpponentFarmerId, targetIndex, PlayerTeam[targetIndex].Nickname);
 		}
 
@@ -4145,6 +4140,16 @@ private PokemonMove SelectEnemyMove()
 
 		base.update(time);
 		PokemonMusicManager.TickLoop();
+
+		if (IsPvP && OpponentFarmerId != 0L)
+		{
+			if (!ActiveBattles.ContainsKey(OpponentFarmerId))
+			{
+				Game1.addHUDMessage(new HUDMessage($"{TrainerName} encerrou a batalha.", 2));
+				exitThisMenuNoSound();
+				return;
+			}
+		}
 
 		float dt = (float)time.ElapsedGameTime.TotalSeconds;
 		UpdateWeatherParticles(dt);
