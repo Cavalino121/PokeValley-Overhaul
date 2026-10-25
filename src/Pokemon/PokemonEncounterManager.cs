@@ -25,6 +25,7 @@ public static class PokemonEncounterManager
 		public float DespawnTimer = 300f;
 		public float ContactCooldown = 0f;
 		public bool MarkedForRemoval = false;
+		public long CurrentBattlerFarmerId = 0L;
 
 		public void Remove()
 		{
@@ -207,7 +208,7 @@ public static class PokemonEncounterManager
 			}
 
 			// Trigger wild encounter on player contact
-			if (Game1.activeClickableMenu == null && s.ContactCooldown <= 0f && (Game1.ticks - lastTick >= 150) && PokemonItemUse.RepelSteps <= 0)
+			if (s.CurrentBattlerFarmerId == 0L && Game1.activeClickableMenu == null && s.ContactCooldown <= 0f && (Game1.ticks - lastTick >= 150) && PokemonItemUse.RepelSteps <= 0)
 			{
 				Rectangle pBox = player.GetBoundingBox();
 				float dist = Vector2.Distance(new Vector2(pBox.Center.X, pBox.Center.Y), s.Position);
@@ -215,6 +216,7 @@ public static class PokemonEncounterManager
 				{
 					var wildInst = s.Instance;
 					s.ContactCooldown = 4.0f; // Keep spawn in world, with cooldown if fleeing
+					s.CurrentBattlerFarmerId = fid;
 					_lastEncounterTickByFarmer[fid] = Game1.ticks;
 					Game1.playSound("dwoop");
 					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true, sourceSpawn: s);

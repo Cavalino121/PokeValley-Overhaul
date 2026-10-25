@@ -7687,9 +7687,16 @@ public class GameLocation : INetObject<NetFields>, IEquatable<GameLocation>, IAn
 		}
 		foreach (Farmer farmer in farmers)
 		{
-			if (farmer != Game1.player && farmer.GetBoundingBox().Intersects(rectangle) && farmer.checkAction(who, this))
+			if (farmer != Game1.player && farmer.GetBoundingBox().Intersects(rectangle))
 			{
-				return true;
+				if (StardewValley.Pokemon.PokemonPvPManager.HandleFarmerInteraction(who, farmer, this))
+				{
+					return true;
+				}
+				if (farmer.checkAction(who, this))
+				{
+					return true;
+				}
 			}
 		}
 		if (currentEvent != null && currentEvent.isFestival)
@@ -11079,16 +11086,18 @@ public class GameLocation : INetObject<NetFields>, IEquatable<GameLocation>, IAn
 						break;
 					}
 				}
-				Response[] answerChoices = ((!flag) ? new Response[3]
+				Response[] answerChoices = ((!flag) ? new Response[4]
 				{
 					new Response("Shop", Game1.content.LoadString("Strings\\Locations:Blacksmith_Clint_Shop")),
 					new Response("Upgrade", Game1.content.LoadString("Strings\\Locations:Blacksmith_Clint_Upgrade")),
+					new Response("TeraForge", "💎 Forjar Tera Type (50 Tera Shards)"),
 					new Response("Leave", Game1.content.LoadString("Strings\\Locations:Blacksmith_Clint_Leave"))
-				} : new Response[4]
+				} : new Response[5]
 				{
 					new Response("Shop", Game1.content.LoadString("Strings\\Locations:Blacksmith_Clint_Shop")),
 					new Response("Upgrade", Game1.content.LoadString("Strings\\Locations:Blacksmith_Clint_Upgrade")),
 					new Response("Process", Game1.content.LoadString("Strings\\Locations:Blacksmith_Clint_Geodes")),
+					new Response("TeraForge", "💎 Forjar Tera Type (50 Tera Shards)"),
 					new Response("Leave", Game1.content.LoadString("Strings\\Locations:Blacksmith_Clint_Leave"))
 				});
 				createQuestionDialogue("", answerChoices, "Blacksmith");
@@ -11119,6 +11128,7 @@ public class GameLocation : INetObject<NetFields>, IEquatable<GameLocation>, IAn
 			{
 				new Response("Supplies", Game1.content.LoadString("Strings\\Locations:AnimalShop_Marnie_Supplies")),
 				new Response("Purchase", Game1.content.LoadString("Strings\\Locations:AnimalShop_Marnie_Animals")),
+				new Response("Daycare", "🐣 Creche Pokémon (Daycare)"),
 				new Response("Leave", Game1.content.LoadString("Strings\\Locations:AnimalShop_Marnie_Leave"))
 			};
 			if ((Utility.getAllPets().Count == 0 && Game1.year >= 2) || Game1.player.mailReceived.Contains("MarniePetAdoption") || Game1.player.mailReceived.Contains("MarniePetRejectedAdoption"))
@@ -11146,6 +11156,7 @@ public class GameLocation : INetObject<NetFields>, IEquatable<GameLocation>, IAn
 				{
 					new Response("Supplies", Game1.content.LoadString("Strings\\Locations:AnimalShop_Marnie_Supplies")),
 					new Response("Purchase", Game1.content.LoadString("Strings\\Locations:AnimalShop_Marnie_Animals")),
+					new Response("Daycare", "🐣 Creche Pokémon (Daycare)"),
 					new Response("Leave", Game1.content.LoadString("Strings\\Locations:AnimalShop_Marnie_Leave"))
 				};
 				if ((Utility.getAllPets().Count == 0 && Game1.year >= 2) || Game1.player.mailReceived.Contains("MarniePetAdoption") || Game1.player.mailReceived.Contains("MarniePetRejectedAdoption"))
@@ -11652,6 +11663,10 @@ public class GameLocation : INetObject<NetFields>, IEquatable<GameLocation>, IAn
 
 	public virtual bool answerDialogueAction(string questionAndAnswer, string[] questionParams)
 	{
+		if (questionAndAnswer != null && questionAndAnswer.StartsWith("PokemonTeraForge_"))
+		{
+			return StardewValley.Pokemon.PokemonTeraManager.HandleTeraForgeAnswer(questionAndAnswer);
+		}
 		switch (questionAndAnswer)
 		{
 		case null:
@@ -12409,6 +12424,9 @@ public class GameLocation : INetObject<NetFields>, IEquatable<GameLocation>, IAn
 			Game1.player.forceCanMove();
 			Game1.currentLocation.ShowAnimalShopMenu();
 			break;
+		case "Marnie_Daycare":
+			Game1.activeClickableMenu = new StardewValley.Pokemon.PokemonDaycareMenu();
+			break;
 		case "Blacksmith_Shop":
 			Utility.TryOpenShopMenu("Blacksmith", "Clint");
 			break;
@@ -12428,6 +12446,9 @@ public class GameLocation : INetObject<NetFields>, IEquatable<GameLocation>, IAn
 			break;
 		case "Blacksmith_Process":
 			Game1.activeClickableMenu = new GeodeMenu();
+			break;
+		case "Blacksmith_TeraForge":
+			StardewValley.Pokemon.PokemonTeraManager.HandleClintTeraForge();
 			break;
 		case "Dungeon_Go":
 			Game1.enterMine(Game1.CurrentMineLevel + 1);

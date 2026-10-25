@@ -257,6 +257,25 @@ public class PokemonPartyPage : IClickableMenu
 			}
 			return;
 		}
+		if (button == Buttons.RightTrigger || button == Buttons.Back || button == Buttons.RightShoulder)
+		{
+			if (_selectedSlot >= 0 && _selectedSlot < team.Count)
+			{
+				var p = team[_selectedSlot];
+				Game1.playSound("select");
+				Game1.activeClickableMenu = new NamingMenu(newName =>
+				{
+					Game1.keyboardDispatcher.Subscriber = null;
+					if (!string.IsNullOrWhiteSpace(newName))
+					{
+						p.Nickname = newName.Trim();
+						Game1.addHUDMessage(new HUDMessage($"Pokémon renomeado para {p.Nickname}!", 2));
+					}
+					Game1.activeClickableMenu = new GameMenu(GameMenu.pokemonTab);
+				}, "Renomear " + p.Species.Name, p.Nickname);
+			}
+			return;
+		}
 	}
 
 	public override void draw(SpriteBatch b)
@@ -444,6 +463,15 @@ public class PokemonPartyPage : IClickableMenu
 				PokemonUI.Border(b, cardBounds, 1, new Color(180, 205, 200) * 0.7f);
 				PokemonUI.Text(b, Game1.smallFont, $"-- Vaga #{i + 1} Vazia --", cardBounds, Color.DarkSlateGray * 0.6f, center: true, maxScale: 0.82f);
 			}
+		}
+
+		if (Game1.options.gamepadControls)
+		{
+			string hint = "[A] Ativar   [X] Detalhes   [RT/Back] Renomear   [Y] PC / Pokédex";
+			Vector2 hSize = Game1.tinyFont.MeasureString(hint);
+			int hx = xPositionOnScreen + (width - (int)hSize.X) / 2;
+			int hy = yPositionOnScreen + height - 28;
+			b.DrawString(Game1.tinyFont, hint, new Vector2(hx, hy), Color.DarkSlateGray * 0.85f);
 		}
 
 		drawMouse(b);

@@ -2159,11 +2159,11 @@ public class Object : Item
 						StardewValley.Pokemon.PlayerParty.Instance.RemovePokemon(eggToIncubate);
 					}
 
-					heldObject.Value = ItemRegistry.Create<Object>("(O)PokemonEgg") ?? new Object("PokemonEgg", 1);
+					heldObject.Value = ItemRegistry.Create<Object>("(O)107") ?? new Object("107", 1);
 					StardewValley.Pokemon.PokemonBreeding.AddIncubatingEgg(TileLocation, eggToIncubate);
 					MinutesUntilReady = 480;
 					showNextIndex.Value = true;
-					location.playSound("Ship");
+					Game1.playSound("Ship");
 					Game1.addHUDMessage(new HUDMessage($"🥚 Ovo de {eggToIncubate.Species?.Name ?? "Pokémon"} colocado na chocadeira!", 2));
 					return true;
 				}
@@ -4111,33 +4111,57 @@ public class Object : Item
 			return true;
 		}
 
-		if ((base.QualifiedItemId == "(BC)101" || base.QualifiedItemId == "(BC)104" || (GetMachineData() != null && GetMachineData().IsIncubator) || (base.Name != null && base.Name.Contains("Incubator"))) &&
-		    StardewValley.Pokemon.PokemonBreeding.HasIncubatingEgg(TileLocation))
+		if ((base.QualifiedItemId == "(BC)101" || base.QualifiedItemId == "(BC)104" || (GetMachineData() != null && GetMachineData().IsIncubator) || (base.Name != null && base.Name.Contains("Incubator"))))
 		{
-			if (readyForHarvest.Value || MinutesUntilReady <= 0)
+			if (heldObject.Value == null && !StardewValley.Pokemon.PokemonBreeding.HasIncubatingEgg(TileLocation))
 			{
-				if (!justCheckingForActivity)
+				var party = StardewValley.Pokemon.PlayerParty.Instance;
+				var activeEgg = (party?.ActivePokemon != null && party.ActivePokemon.IsEgg)
+					? party.ActivePokemon
+					: party?.Team?.Find(p => p != null && p.IsEgg);
+
+				if (activeEgg != null)
 				{
-					var hatchedEgg = StardewValley.Pokemon.PokemonBreeding.GetIncubatingEgg(TileLocation);
-					StardewValley.Pokemon.PokemonBreeding.RemoveIncubatingEgg(TileLocation);
-					heldObject.Value = null;
-					readyForHarvest.Value = false;
-					showNextIndex.Value = false;
-					MinutesUntilReady = 0;
-					if (hatchedEgg != null)
-					{
-						Game1.activeClickableMenu = new StardewValley.Pokemon.PokemonHatchMenu(hatchedEgg);
-					}
+					if (justCheckingForActivity) return true;
+					party.RemovePokemon(activeEgg);
+					party.SaveParty();
+
+					heldObject.Value = ItemRegistry.Create<Object>("(O)107") ?? new Object("107", 1);
+					StardewValley.Pokemon.PokemonBreeding.AddIncubatingEgg(TileLocation, activeEgg);
+					MinutesUntilReady = 480;
+					showNextIndex.Value = true;
+					Game1.playSound("Ship");
+					Game1.addHUDMessage(new HUDMessage($"🥚 Ovo de {activeEgg.Species?.Name ?? "Pokémon"} colocado na chocadeira!", 2));
+					return true;
 				}
-				return true;
 			}
-			else
+			else if (StardewValley.Pokemon.PokemonBreeding.HasIncubatingEgg(TileLocation))
 			{
-				if (!justCheckingForActivity)
+				if (readyForHarvest.Value || MinutesUntilReady <= 0)
 				{
-					Game1.addHUDMessage(new HUDMessage($"🥚 O Ovo Pokémon está sendo incubado... ({MinutesUntilReady}m restantes)", 1));
+					if (!justCheckingForActivity)
+					{
+						var hatchedEgg = StardewValley.Pokemon.PokemonBreeding.GetIncubatingEgg(TileLocation);
+						StardewValley.Pokemon.PokemonBreeding.RemoveIncubatingEgg(TileLocation);
+						heldObject.Value = null;
+						readyForHarvest.Value = false;
+						showNextIndex.Value = false;
+						MinutesUntilReady = 0;
+						if (hatchedEgg != null)
+						{
+							Game1.activeClickableMenu = new StardewValley.Pokemon.PokemonHatchMenu(hatchedEgg);
+						}
+					}
+					return true;
 				}
-				return true;
+				else
+				{
+					if (!justCheckingForActivity)
+					{
+						Game1.addHUDMessage(new HUDMessage($"🥚 O Ovo Pokémon está sendo incubado... ({MinutesUntilReady}m restantes)", 1));
+					}
+					return true;
+				}
 			}
 		}
 

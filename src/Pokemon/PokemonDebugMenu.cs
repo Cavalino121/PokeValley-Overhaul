@@ -424,8 +424,8 @@ public class PokemonDebugMenu : IClickableMenu
 				));
 				_legendaryButtons.Add(new ClickableComponent(
 					new Rectangle(cardX + 318, cardY + 14, 86, 38),
-					"leg_spawn_" + legName,
-					"🌍 Spawn"
+					"leg_habitat_" + legName,
+					"🧭 Habitat"
 				));
 			}
 
@@ -788,21 +788,25 @@ public class PokemonDebugMenu : IClickableMenu
 						}
 						return;
 					}
-					else if (lb.name.StartsWith("leg_spawn_"))
+					else if (lb.name.StartsWith("leg_habitat_") || lb.name.StartsWith("leg_spawn_"))
 					{
-						string monName = lb.name.Substring("leg_spawn_".Length);
-						Point pTile = Game1.player.TilePoint;
-						Point spawnTile = new Point(pTile.X + 2, pTile.Y);
-						var spawn = PokemonEncounterManager.SpawnWildAt(Game1.currentLocation, spawnTile, monName, level: 70);
-						if (spawn != null)
+						string monName = lb.name.StartsWith("leg_habitat_")
+							? lb.name.Substring("leg_habitat_".Length)
+							: lb.name.Substring("leg_spawn_".Length);
+
+						var (loc, tx, ty, itemId, itemName) = GetLegendaryHabitat(monName);
+
+						// Grant summon relic item
+						if (!string.IsNullOrEmpty(itemId))
 						{
-							Game1.playSound("reward");
-							Game1.addHUDMessage(new HUDMessage($"✨ {monName} selvagem apareceu no mapa em ({spawnTile.X}, {spawnTile.Y})!", 2));
+							Game1.player.addItemToInventory(ItemRegistry.Create<Object>("(O)" + itemId) ?? new Object(itemId, 1));
 						}
-						else
-						{
-							Game1.showRedMessage($"Não foi possível spawnar {monName}!");
-						}
+
+						// Teleport directly to lore-accurate Valley habitat
+						Game1.warpFarmer(loc, tx, ty, 2);
+						Game1.playSound("wand");
+						exitThisMenuNoSound();
+						Game1.addHUDMessage(new HUDMessage($"🧭 Teleportado para o habitat de {monName} em {loc} ({tx}, {ty})! Relíquia '{itemName}' concedida.", 2));
 						return;
 					}
 				}
@@ -2456,4 +2460,53 @@ public class PokemonDebugMenu : IClickableMenu
 		PokemonUI.Text(b, Game1.smallFont, name, new Rectangle(px, py, pillW, pillH), Color.White, center: true, maxScale: 0.48f, shadow: false);
 		return pillW;
 	}
+
+	public static (string loc, int x, int y, string itemId, string itemName) GetLegendaryHabitat(string name)
+	{
+		return name switch
+		{
+			"Articuno" => ("UndergroundMine", 18, 13, "Poke_FreezingFeather", "Pena Glacial"),
+			"Zapdos" => ("Mountain", 32, 44, "Poke_ElectricFeather", "Pena Elétrica"),
+			"Moltres" => ("Caldera", 28, 28, "Poke_FlameFeather", "Pena de Chamas"),
+			"Mewtwo" => ("SkullCave", 18, 18, "Poke_BerserkGene", "Gene Berserk"),
+			"Mew" => ("IslandSouthEast", 22, 18, "Poke_OldSeaMap", "Mapa do Mar Antigo"),
+			"Raikou" => ("Woods", 15, 20, "Poke_ClearBell", "Sino Claro"),
+			"Entei" => ("Mountain", 25, 30, "Poke_ClearBell", "Sino Claro"),
+			"Suicune" => ("Beach", 20, 15, "Poke_ClearBell", "Sino Claro"),
+			"Lugia" => ("Submarine", 12, 12, "Poke_TidalBell", "Sino das Marés"),
+			"Ho-Oh" => ("Summit", 22, 14, "Poke_RainbowWing", "Asa do Arco-Íris"),
+			"Celebi" => ("Woods", 28, 15, "Poke_GSBall", "GS Ball"),
+			"Regirock" => ("UndergroundMine", 15, 10, "Poke_RelicCrown", "Coroa Relíquia"),
+			"Regice" => ("UndergroundMine", 15, 10, "Poke_RelicCrown", "Coroa Relíquia"),
+			"Registeel" => ("UndergroundMine", 15, 10, "Poke_RelicCrown", "Coroa Relíquia"),
+			"Latias" => ("IslandWest", 30, 40, "Poke_EonFlute", "Flauta Eon"),
+			"Latios" => ("Beach", 40, 20, "Poke_EonFlute", "Flauta Eon"),
+			"Kyogre" => ("Beach", 28, 35, "Poke_BlueOrb", "Orbe Azul"),
+			"Groudon" => ("Caldera", 16, 22, "Poke_RedOrb", "Orbe Vermelho"),
+			"Rayquaza" => ("Summit", 21, 10, "Poke_JadeOrb", "Orbe de Jade"),
+			"Jirachi" => ("Mountain", 50, 10, "Poke_CometShard", "Fragmento de Cometa"),
+			"Deoxys" => ("Railroad", 15, 52, "Poke_MeteoritePiece", "Pedaço de Meteorito"),
+			"Dialga" => ("Summit", 21, 12, "Poke_AdamantOrb", "Orbe Diamante"),
+			"Palkia" => ("Summit", 23, 12, "Poke_LustrousOrb", "Orbe Pérola"),
+			"Giratina" => ("SkullCave", 15, 15, "Poke_GriseousOrb", "Orbe Platina"),
+			"Darkrai" => ("Town", 55, 18, "Poke_DarkraiNightmare", "Pesadelo Obscuro"),
+			"Shaymin" => ("Forest", 60, 40, "Poke_GracideaFlower", "Flor Gracídea"),
+			"Arceus" => ("Summit", 22, 8, "Poke_AzureFlute", "Flauta Azure"),
+			"Reshiram" => ("Caldera", 24, 24, "Poke_LightStone", "Pedra da Luz"),
+			"Zekrom" => ("Desert", 18, 32, "Poke_DarkStone", "Pedra das Trevas"),
+			"Kyurem" => ("UndergroundMine", 18, 13, "Poke_DNA_Splicers", "Fundidores de DNA"),
+			"Xerneas" => ("Woods", 35, 18, "Poke_FairyFeather", "Pena Feérica"),
+			"Yveltal" => ("SkullCave", 25, 25, "Poke_DarkFeather", "Pena Sombria"),
+			"Zygarde" => ("UndergroundMine", 15, 15, "Poke_ZygardeCube", "Cubo Zygarde"),
+			"Solgaleo" => ("Desert", 34, 42, "Poke_SunFlute", "Flauta do Sol"),
+			"Lunala" => ("Beach", 18, 25, "Poke_MoonFlute", "Flauta da Lua"),
+			"Necrozma" => ("SkullCave", 30, 30, "Poke_UltranecroziumZ", "Ultralnecrozium Z"),
+			"Zacian" => ("Forest", 45, 50, "Poke_RustedSword", "Espada Enferrujada"),
+			"Zamazenta" => ("Mountain", 35, 30, "Poke_RustedShield", "Escudo Enferrujado"),
+			"Koraidon" => ("Caldera", 20, 20, "Poke_KoraidonFeather", "Asa Passada"),
+			"Miraidon" => ("Railroad", 25, 45, "Poke_MiraidonCore", "Núcleo Futuro"),
+			_ => ("Mountain", 48, 12, "Poke_RainbowWing", "Relíquia Lendária")
+		};
+	}
+
 }

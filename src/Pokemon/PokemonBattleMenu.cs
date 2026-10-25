@@ -20,7 +20,8 @@ public class PokemonBattleMenu : IClickableMenu
 		SwitchSelect,
 		MessageWait,
 		Victory,
-		Defeat
+		Defeat,
+		WaitingForOpponent
 	}
 
 	public enum ArenaTheme
@@ -48,6 +49,33 @@ public class PokemonBattleMenu : IClickableMenu
 	private ClickableComponent _spectatorExitBtn;
 
 	public bool IsWild { get; }
+	public bool IsPvP { get; } = false;
+	public long OpponentFarmerId { get; set; } = 0L;
+
+	public enum PvPActionType
+	{
+		Move,
+		Switch,
+		Run
+	}
+
+	public class PvPAction
+	{
+		public PvPActionType ActionType;
+		public int MoveIndex;
+		public string MoveName;
+		public int SwitchSlot;
+		public bool UseMega;
+		public bool UseZMove;
+		public bool UseDynamax;
+		public bool UseGMax;
+		public bool UseTera;
+	}
+
+	private PvPAction _myPendingAction = null;
+	private PvPAction _opponentPendingAction = null;
+	private bool _wasCaptured = false;
+
 	public string TrainerName { get; }
 	public List<PokemonInstance> EnemyTeam { get; }
 	public int EnemyIndex { get; private set; } = 0;
@@ -704,6 +732,26 @@ private PokemonMove SelectEnemyMove()
 			ActiveBattles.Remove(Game1.player.UniqueMultiplayerID);
 		}
 		PokemonMusicManager.StopAndRestoreStardewMusic();
+
+		if (SourceWildSpawn != null)
+		{
+			SourceWildSpawn.CurrentBattlerFarmerId = 0L;
+		}
+		if (IsWild && EnemyPokemon != null && !_wasCaptured)
+		{
+			EnemyPokemon.CurrentHP = EnemyPokemon.MaxHP;
+			EnemyPokemon.Status = PokemonStatusCondition.None;
+			EnemyPokemon.StatusTurns = 0;
+			EnemyPokemon.ConfusionTurns = 0;
+			EnemyPokemon.Flinched = false;
+			EnemyPokemon.EndBattleGimmicks(revertMega: true);
+		}
+
+		if (IsPvP && OpponentFarmerId != 0L)
+		{
+			PokemonPvPManager.SendPvPBattleEnd(OpponentFarmerId);
+		}
+
 		if (PlayerTeam != null)
 		{
 			foreach (var p in PlayerTeam)
@@ -733,6 +781,41 @@ private PokemonMove SelectEnemyMove()
 		InitBattle();
 
 		QueueMessage($"O(A) Treinador(a) {TrainerName} desafiou você para uma batalha!", () =>
+		{
+			_isEnemySending = true;
+			_enemySendTimer = 0f;
+			QueueMessage($"{TrainerName} enviou {EnemyPokemon?.Nickname}!", () =>
+			{
+				_isPlayerThrowing = true;
+				_playerThrowTimer = 0f;
+				QueueMessage($"Vai, {PlayerPokemon?.Nickname}!", () =>
+				{
+					TriggerSwitchInAbility(PlayerPokemon, EnemyPokemon, () =>
+					{
+						TriggerSwitchInAbility(EnemyPokemon, PlayerPokemon, () =>
+						{
+							Phase = BattlePhase.ActionSelect;
+						});
+					});
+				});
+			});
+		});
+	}
+
+	// PvP Battle Constructor
+	public PokemonBattleMenu(long opponentFarmerId, string opponentName, List<PokemonInstance> opponentTeam)
+		: base(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height)
+	{
+		IsWild = false;
+		IsPvP = true;
+		OpponentFarmerId = opponentFarmerId;
+		TrainerName = opponentName;
+		EnemyTeam = opponentTeam ?? new List<PokemonInstance>();
+		EnemyIndex = 0;
+
+		InitBattle();
+
+		QueueMessage($"Batalha PvP contra {TrainerName} começou!", () =>
 		{
 			_isEnemySending = true;
 			_enemySendTimer = 0f;
@@ -1695,7 +1778,29 @@ private PokemonMove SelectEnemyMove()
 		if (move.CurrentPP > 0)
 		{
 			Game1.playSound("select");
-			ExecuteTurn(move);
+			if (IsPvP)
+			{
+				SubmitPvPAction(new PvPAction
+				{
+					ActionType = PvPActionType.Move,
+					MoveIndex = moveIndex,
+					MoveName = move.Name,
+					UseMega = _megaToggled,
+					UseZMove = _zMoveToggled,
+					UseDynamax = _dynamaxToggled,
+					UseGMax = _gmaxToggled,
+					UseTera = _teraToggled
+				});
+				_megaToggled = false;
+				_zMoveToggled = false;
+				_dynamaxToggled = false;
+				_gmaxToggled = false;
+				_teraToggled = false;
+			}
+			else
+			{
+				ExecuteTurn(move);
+			}
 		}
 		else
 		{
@@ -2781,6 +2886,12 @@ private PokemonMove SelectEnemyMove()
 
 	private void HandleEnemyFainted()
 	{
+		if (IsPvP)
+		{
+			HandleEnemyFaintedPvP();
+			return;
+		}
+
 		Game1.playSound("monsterdead");
 		if (!IsWild)
 		{
@@ -3490,6 +3601,11 @@ private PokemonMove SelectEnemyMove()
 			PlayerPokemon.SaltCureTurns = 0;
 		}
 
+		if (IsPvP)
+		{
+			PokemonPvPManager.SendPvPSwitch(OpponentFarmerId, targetIndex, PlayerTeam[targetIndex].Nickname);
+		}
+
 		_isSwitching = true;
 		_switchTargetIndex = targetIndex;
 
@@ -4184,6 +4300,7 @@ private PokemonMove SelectEnemyMove()
 				if (_captureTimer >= 0.70f)
 				{
 					_isCapturing = false;
+					_wasCaptured = true;
 					_captureStage = CaptureStage.None;
 					if (_capturingBallId == "HealBall") EnemyPokemon.FullRestore();
 					EnemyPokemon.EndBattleGimmicks(revertMega: true);
@@ -5646,4 +5763,304 @@ private PokemonMove SelectEnemyMove()
 			PokemonUI.Text(b, Game1.smallFont, label, new Rectangle(btn.bounds.X + 12, btn.bounds.Y + 6, btn.bounds.Width - 24, btn.bounds.Height - 12), (p != null && p.IsFainted) ? Color.DarkRed : ((hovered || gamepadFocused) ? Color.DarkRed : Game1.textColor), maxScale: 0.85f);
 		}
 	}
+
+	#region PvP Battle Synchronization
+
+	public void SubmitPvPAction(PvPAction act)
+	{
+		_myPendingAction = act;
+		Phase = BattlePhase.WaitingForOpponent;
+		_currentMessage = $"Aguardando a decisão de {TrainerName}...";
+
+		PokemonPvPManager.SendPvPAction(OpponentFarmerId, act);
+		CheckAndExecutePvPTurn();
+	}
+
+	public void ReceiveOpponentAction(PvPAction act)
+	{
+		_opponentPendingAction = act;
+		CheckAndExecutePvPTurn();
+	}
+
+	private void CheckAndExecutePvPTurn()
+	{
+		if (_myPendingAction == null || _opponentPendingAction == null) return;
+
+		var myAct = _myPendingAction;
+		var oppAct = _opponentPendingAction;
+		_myPendingAction = null;
+		_opponentPendingAction = null;
+
+		ExecutePvPTurn(myAct, oppAct);
+	}
+
+	private void ExecutePvPTurn(PvPAction playerAct, PvPAction oppAct)
+	{
+		// 1. Both switch
+		if (playerAct.ActionType == PvPActionType.Switch && oppAct.ActionType == PvPActionType.Switch)
+		{
+			PerformPlayerSwitch(playerAct.SwitchSlot, () =>
+			{
+				PerformEnemySwitch(oppAct.SwitchSlot, () =>
+				{
+					RunEndOfTurnEffects(() => Phase = BattlePhase.ActionSelect);
+				});
+			});
+			return;
+		}
+
+		// 2. Player switches, Opponent moves
+		if (playerAct.ActionType == PvPActionType.Switch && oppAct.ActionType == PvPActionType.Move)
+		{
+			PerformPlayerSwitch(playerAct.SwitchSlot, () =>
+			{
+				PokemonMove oppMove = (oppAct.MoveIndex >= 0 && oppAct.MoveIndex < EnemyPokemon.Moves.Count)
+					? EnemyPokemon.Moves[oppAct.MoveIndex]
+					: (EnemyPokemon.Moves.Count > 0 ? EnemyPokemon.Moves[0] : PokemonMove.Get("Tackle"));
+
+				ExecuteAttack(EnemyPokemon, PlayerPokemon, oppMove, () =>
+				{
+					if (PlayerPokemon.IsFainted)
+					{
+						HandlePlayerFainted();
+					}
+					else
+					{
+						RunEndOfTurnEffects(() => Phase = BattlePhase.ActionSelect);
+					}
+				}, oppAct.UseZMove, oppAct.UseDynamax);
+			});
+			return;
+		}
+
+		// 3. Opponent switches, Player moves
+		if (oppAct.ActionType == PvPActionType.Switch && playerAct.ActionType == PvPActionType.Move)
+		{
+			PerformEnemySwitch(oppAct.SwitchSlot, () =>
+			{
+				PokemonMove pMove = (playerAct.MoveIndex >= 0 && playerAct.MoveIndex < PlayerPokemon.Moves.Count)
+					? PlayerPokemon.Moves[playerAct.MoveIndex]
+					: (PlayerPokemon.Moves.Count > 0 ? PlayerPokemon.Moves[0] : PokemonMove.Get("Tackle"));
+
+				ExecuteAttack(PlayerPokemon, EnemyPokemon, pMove, () =>
+				{
+					if (EnemyPokemon.IsFainted)
+					{
+						HandleEnemyFaintedPvP();
+					}
+					else
+					{
+						RunEndOfTurnEffects(() => Phase = BattlePhase.ActionSelect);
+					}
+				}, playerAct.UseZMove, playerAct.UseDynamax);
+			});
+			return;
+		}
+
+		// 4. Both use moves
+		PokemonMove playerMove = (playerAct.MoveIndex >= 0 && playerAct.MoveIndex < PlayerPokemon.Moves.Count)
+			? PlayerPokemon.Moves[playerAct.MoveIndex]
+			: (PlayerPokemon.Moves.Count > 0 ? PlayerPokemon.Moves[0] : PokemonMove.Get("Tackle"));
+		PokemonMove enemyMove = (oppAct.MoveIndex >= 0 && oppAct.MoveIndex < EnemyPokemon.Moves.Count)
+			? EnemyPokemon.Moves[oppAct.MoveIndex]
+			: (EnemyPokemon.Moves.Count > 0 ? EnemyPokemon.Moves[0] : PokemonMove.Get("Tackle"));
+
+		playerMove.CurrentPP = Math.Max(0, playerMove.CurrentPP - 1);
+		enemyMove.CurrentPP = Math.Max(0, enemyMove.CurrentPP - 1);
+
+		// Apply gimmicks
+		if (playerAct.UseTera && !PlayerPokemon.IsTerastallized) PlayerPokemon.Terastallize();
+		if (playerAct.UseDynamax && !PlayerPokemon.IsDynamaxed) PlayerPokemon.ActivateDynamax(playerAct.UseGMax);
+		if (oppAct.UseTera && !EnemyPokemon.IsTerastallized) EnemyPokemon.Terastallize();
+		if (oppAct.UseDynamax && !EnemyPokemon.IsDynamaxed) EnemyPokemon.ActivateDynamax(oppAct.UseGMax);
+
+		int playerEffSpeed = (int)(EffectiveSpeedOf(PlayerPokemon) * GetStageMultiplier(_playerSpeedStage));
+		int enemyEffSpeed = (int)(EffectiveSpeedOf(EnemyPokemon) * GetStageMultiplier(_enemySpeedStage));
+
+		int playerPriority = GetEffectivePriority(PlayerPokemon, EnemyPokemon, playerMove, playerAct.UseZMove, playerAct.UseDynamax);
+		int enemyPriority = GetEffectivePriority(EnemyPokemon, PlayerPokemon, enemyMove, oppAct.UseZMove, oppAct.UseDynamax);
+
+		bool playerFirst;
+		if (playerPriority != enemyPriority)
+		{
+			playerFirst = playerPriority > enemyPriority;
+		}
+		else if (playerEffSpeed != enemyEffSpeed)
+		{
+			playerFirst = playerEffSpeed > enemyEffSpeed;
+		}
+		else
+		{
+			playerFirst = (Game1.player?.UniqueMultiplayerID ?? 0L) < OpponentFarmerId;
+		}
+
+		if (playerFirst)
+		{
+			ExecuteAttack(PlayerPokemon, EnemyPokemon, playerMove, () =>
+			{
+				if (EnemyPokemon.IsFainted)
+				{
+					HandleEnemyFaintedPvP();
+				}
+				else
+				{
+					ExecuteAttack(EnemyPokemon, PlayerPokemon, enemyMove, () =>
+					{
+						if (PlayerPokemon.IsFainted)
+						{
+							HandlePlayerFainted();
+						}
+						else
+						{
+							RunEndOfTurnEffects(() => Phase = BattlePhase.ActionSelect);
+						}
+					}, oppAct.UseZMove, oppAct.UseDynamax);
+				}
+			}, playerAct.UseZMove, playerAct.UseDynamax);
+		}
+		else
+		{
+			ExecuteAttack(EnemyPokemon, PlayerPokemon, enemyMove, () =>
+			{
+				if (PlayerPokemon.IsFainted)
+				{
+					HandlePlayerFainted();
+				}
+				else
+				{
+					ExecuteAttack(PlayerPokemon, EnemyPokemon, playerMove, () =>
+					{
+						if (EnemyPokemon.IsFainted)
+						{
+							HandleEnemyFaintedPvP();
+						}
+						else
+						{
+							RunEndOfTurnEffects(() => Phase = BattlePhase.ActionSelect);
+						}
+					}, playerAct.UseZMove, playerAct.UseDynamax);
+				}
+			}, oppAct.UseZMove, oppAct.UseDynamax);
+		}
+	}
+
+	private void HandleEnemyFaintedPvP()
+	{
+		Game1.playSound("monsterdead");
+		_isEnemyRetrieving = true;
+		_enemyRetrieveTimer = 0f;
+		Game1.playSound("wand");
+
+		QueueMessage($"{EnemyPokemon.Nickname} adversário desmaiou!", () =>
+		{
+			_enemyPokemonScale = 0f;
+			_isEnemyRetrieving = false;
+
+			bool hasRemainingAlive = EnemyTeam.Exists(p => p != null && !p.IsFainted);
+			if (!hasRemainingAlive)
+			{
+				Phase = BattlePhase.Victory;
+				Game1.playSound("reward");
+				PokemonMusicManager.PlayVictoryMusic();
+				QueueMessage($"Todos os Pokémon de {TrainerName} desmaiaram! Você venceu a batalha!", () =>
+				{
+					exitThisMenuNoSound();
+				});
+			}
+			else
+			{
+				Phase = BattlePhase.WaitingForOpponent;
+				_currentMessage = $"Aguardando {TrainerName} escolher o próximo Pokémon...";
+			}
+		});
+	}
+
+	public void ReceiveOpponentSwitch(int newEnemySlot, string nickname)
+	{
+		if (newEnemySlot >= 0 && newEnemySlot < EnemyTeam.Count)
+		{
+			EnemyIndex = newEnemySlot;
+		}
+		_enemyAtkStage = 0; _enemyDefStage = 0; _enemySpAtkStage = 0; _enemySpDefStage = 0; _enemySpeedStage = 0;
+		_displayEnemyHP = EnemyPokemon != null ? EnemyPokemon.CurrentHP : 0;
+		_enemyPokemonScale = 0f;
+		_isEnemySending = true;
+		_enemySendTimer = 0f;
+		Game1.playSound("throw");
+
+		QueueMessage($"{TrainerName} enviou {nickname}!", () =>
+		{
+			_enemyPokemonScale = 3.2f;
+			_isEnemySending = false;
+			Game1.playSound("reward");
+			TriggerSwitchInAbility(EnemyPokemon, PlayerPokemon, () =>
+			{
+				if (Phase == BattlePhase.WaitingForOpponent)
+				{
+					Phase = BattlePhase.ActionSelect;
+				}
+			});
+		});
+	}
+
+	public void ReceiveOpponentForfeit()
+	{
+		Game1.playSound("reward");
+		Game1.addHUDMessage(new HUDMessage($"{TrainerName} encerrou/desistiu da batalha.", 2));
+		exitThisMenuNoSound();
+	}
+
+	private void PerformPlayerSwitch(int targetIndex, Action onDone)
+	{
+		if (targetIndex >= 0 && targetIndex < PlayerTeam.Count)
+		{
+			PlayerActiveIndex = targetIndex;
+			PlayerParty.Instance.ActiveIndex = targetIndex;
+			_playerAtkStage = 0; _playerDefStage = 0; _playerSpAtkStage = 0; _playerSpDefStage = 0; _playerSpeedStage = 0;
+			_displayPlayerHP = PlayerPokemon.CurrentHP;
+			_playerSpriteScale = 0f;
+			_isPlayerThrowing = true;
+			_playerThrowTimer = 0f;
+			Game1.playSound("throw");
+
+			QueueMessage($"Vai, {PlayerPokemon.Nickname}!", () =>
+			{
+				_playerSpriteScale = 3.2f;
+				_isPlayerThrowing = false;
+				TriggerSwitchInAbility(PlayerPokemon, EnemyPokemon, onDone);
+			});
+		}
+		else
+		{
+			onDone?.Invoke();
+		}
+	}
+
+	private void PerformEnemySwitch(int targetIndex, Action onDone)
+	{
+		if (targetIndex >= 0 && targetIndex < EnemyTeam.Count)
+		{
+			EnemyIndex = targetIndex;
+			_enemyAtkStage = 0; _enemyDefStage = 0; _enemySpAtkStage = 0; _enemySpDefStage = 0; _enemySpeedStage = 0;
+			_displayEnemyHP = EnemyPokemon.CurrentHP;
+			_enemyPokemonScale = 0f;
+			_isEnemySending = true;
+			_enemySendTimer = 0f;
+			Game1.playSound("throw");
+
+			QueueMessage($"{TrainerName} enviou {EnemyPokemon.Nickname}!", () =>
+			{
+				_enemyPokemonScale = 3.2f;
+				_isEnemySending = false;
+				TriggerSwitchInAbility(EnemyPokemon, PlayerPokemon, onDone);
+			});
+		}
+		else
+		{
+			onDone?.Invoke();
+		}
+	}
+
+	#endregion
+
 }

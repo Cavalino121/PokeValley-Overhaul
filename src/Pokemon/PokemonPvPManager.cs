@@ -109,7 +109,7 @@ public static class PokemonPvPManager
 									ReceiveBattlePacket(targetId, $"ACCEPT|{targetId}|{challengerId}");
 								}
 								var challengerParty = PlayerParty.GetForFarmer(challengerId);
-								Game1.activeClickableMenu = new PokemonBattleMenu(challengerName, challengerParty.Team);
+								Game1.activeClickableMenu = new PokemonBattleMenu(challengerId, challengerName, challengerParty.Team);
 							}
 							else
 							{
@@ -133,7 +133,7 @@ public static class PokemonPvPManager
 						string targetName = acceptorFarmer?.Name ?? "Treinador";
 						var targetParty = PlayerParty.GetForFarmer(acceptorId);
 						Game1.playSound("reward");
-						Game1.activeClickableMenu = new PokemonBattleMenu(targetName, targetParty.Team);
+						Game1.activeClickableMenu = new PokemonBattleMenu(acceptorId, targetName, targetParty.Team);
 					}
 				}
 				break;
@@ -149,6 +149,80 @@ public static class PokemonPvPManager
 					}
 				}
 				break;
+
+			case "ACTION":
+				if (parts.Length >= 11)
+				{
+					if (PokemonBattleMenu.ActiveBattles.TryGetValue(Game1.player.UniqueMultiplayerID, out var battle) && battle != null && battle.IsPvP)
+					{
+						var act = new PokemonBattleMenu.PvPAction
+						{
+							ActionType = Enum.Parse<PokemonBattleMenu.PvPActionType>(parts[2]),
+							MoveIndex = int.Parse(parts[3]),
+							MoveName = parts[4],
+							SwitchSlot = int.Parse(parts[5]),
+							UseMega = bool.Parse(parts[6]),
+							UseZMove = bool.Parse(parts[7]),
+							UseDynamax = bool.Parse(parts[8]),
+							UseGMax = bool.Parse(parts[9]),
+							UseTera = bool.Parse(parts[10])
+						};
+						battle.ReceiveOpponentAction(act);
+					}
+				}
+				break;
+
+			case "SWITCH":
+				if (parts.Length >= 4 && int.TryParse(parts[2], out int switchSlot))
+				{
+					if (PokemonBattleMenu.ActiveBattles.TryGetValue(Game1.player.UniqueMultiplayerID, out var battle) && battle != null && battle.IsPvP)
+					{
+						string nickname = parts[3];
+						battle.ReceiveOpponentSwitch(switchSlot, nickname);
+					}
+				}
+				break;
+
+			case "FORFEIT":
+				if (PokemonBattleMenu.ActiveBattles.TryGetValue(Game1.player.UniqueMultiplayerID, out var bEnd) && bEnd != null && bEnd.IsPvP)
+				{
+					bEnd.ReceiveOpponentForfeit();
+				}
+				break;
+		}
+	}
+
+	public static void SendPvPAction(long recipient, PokemonBattleMenu.PvPAction act)
+	{
+		string payload = $"ACTION|{Game1.player?.UniqueMultiplayerID ?? 0L}|{act.ActionType}|{act.MoveIndex}|{act.MoveName}|{act.SwitchSlot}|{act.UseMega}|{act.UseZMove}|{act.UseDynamax}|{act.UseGMax}|{act.UseTera}";
+		SendBattlePacket(payload, recipient);
+
+		// Local split screen direct memory dispatch:
+		if (PokemonBattleMenu.ActiveBattles.TryGetValue(recipient, out var targetBattle) && targetBattle != null && targetBattle.IsPvP)
+		{
+			targetBattle.ReceiveOpponentAction(act);
+		}
+	}
+
+	public static void SendPvPSwitch(long recipient, int newSlot, string nickname)
+	{
+		string payload = $"SWITCH|{Game1.player?.UniqueMultiplayerID ?? 0L}|{newSlot}|{nickname}";
+		SendBattlePacket(payload, recipient);
+
+		if (PokemonBattleMenu.ActiveBattles.TryGetValue(recipient, out var targetBattle) && targetBattle != null && targetBattle.IsPvP)
+		{
+			targetBattle.ReceiveOpponentSwitch(newSlot, nickname);
+		}
+	}
+
+	public static void SendPvPBattleEnd(long recipient)
+	{
+		string payload = $"FORFEIT|{Game1.player?.UniqueMultiplayerID ?? 0L}";
+		SendBattlePacket(payload, recipient);
+
+		if (PokemonBattleMenu.ActiveBattles.TryGetValue(recipient, out var targetBattle) && targetBattle != null && targetBattle.IsPvP)
+		{
+			targetBattle.ReceiveOpponentForfeit();
 		}
 	}
 }
