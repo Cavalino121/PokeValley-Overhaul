@@ -166,12 +166,18 @@ public class PokemonEvolutionMenu : IClickableMenu
 				_scale = 3.6f;
 				_tint = Color.White;
 
+				// Play newly evolved species cry and triumph fanfare
+				if (_targetSpecies != null)
+				{
+					PokemonCryManager.PlayCry(_targetSpecies.Name);
+				}
+
 				// Spawn celebration sparkles
 				_sparkles.Clear();
-				for (int i = 0; i < 30; i++)
+				for (int i = 0; i < 40; i++)
 				{
 					float angle = (float)(Game1.random.NextDouble() * Math.PI * 2.0);
-					float dist = Game1.random.Next(60, 260);
+					float dist = Game1.random.Next(50, 300);
 					_sparkles.Add(new Vector2((float)Math.Cos(angle) * dist, (float)Math.Sin(angle) * dist));
 				}
 			}

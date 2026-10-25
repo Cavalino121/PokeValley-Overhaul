@@ -157,6 +157,7 @@ public class PokemonHUD
 
 	public void Update(GameTime gameTime)
 	{
+		PokemonCutsceneManager.Update(gameTime);
 		KeyboardState currentKb = Game1.input.GetKeyboardState();
 		GamePadState gp = Game1.input.GetGamePadState();
 
@@ -1150,5 +1151,7 @@ public class PokemonHUD
 			PokemonUI.Text(b, Game1.smallFont, _pokedexHUDButton.label, _pokedexHUDButton.bounds, dexHover ? Color.DarkRed : Color.White, center: true, maxScale: 0.74f);
 		}
 
+		// 5. Cinematic Cutscene Overlay (Letterbox widescreen bars & Legendary Awakening banner)
+		PokemonCutsceneManager.DrawOverworldOverlay(b);
 	}
 }

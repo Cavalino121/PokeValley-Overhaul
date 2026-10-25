@@ -205,10 +205,15 @@ public static class PokemonSaveStore
 		}
 
 		long embeddedStamp = ReadEmbeddedStampForFarmer(farmer);
-		bool recoveredFromMirror = haveData && embeddedStamp > 0 && file.SavedAtUtc > embeddedStamp
-			&& isHost;
 
-		if (!recoveredFromMirror && ReadFarmerModData(farmer, file))
+		// Single Source of Truth & Anti-Exploit Rollback Protection:
+		// Stardew Valley saves all player progress (inventory, items, money, world state) into the .sv save file
+		// when the player sleeps at night. If the player quits without saving (e.g. after summoning and catching a Legendary),
+		// the day rolls back to 6:00 AM.
+		// To prevent desync exploits where the player keeps the caught Legendary while recovering the used Master Ball
+		// and Summon Relic, farmer.modData MUST be authoritative whenever present.
+		// The disk mirror (pokemon_save.json) is strictly a secondary fallback for initial import or offline tools.
+		if (ReadFarmerModData(farmer, file))
 		{
 			haveData = true;
 			entry.LoadedFromSaveFile = true;
@@ -232,12 +237,11 @@ public static class PokemonSaveStore
 		{
 			entry.LastEmbeddedProbeMs = Environment.TickCount;
 		}
-
-		if (recoveredFromMirror)
+		else
 		{
-			Log("recovered a newer pokemon mirror after the save file lagged behind");
-			SaveForFarmer(farmerId);
-			entry.LoadedFromSaveFile = true;
+			// Align disk mirror immediately with the authoritative morning save, scrubbing any uncommitted
+			// progress from an aborted/unsaved day.
+			WriteMirrorForEntry(entry);
 		}
 	}
 

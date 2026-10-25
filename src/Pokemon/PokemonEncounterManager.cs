@@ -380,22 +380,19 @@ public static class PokemonEncounterManager
 		// Ensure no object remains on the placement tile
 		loc.objects.Remove(new Vector2(tileX, tileY));
 
-		// Dramatic summon audiovisuals
-		Game1.playSound("thunder");
-		Game1.playSound("roar");
-		Rumble.rumble(0.9f, 600f);
-		Game1.screenGlowOnce(Color.Gold, hold: false);
-
 		var spec = PokemonSpecies.Get(matchedDef.SpeciesName);
 		if (spec != null)
 		{
-			PokemonCryManager.PlayCry(spec.Name);
-			var spawn = SpawnWildAt(loc, new Point(tileX, tileY), spec.InternalName, level: 70, isShiny: RollWildShiny());
-			if (spawn != null)
+			// Play full cinematic cutscene: letterboxing, screen darkening, elemental storm flash, rumbling, roar & cry
+			PokemonCutsceneManager.PlayLegendaryAwakening(loc, new Point(tileX, tileY), spec, matchedDef.RelicName, () =>
 			{
-				spawn.ContactCooldown = 1.0f;
-			}
-			Game1.addHUDMessage(new HUDMessage($"✨ {matchedDef.RelicName} desapareceu em luz! O lendário {spec.Name} emergiu!", 2));
+				var spawn = SpawnWildAt(loc, new Point(tileX, tileY), spec.InternalName, level: 70, isShiny: RollWildShiny());
+				if (spawn != null)
+				{
+					spawn.ContactCooldown = 1.2f;
+				}
+				Game1.addHUDMessage(new HUDMessage($"✨ {matchedDef.RelicName} desapareceu em luz! O lendário {spec.Name} emergiu!", 2));
+			});
 		}
 
 		return true;

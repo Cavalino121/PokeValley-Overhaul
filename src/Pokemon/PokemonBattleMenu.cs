@@ -31,7 +31,15 @@ public class PokemonBattleMenu : IClickableMenu
 		Cave,
 		Beach,
 		Forest,
-		Interior
+		Interior,
+		Summit,
+		Caldera,
+		BugLand,
+		SkullCave,
+		Submarine,
+		Distortion,
+		Desert,
+		Gym
 	}
 
 	private class FloatingDamage
@@ -461,11 +469,30 @@ private PokemonMove SelectEnemyMove()
 	private int _boxHeight;
 
 	// Animation & Visual States
+	private static readonly HashSet<string> _legendaryNames = new(StringComparer.OrdinalIgnoreCase)
+	{
+		"Articuno", "Zapdos", "Moltres", "Mewtwo", "Mew", "Raikou", "Entei", "Suicune", "Lugia", "Ho-Oh",
+		"Celebi", "Regirock", "Regice", "Registeel", "Latias", "Latios", "Kyogre", "Groudon", "Rayquaza",
+		"Jirachi", "Deoxys", "Uxie", "Mesprit", "Azelf", "Dialga", "Palkia", "Heatran", "Regigigas", "Giratina",
+		"Cresselia", "Phione", "Manaphy", "Darkrai", "Shaymin", "Arceus", "Victini", "Cobalion", "Terrakion",
+		"Virizion", "Tornadus", "Thundurus", "Reshiram", "Zekrom", "Landorus", "Kyurem", "Keldeo", "Meloetta",
+		"Genesect", "Xerneas", "Yveltal", "Zygarde", "Diancie", "Hoopa", "Volcanion", "Type: Null", "Silvally",
+		"Tapu Koko", "Tapu Lele", "Tapu Bulu", "Tapu Fini", "Cosmog", "Cosmoem", "Solgaleo", "Lunala", "Nihilego",
+		"Buzzwole", "Pheromosa", "Xurkitree", "Celesteela", "Kartana", "Guzzlord", "Necrozma", "Magearna", "Marshadow",
+		"Poipole", "Naganadel", "Stakataka", "Blacephalon", "Zeraora", "Meltan", "Melmetal", "Zacian", "Zamazenta",
+		"Eternatus", "Kubfu", "Urshifu", "Zarude", "Regieleki", "Regidrago", "Glastrier", "Spectrier", "Calyrex",
+		"Enamorus", "Wo-Chien", "Chien-Pao", "Ting-Lu", "Chi-Yu", "Roaring Moon", "Iron Valiant", "Koraidon",
+		"Miraidon", "Walking Wake", "Iron Leaves", "Okidogi", "Munkidori", "Fezandipiti", "Ogerpon", "Gouging Fire",
+		"Raging Bolt", "Iron Boulder", "Iron Crown", "Terapagos", "Pecharunt"
+	};
+
 	private ArenaTheme _currentTheme;
 	private float _displayPlayerHP;
 	private float _displayEnemyHP;
 	private float _playerDamageShake = 0f;
 	private float _enemyDamageShake = 0f;
+	private bool _legendaryBattleIntro = false;
+	private float _legendaryIntroTimer = 0f;
 	private Vector2 _playerLungeOffset = Vector2.Zero;
 	private Vector2 _enemyLungeOffset = Vector2.Zero;
 	private readonly List<FloatingDamage> _floatingDamages = new();
@@ -852,21 +879,50 @@ private PokemonMove SelectEnemyMove()
 		InitBattle();
 		if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name);
 
-		QueueMessage($"Um {EnemyPokemon?.Species?.Name} selvagem apareceu!", () =>
+		string monName = EnemyPokemon?.Species?.Name ?? "";
+		var dexEntry = PokemonPokedex.Instance?.GetEntry(monName);
+		bool isLegendary = (dexEntry != null && (dexEntry.Tier == "Legendary" || dexEntry.Tier == "Mythical"))
+			|| _legendaryNames.Contains(monName);
+		if (isLegendary)
 		{
-			_isPlayerThrowing = true;
-			_playerThrowTimer = 0f;
-			QueueMessage($"Vai, {PlayerPokemon?.Nickname}!", () =>
+			_legendaryBattleIntro = true;
+			_legendaryIntroTimer = 2.4f;
+			Game1.playSound("thunder");
+			Rumble.rumble(1.0f, 800f);
+			QueueMessage($"⚡ O TITÃ ANCESTRAL {EnemyPokemon.Species.Name.ToUpperInvariant()} EMERGIU!", () =>
 			{
-				TriggerSwitchInAbility(PlayerPokemon, EnemyPokemon, () =>
+				_isPlayerThrowing = true;
+				_playerThrowTimer = 0f;
+				QueueMessage($"Vai, {PlayerPokemon?.Nickname}!", () =>
 				{
-					TriggerSwitchInAbility(EnemyPokemon, PlayerPokemon, () =>
+					TriggerSwitchInAbility(PlayerPokemon, EnemyPokemon, () =>
 					{
-						Phase = BattlePhase.ActionSelect;
+						TriggerSwitchInAbility(EnemyPokemon, PlayerPokemon, () =>
+						{
+							Phase = BattlePhase.ActionSelect;
+						});
 					});
 				});
 			});
-		});
+		}
+		else
+		{
+			QueueMessage($"Um {EnemyPokemon?.Species?.Name} selvagem apareceu!", () =>
+			{
+				_isPlayerThrowing = true;
+				_playerThrowTimer = 0f;
+				QueueMessage($"Vai, {PlayerPokemon?.Nickname}!", () =>
+				{
+					TriggerSwitchInAbility(PlayerPokemon, EnemyPokemon, () =>
+					{
+						TriggerSwitchInAbility(EnemyPokemon, PlayerPokemon, () =>
+						{
+							Phase = BattlePhase.ActionSelect;
+						});
+					});
+				});
+			});
+		}
 	}
 
 	// Spectator Mode Constructor
@@ -1109,13 +1165,66 @@ private PokemonMove SelectEnemyMove()
 
 	private ArenaTheme DetermineArenaTheme()
 	{
+		// 1. Cosmic Distortion World for Primordial/Dimensional Titans
+		string enemyName = EnemyPokemon?.Species?.Name ?? "";
+		if (enemyName is "Giratina" or "Arceus" or "Dialga" or "Palkia" or "Deoxys" or "Necrozma" or "Eternatus")
+		{
+			return ArenaTheme.Distortion;
+		}
+
+		// 2. Official Tournament Stadium & Gym Battles
+		if (!IsWild && (IsPvP || TrainerName.Contains("Gym") || TrainerName.Contains("Líder") || TrainerName.Contains("Campeão") || TrainerName.Contains("Elite")))
+		{
+			return ArenaTheme.Gym;
+		}
+
 		var loc = Game1.currentLocation;
 		if (loc == null) return ArenaTheme.Farm;
-		if (loc is StardewValley.Locations.MineShaft || loc.Name.Contains("Cave") || loc.Name.Contains("Mine")) return ArenaTheme.Cave;
-		if (loc is StardewValley.Locations.Beach || loc.Name.Contains("Beach") || loc.isWaterTile((int)Game1.player.Tile.X, (int)Game1.player.Tile.Y)) return ArenaTheme.Beach;
-		if (loc is StardewValley.Locations.Forest || loc.Name.Contains("Woods") || loc.Name.Contains("Forest")) return ArenaTheme.Forest;
-		if (loc is StardewValley.Locations.Town || loc.Name.Contains("Town")) return ArenaTheme.Town;
-		if (!loc.IsOutdoors) return ArenaTheme.Interior;
+		string locName = loc.NameOrUniqueName ?? loc.Name ?? "";
+
+		// 3. High Altitude Mountain Summit
+		if (locName.Contains("Summit", StringComparison.OrdinalIgnoreCase))
+			return ArenaTheme.Summit;
+
+		// 4. Volcanic Caldera & Volcano Dungeon
+		if (loc is StardewValley.Locations.VolcanoDungeon || locName.Contains("Caldera", StringComparison.OrdinalIgnoreCase) || locName.Contains("Volcano", StringComparison.OrdinalIgnoreCase))
+			return ArenaTheme.Caldera;
+
+		// 5. Mutant Bug Lair, Witch Swamp & Sewers
+		if (loc is StardewValley.Locations.Sewer || locName.Contains("BugLand", StringComparison.OrdinalIgnoreCase) || locName.Contains("MutantBugLand", StringComparison.OrdinalIgnoreCase) || locName.Contains("WitchSwamp", StringComparison.OrdinalIgnoreCase) || locName.Contains("Sewer", StringComparison.OrdinalIgnoreCase))
+			return ArenaTheme.BugLand;
+
+		// 6. Deep Ocean Trench / Night Submarine
+		if (loc is StardewValley.Locations.Submarine || locName.Contains("Submarine", StringComparison.OrdinalIgnoreCase))
+			return ArenaTheme.Submarine;
+
+		// 7. Skull Cavern (Deep Ancient Mine floors 121+)
+		if (locName.Contains("SkullCave", StringComparison.OrdinalIgnoreCase) || (loc is StardewValley.Locations.MineShaft msSkull && msSkull.mineLevel >= 121))
+			return ArenaTheme.SkullCave;
+
+		// 8. Calico Desert
+		if (loc is StardewValley.Locations.Desert || locName.Contains("Desert", StringComparison.OrdinalIgnoreCase) || locName.Contains("Sandy", StringComparison.OrdinalIgnoreCase))
+			return ArenaTheme.Desert;
+
+		// 9. Standard Mountain Mines & Natural Caves
+		if (loc is StardewValley.Locations.MineShaft || locName.Contains("Cave", StringComparison.OrdinalIgnoreCase) || locName.Contains("Mine", StringComparison.OrdinalIgnoreCase))
+			return ArenaTheme.Cave;
+
+		// 10. Beach & Oceanside
+		if (loc is StardewValley.Locations.Beach || locName.Contains("Beach", StringComparison.OrdinalIgnoreCase) || locName.Contains("IslandSouth", StringComparison.OrdinalIgnoreCase) || loc.isWaterTile((int)Game1.player.Tile.X, (int)Game1.player.Tile.Y))
+			return ArenaTheme.Beach;
+
+		// 11. Secret Woods & Forest
+		if (loc is StardewValley.Locations.Forest || locName.Contains("Woods", StringComparison.OrdinalIgnoreCase) || locName.Contains("Forest", StringComparison.OrdinalIgnoreCase))
+			return ArenaTheme.Forest;
+
+		// 12. Pelican Town
+		if (loc is StardewValley.Locations.Town || locName.Contains("Town", StringComparison.OrdinalIgnoreCase))
+			return ArenaTheme.Town;
+
+		if (!loc.IsOutdoors)
+			return ArenaTheme.Interior;
+
 		return ArenaTheme.Farm;
 	}
 
@@ -4033,6 +4142,15 @@ private PokemonMove SelectEnemyMove()
 		float dt = (float)time.ElapsedGameTime.TotalSeconds;
 		UpdateWeatherParticles(dt);
 
+		if (_legendaryBattleIntro)
+		{
+			_legendaryIntroTimer -= dt;
+			if (_legendaryIntroTimer <= 0f)
+			{
+				_legendaryBattleIntro = false;
+			}
+		}
+
 		if (_startupTransitionTimer > 0f)
 		{
 			_startupTransitionTimer = Math.Max(0f, _startupTransitionTimer - dt);
@@ -4539,6 +4657,9 @@ private PokemonMove SelectEnemyMove()
 			}
 		}
 
+		// 9.5 Cinematic Legendary Boss Battle Intro Banner
+		DrawLegendaryBattleIntro(b);
+
 		// 10. Draw Hardware Mouse Cursor
 		drawMouse(b);
 	}
@@ -4582,6 +4703,54 @@ private PokemonMove SelectEnemyMove()
 				hillColor = new Color(105, 70, 45);
 				groundColor = new Color(115, 75, 45);
 				break;
+			case ArenaTheme.Summit:
+				skyTop = new Color(8, 6, 28);
+				skyBottom = new Color(28, 22, 65);
+				hillColor = new Color(50, 58, 85);
+				groundColor = new Color(145, 160, 180);
+				break;
+			case ArenaTheme.Caldera:
+				skyTop = new Color(42, 8, 8);
+				skyBottom = new Color(110, 24, 12);
+				hillColor = new Color(48, 14, 14);
+				groundColor = new Color(55, 20, 20);
+				break;
+			case ArenaTheme.BugLand:
+				skyTop = new Color(12, 25, 10);
+				skyBottom = new Color(34, 58, 22);
+				hillColor = new Color(20, 40, 18);
+				groundColor = new Color(42, 70, 32);
+				break;
+			case ArenaTheme.SkullCave:
+				skyTop = new Color(18, 8, 28);
+				skyBottom = new Color(36, 16, 50);
+				hillColor = new Color(28, 14, 40);
+				groundColor = new Color(52, 32, 65);
+				break;
+			case ArenaTheme.Submarine:
+				skyTop = new Color(4, 28, 62);
+				skyBottom = new Color(14, 75, 120);
+				hillColor = new Color(10, 50, 85);
+				groundColor = new Color(135, 160, 150);
+				break;
+			case ArenaTheme.Distortion:
+				skyTop = new Color(12, 4, 24);
+				skyBottom = new Color(42, 8, 48);
+				hillColor = new Color(30, 8, 38);
+				groundColor = new Color(48, 22, 58);
+				break;
+			case ArenaTheme.Desert:
+				skyTop = new Color(82, 162, 228);
+				skyBottom = new Color(178, 218, 242);
+				hillColor = new Color(188, 138, 72);
+				groundColor = new Color(222, 178, 108);
+				break;
+			case ArenaTheme.Gym:
+				skyTop = new Color(30, 40, 55);
+				skyBottom = new Color(55, 70, 92);
+				hillColor = new Color(42, 52, 68);
+				groundColor = new Color(168, 172, 178);
+				break;
 			case ArenaTheme.Farm:
 			default:
 				skyTop = new Color(100, 175, 240);
@@ -4597,21 +4766,129 @@ private PokemonMove SelectEnemyMove()
 		b.Draw(Game1.staminaRect, new Rectangle(arenaRect.X, arenaRect.Y, arenaRect.Width, halfSky), skyTop);
 		b.Draw(Game1.staminaRect, new Rectangle(arenaRect.X, arenaRect.Y + halfSky, arenaRect.Width, skyHeight - halfSky), skyBottom);
 
-		// Distant Sun / Moon (Soft glowing orb with subtle halo)
+		// Celestial Orbs & Atmospheric Details
 		int celestialCenterX = arenaRect.X + arenaRect.Width - 100;
 		int celestialCenterY = arenaRect.Y + 45;
-		if (_currentTheme != ArenaTheme.Cave && _currentTheme != ArenaTheme.Interior)
+
+		if (_currentTheme == ArenaTheme.Summit)
 		{
-			// Outer soft halo
+			// Twinkling stars
+			for (int i = 0; i < 30; i++)
+			{
+				int sx = arenaRect.X + ((i * 47) % arenaRect.Width);
+				int sy = arenaRect.Y + ((i * 29) % halfSky);
+				float twinkle = 0.4f + 0.6f * (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 3.0 + i);
+				b.Draw(Game1.staminaRect, new Rectangle(sx, sy, 2, 2), Color.White * twinkle);
+			}
+
+			// Aurora Borealis wave
+			for (int x = arenaRect.X; x < arenaRect.Right; x += 16)
+			{
+				float waveY = (float)Math.Sin((x * 0.015f) + Game1.currentGameTime.TotalGameTime.TotalSeconds * 1.5f) * 14f;
+				b.Draw(Game1.staminaRect, new Rectangle(x, arenaRect.Y + 28 + (int)waveY, 16, 18), Color.Cyan * 0.18f);
+				b.Draw(Game1.staminaRect, new Rectangle(x, arenaRect.Y + 36 + (int)waveY, 16, 14), Color.Violet * 0.14f);
+			}
+
+			// Luminous Silver Moon
+			PokemonUI.SoftShadow(b, new Rectangle(celestialCenterX - 32, celestialCenterY - 32, 64, 64), 0.35f);
+			PokemonUI.SoftShadow(b, new Rectangle(celestialCenterX - 18, celestialCenterY - 18, 36, 36), 0.65f);
+			b.Draw(Game1.staminaRect, new Rectangle(celestialCenterX - 10, celestialCenterY - 10, 20, 20), Color.White * 0.95f);
+		}
+		else if (_currentTheme == ArenaTheme.Caldera)
+		{
+			// Magma horizon glow
+			b.Draw(Game1.staminaRect, new Rectangle(arenaRect.X, arenaRect.Y + skyHeight - 8, arenaRect.Width, 10), new Color(255, 95, 20) * 0.75f);
+
+			// Rising fiery embers
+			for (int i = 0; i < 20; i++)
+			{
+				float emberProgress = ((float)(Game1.currentGameTime.TotalGameTime.TotalSeconds * 0.4 + i * 0.05) % 1.0f);
+				int ex = arenaRect.X + ((i * 53) % arenaRect.Width) + (int)(Math.Sin(emberProgress * 10f + i) * 16f);
+				int ey = arenaRect.Y + skyHeight - (int)(emberProgress * (skyHeight - 10));
+				b.Draw(Game1.staminaRect, new Rectangle(ex, ey, 3, 3), Color.OrangeRed * (1f - emberProgress));
+			}
+		}
+		else if (_currentTheme == ArenaTheme.BugLand)
+		{
+			// Spore particles
+			for (int i = 0; i < 22; i++)
+			{
+				float sporeProgress = ((float)(Game1.currentGameTime.TotalGameTime.TotalSeconds * 0.2 + i * 0.045) % 1.0f);
+				int sx = arenaRect.X + ((i * 49) % arenaRect.Width) + (int)(Math.Sin(sporeProgress * 8f + i) * 20f);
+				int sy = arenaRect.Y + (int)(sporeProgress * arenaRect.Height);
+				b.Draw(Game1.staminaRect, new Rectangle(sx, sy, 3, 3), Color.LimeGreen * (0.35f + 0.35f * (float)Math.Sin(i + sporeProgress * 6f)));
+			}
+			// Sickly pale moon
+			PokemonUI.SoftShadow(b, new Rectangle(celestialCenterX - 24, celestialCenterY - 24, 48, 48), 0.25f);
+			b.Draw(Game1.staminaRect, new Rectangle(celestialCenterX - 8, celestialCenterY - 8, 16, 16), Color.LightGreen * 0.7f);
+		}
+		else if (_currentTheme == ArenaTheme.SkullCave)
+		{
+			// Amethyst crystal glints
+			for (int i = 0; i < 18; i++)
+			{
+				int cx = arenaRect.X + ((i * 59) % arenaRect.Width);
+				int cy = arenaRect.Y + 15 + ((i * 23) % (skyHeight - 30));
+				float glint = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 2.5 + i);
+				if (glint > 0.3f)
+				{
+					b.Draw(Game1.staminaRect, new Rectangle(cx, cy, 3, 5), Color.MediumPurple * glint);
+				}
+			}
+		}
+		else if (_currentTheme == ArenaTheme.Submarine)
+		{
+			// Sun caustics filtering down
+			for (int x = arenaRect.X + 30; x < arenaRect.Right - 30; x += 60)
+			{
+				float rayAlpha = 0.12f + 0.08f * (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 1.8 + x);
+				b.Draw(Game1.staminaRect, new Rectangle(x, arenaRect.Y, 28, skyHeight), Color.LightCyan * rayAlpha);
+			}
+
+			// Rising air bubbles
+			for (int i = 0; i < 24; i++)
+			{
+				float bubT = ((float)(Game1.currentGameTime.TotalGameTime.TotalSeconds * 0.35 + i * 0.04) % 1.0f);
+				int bx = arenaRect.X + ((i * 43) % arenaRect.Width) + (int)(Math.Sin(bubT * 12f + i) * 12f);
+				int by = arenaRect.Y + arenaRect.Height - (int)(bubT * arenaRect.Height);
+				b.Draw(Game1.staminaRect, new Rectangle(bx, by, 4, 4), Color.White * 0.45f);
+			}
+		}
+		else if (_currentTheme == ArenaTheme.Distortion)
+		{
+			// Cosmic antimatter sparks
+			for (int i = 0; i < 25; i++)
+			{
+				int dx = arenaRect.X + ((i * 61) % arenaRect.Width);
+				int dy = arenaRect.Y + ((i * 37) % arenaRect.Height);
+				float pulse = (float)Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 3.5 + i);
+				Color sparkCol = (i % 2 == 0) ? Color.Magenta : Color.Gold;
+				b.Draw(Game1.staminaRect, new Rectangle(dx, dy, 3, 3), sparkCol * (0.3f + 0.4f * Math.Abs(pulse)));
+			}
+		}
+		else if (_currentTheme == ArenaTheme.Gym)
+		{
+			// 4 Stadium Floodlights
+			int[] floodX = { arenaRect.X + 120, arenaRect.X + arenaRect.Width / 3, arenaRect.X + arenaRect.Width * 2 / 3, arenaRect.Right - 120 };
+			foreach (int fx in floodX)
+			{
+				b.Draw(Game1.staminaRect, new Rectangle(fx - 14, arenaRect.Y + 8, 28, 10), Color.Gray);
+				b.Draw(Game1.staminaRect, new Rectangle(fx - 10, arenaRect.Y + 12, 20, 6), Color.LightYellow);
+				b.Draw(Game1.staminaRect, new Rectangle(fx - 24, arenaRect.Y + 18, 48, skyHeight - 18), Color.LightGoldenrodYellow * 0.08f);
+			}
+		}
+		else if (_currentTheme != ArenaTheme.Cave && _currentTheme != ArenaTheme.Interior)
+		{
+			// Standard Sun / Beach Sun
 			PokemonUI.SoftShadow(b, new Rectangle(celestialCenterX - 30, celestialCenterY - 30, 60, 60), 0.20f);
-			// Inner orb
-			Color sunColor = (_currentTheme == ArenaTheme.Beach) ? new Color(255, 250, 205) : new Color(255, 245, 180);
+			Color sunColor = (_currentTheme == ArenaTheme.Beach || _currentTheme == ArenaTheme.Desert) ? new Color(255, 250, 205) : new Color(255, 245, 180);
 			PokemonUI.SoftShadow(b, new Rectangle(celestialCenterX - 18, celestialCenterY - 18, 36, 36), 0.45f);
 			b.Draw(Game1.staminaRect, new Rectangle(celestialCenterX - 10, celestialCenterY - 10, 20, 20), sunColor * 0.85f);
 		}
 
-		// Drifting Clouds strictly clamped within arenaRect
-		if (_currentTheme != ArenaTheme.Cave && _currentTheme != ArenaTheme.Interior && _cloudsTex != null)
+		// Drifting Clouds for outdoor natural areas
+		bool hasClouds = _currentTheme is ArenaTheme.Farm or ArenaTheme.Beach or ArenaTheme.Forest or ArenaTheme.Town or ArenaTheme.Desert;
+		if (hasClouds && _cloudsTex != null)
 		{
 			int cloudW = _cloudsTex.Width;
 			int totalClouds = (arenaRect.Width / cloudW) + 2;
@@ -4631,10 +4908,11 @@ private PokemonMove SelectEnemyMove()
 			}
 		}
 
-		// Distant Hills / Tree line Silhouette strictly clamped within arenaRect
+		// Distant Hills / Tree line Silhouette
 		int hillHeight = 45;
 		int hillY = arenaRect.Y + skyHeight - hillHeight;
-		if (_treeStrip != null && _currentTheme != ArenaTheme.Cave && _currentTheme != ArenaTheme.Interior)
+		bool hasTreeStrip = _currentTheme is ArenaTheme.Farm or ArenaTheme.Forest or ArenaTheme.Town;
+		if (_treeStrip != null && hasTreeStrip)
 		{
 			for (int x = arenaRect.X; x < arenaRect.Right; x += _treeStrip.Width)
 			{
@@ -4652,6 +4930,15 @@ private PokemonMove SelectEnemyMove()
 		// Bottom Terrain / Ground strictly inside arenaRect
 		int groundHeight = arenaRect.Height - skyHeight;
 		b.Draw(Game1.staminaRect, new Rectangle(arenaRect.X, arenaRect.Y + skyHeight, arenaRect.Width, groundHeight), groundColor);
+
+		// Special Gym Court center ring
+		if (_currentTheme == ArenaTheme.Gym)
+		{
+			int groundCenterY = arenaRect.Y + skyHeight + groundHeight / 2;
+			int courtCenterX = arenaRect.Center.X;
+			b.Draw(Game1.staminaRect, new Rectangle(arenaRect.X + 40, groundCenterY, arenaRect.Width - 80, 2), Color.White * 0.4f);
+			PokemonUI.Border(b, new Rectangle(courtCenterX - 45, groundCenterY - 25, 90, 50), 2, Color.White * 0.45f);
+		}
 
 		// Ground Highlight Line
 		b.Draw(Game1.staminaRect, new Rectangle(arenaRect.X, arenaRect.Y + skyHeight, arenaRect.Width, 2), Color.White * 0.25f);
@@ -4677,6 +4964,14 @@ private PokemonMove SelectEnemyMove()
 			ArenaTheme.Forest => new Color(55, 120, 60),
 			ArenaTheme.Town => new Color(135, 130, 125),
 			ArenaTheme.Interior => new Color(150, 105, 70),
+			ArenaTheme.Summit => new Color(120, 135, 155),
+			ArenaTheme.Caldera => new Color(65, 25, 20),
+			ArenaTheme.BugLand => new Color(50, 82, 35),
+			ArenaTheme.SkullCave => new Color(75, 45, 90),
+			ArenaTheme.Submarine => new Color(85, 135, 140),
+			ArenaTheme.Distortion => new Color(80, 40, 90),
+			ArenaTheme.Desert => new Color(205, 160, 95),
+			ArenaTheme.Gym => new Color(185, 190, 195),
 			_ => new Color(90, 175, 75)
 		};
 		Color rimColor = new Color(topPlatColor.R * 6 / 10, topPlatColor.G * 6 / 10, topPlatColor.B * 6 / 10);
@@ -4713,6 +5008,41 @@ private PokemonMove SelectEnemyMove()
 		// Platform Top Highlight
 		b.Draw(Game1.staminaRect, new Rectangle(ppx + 12, ppy + 3, ppw - 24, 5), highlightColor * 0.6f);
 		DrawBorder(b, new Rectangle(ppx, ppy, ppw, pph), 2, rimColor * 0.8f);
+	}
+
+	private void DrawLegendaryBattleIntro(SpriteBatch b)
+	{
+		if (!_legendaryBattleIntro) return;
+
+		int sw = Game1.uiViewport.Width;
+		int sh = Game1.uiViewport.Height;
+		float alpha = Math.Clamp(_legendaryIntroTimer / 0.5f, 0f, 1f);
+
+		// Cinematic letterbox bars
+		int barH = 55;
+		b.Draw(Game1.staminaRect, new Rectangle(0, 0, sw, barH), Color.Black * 0.88f * alpha);
+		b.Draw(Game1.staminaRect, new Rectangle(0, sh - barH, sw, barH), Color.Black * 0.88f * alpha);
+		b.Draw(Game1.staminaRect, new Rectangle(0, barH - 2, sw, 2), Color.Gold * 0.8f * alpha);
+		b.Draw(Game1.staminaRect, new Rectangle(0, sh - barH, sw, 2), Color.Gold * 0.8f * alpha);
+
+		// Center splash card
+		int cardW = Math.Min(740, sw - 60);
+		int cardH = 100;
+		int cardX = (sw - cardW) / 2;
+		int cardY = (sh - cardH) / 2 - 20;
+		Rectangle cardRect = new Rectangle(cardX, cardY, cardW, cardH);
+
+		PokemonUI.SoftShadow(b, cardRect, 0.5f * alpha);
+		IClickableMenu.drawTextureBox(b, cardRect.X, cardRect.Y, cardRect.Width, cardRect.Height, new Color(20, 15, 30) * alpha);
+		PokemonUI.DrawCardBorder(b, cardRect, Color.Gold * alpha, 2);
+
+		string headerText = IsWild ? "★ ENCONTRO COM TITÃ ANCESTRAL ★" : "★ BATALHA DE TREINADOR ESPECIAL ★";
+		string subjectName = IsWild ? (EnemyPokemon?.Species?.Name ?? "Lendário").ToUpperInvariant() : TrainerName.ToUpperInvariant();
+		string sub = IsWild ? "O guardião lendário desafia sua coragem no PokéValley!" : "Mostre a perícia da sua equipe nesta disputa pelo campeonato!";
+
+		PokemonUI.Text(b, Game1.smallFont, headerText, new Rectangle(cardX, cardY + 10, cardW, 22), Color.Gold * alpha, center: true, maxScale: 0.76f);
+		PokemonUI.Text(b, Game1.dialogueFont, subjectName, new Rectangle(cardX, cardY + 34, cardW, 36), Color.White * alpha, center: true, maxScale: 0.95f);
+		PokemonUI.Text(b, Game1.tinyFont, sub, new Rectangle(cardX, cardY + 74, cardW, 18), Color.LightGoldenrodYellow * alpha, center: true, maxScale: 0.72f);
 	}
 
 	private static float GetBattleSpriteYOffset(PokemonInstance mon, bool isPlayer)
