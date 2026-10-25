@@ -389,6 +389,7 @@ public static class PokemonEncounterManager
 		var spec = PokemonSpecies.Get(matchedDef.SpeciesName);
 		if (spec != null)
 		{
+			PokemonCryManager.PlayCry(spec.Name);
 			var spawn = SpawnWildAt(loc, new Point(tileX, tileY), spec.InternalName, level: 70, isShiny: RollWildShiny());
 			if (spawn != null)
 			{

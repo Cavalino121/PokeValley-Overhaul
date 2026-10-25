@@ -162,6 +162,10 @@ public class PokemonSummaryMenu : IClickableMenu
 		_contextIndex = (_contextIndex + delta + _contextList.Count) % _contextList.Count;
 		_mon = _contextList[_contextIndex];
 		Game1.playSound("shwip");
+		if (_mon?.Species != null)
+		{
+			PokemonCryManager.PlayCry(_mon.Species.Name);
+		}
 	}
 
 	private void CloseSummary()
@@ -451,6 +455,13 @@ public class PokemonSummaryMenu : IClickableMenu
 		if ((CanRevertMegaOutOfBattle() || CanMegaEvolveOutOfBattle(out _, out _) || PokemonItemUse.CanSwitchFormInSummary(_mon)) && _revertMegaBtn != null && _revertMegaBtn.containsPoint(x, y))
 		{
 			HandleMegaAction();
+			return;
+		}
+
+		Rectangle stageRect = new Rectangle(xPositionOnScreen + 18 + (300 - 190) / 2, yPositionOnScreen + 60 + 66, 190, 140);
+		if (stageRect.Contains(x, y) && _mon?.Species != null)
+		{
+			PokemonCryManager.PlayCry(_mon.Species.Name);
 			return;
 		}
 		if (_contextList != null && _contextList.Count > 1)

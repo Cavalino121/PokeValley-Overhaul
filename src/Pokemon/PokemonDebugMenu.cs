@@ -22,7 +22,8 @@ public class PokemonDebugMenu : IClickableMenu
 		Mechanics,
 		UpdatesV2,
 		Legendaries,
-		FormsAndEvos
+		FormsAndEvos,
+		AudioAndVfx
 	}
 
 	private enum StyleFilter
@@ -68,6 +69,13 @@ public class PokemonDebugMenu : IClickableMenu
 	private readonly List<ClickableComponent> _updateButtons = new();
 	private readonly List<ClickableComponent> _legendaryButtons = new();
 	private readonly List<ClickableComponent> _formsEvosButtons = new();
+	private readonly List<ClickableComponent> _audioVfxButtons = new();
+	private int _crySpeciesIndex = 24;
+	private string _activeVfxAnim = null;
+	private float _vfxAnimTimer = 0f;
+	private float _vfxAnimDuration = 0.85f;
+	private string _activeCutscene = null;
+	private float _cutsceneTimer = 0f;
 
 	private ClickableComponent _prevPageButton;
 	private ClickableComponent _nextPageButton;
@@ -227,6 +235,7 @@ public class PokemonDebugMenu : IClickableMenu
 		_updateButtons.Clear();
 		_legendaryButtons.Clear();
 		_formsEvosButtons.Clear();
+		_audioVfxButtons.Clear();
 
 		int startX = xPositionOnScreen + 30;
 		int startY = yPositionOnScreen + 44;
@@ -245,8 +254,11 @@ public class PokemonDebugMenu : IClickableMenu
 
 		// Lower Tab Bar (Abas Inferiores): Tab 9 (Formas & Evos Lendárias) + Reset Active Spawns Button
 		int bottomTabY = yPositionOnScreen + height - 46;
-		_tabButtons.Add(new ClickableComponent(new Rectangle(startX, bottomTabY, 412, 34), "FormsAndEvos", "9. 🧬 Formas, Evoluções & Fusões Lendárias"));
-		_clearSpawnsBottomButton = new ClickableComponent(new Rectangle(startX + 424, bottomTabY, 412, 34), "clear_active_spawns", "🧹 Resetar / Limpar Spawns Ativos nos Mapas");
+		int bottomW = 272;
+		int bottomGap = 12;
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX, bottomTabY, bottomW, 34), "FormsAndEvos", "9. 🧬 Formas & Fusões"));
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + bottomW + bottomGap, bottomTabY, bottomW, 34), "AudioAndVfx", "10. 🎬 Sons, Cries & FX"));
+		_clearSpawnsBottomButton = new ClickableComponent(new Rectangle(startX + (bottomW + bottomGap) * 2, bottomTabY, bottomW, 34), "clear_active_spawns", "🧹 Resetar Spawns");
 
 		int contentY = startY + 50;
 
@@ -525,6 +537,11 @@ public class PokemonDebugMenu : IClickableMenu
 
 			_fePrevPageButton = new ClickableComponent(new Rectangle(startX + 180, fStartY + 5 * (cardH + rowGap) + 8, 140, 36), "fe_prev", "◀ Anterior");
 			_feNextPageButton = new ClickableComponent(new Rectangle(startX + 520, fStartY + 5 * (cardH + rowGap) + 8, 140, 36), "fe_next", "Próximo ▶");
+		}
+
+		if (_currentTab == Tab.AudioAndVfx)
+		{
+			SetupAudioVfxButtons(startX, contentY);
 		}
 	}
 
@@ -1107,6 +1124,11 @@ public class PokemonDebugMenu : IClickableMenu
 				Game1.addHUDMessage(new HUDMessage($"🧪 Kit de {entry.Title} + 10 MasterBall entregues! Invoque {entry.BaseName} em {loc}!", 2));
 				return;
 			}
+		}
+		else if (_currentTab == Tab.AudioAndVfx)
+		{
+			HandleAudioVfxClick(x, y);
+			return;
 		}
 	}
 
@@ -2282,6 +2304,9 @@ public class PokemonDebugMenu : IClickableMenu
 	public override void update(GameTime time)
 	{
 		base.update(time);
+		float dt = (float)time.ElapsedGameTime.TotalSeconds;
+		if (_vfxAnimTimer > 0f) { _vfxAnimTimer -= dt; if (_vfxAnimTimer <= 0f) _activeVfxAnim = null; }
+		if (_cutsceneTimer > 0f) { _cutsceneTimer -= dt; if (_cutsceneTimer <= 0f) _activeCutscene = null; }
 	}
 
 	private static void DrawFilterPill(SpriteBatch b, Rectangle bounds, string label, bool isActive, bool isHovered)
@@ -2759,6 +2784,16 @@ public class PokemonDebugMenu : IClickableMenu
 			PokemonUI.Text(b, Game1.smallFont, $"Página {_formsEvosPage + 1} de {maxFePages + 1}", new Rectangle(startX + 330, fStartY + 5 * (cardH + rowGap) + 12, 180, 28), Game1.textColor, center: true, maxScale: 0.82f, shadow: false);
 		}
 
+		else if (_currentTab == Tab.AudioAndVfx)
+		{
+			DrawAudioAndVfxTab(b, startX, contentY, mouseX, mouseY);
+		}
+
+		if (_activeCutscene != null)
+		{
+			DrawCutsceneOverlay(b);
+		}
+
 		// Close Button
 		_closeButton.draw(b);
 
@@ -2956,4 +2991,497 @@ public class PokemonDebugMenu : IClickableMenu
 			_ => ("Mountain", 26, 11, "Poke_RainbowWing", "Relíquia Lendária", "Qualquer", 0, null)
 		};
 	}
+
+	#region Tab 10: Audio, Cries & FX Studio
+
+	private void SetupAudioVfxButtons(int startX, int contentY)
+	{
+		_audioVfxButtons.Clear();
+
+		// Quadrant 1: Cries (Top-Left, startX, contentY)
+		int cryBtnY = contentY + 114;
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 12, cryBtnY, 52, 32), "cry_prev10", "« -10"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 68, cryBtnY, 52, 32), "cry_prev", "< Ant"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 124, cryBtnY, 164, 32), "cry_play", "TOCAR CRY"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 292, cryBtnY, 52, 32), "cry_next", "Prox >"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 348, cryBtnY, 52, 32), "cry_next10", "+10 »"));
+
+		// Quick Iconic Species Buttons (2 rows of 6 buttons: width 62, gap 4)
+		string[] row1Icons = { "Pikachu", "Charizard", "Blastoise", "Venusaur", "Mewtwo", "Mew" };
+		for (int i = 0; i < row1Icons.Length; i++)
+		{
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 12 + i * 65, contentY + 172, 62, 26), "cry_quick_" + row1Icons[i], row1Icons[i]));
+		}
+		string[] row2Icons = { "Lugia", "Ho-Oh", "Rayquaza", "Kyogre", "Groudon", "Deoxys" };
+		for (int i = 0; i < row2Icons.Length; i++)
+		{
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 12 + i * 65, contentY + 202, 62, 26), "cry_quick_" + row2Icons[i], row2Icons[i]));
+		}
+
+		// Quadrant 2: Move FX & Animations (Top-Right, startX + 424, contentY)
+		int vfxStartY = contentY + 120;
+		(string tag, string label)[] vfxCol1 =
+		{
+			("vfx_flamethrower", "Flamethrower"),
+			("vfx_hydropump", "Hydro Pump"),
+			("vfx_thunderbolt", "Thunderbolt"),
+			("vfx_blizzard", "Blizzard"),
+			("vfx_earthquake", "Earthquake")
+		};
+		for (int i = 0; i < vfxCol1.Length; i++)
+		{
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, vfxStartY + i * 22, 192, 20), vfxCol1[i].tag, vfxCol1[i].label));
+		}
+		(string tag, string label)[] vfxCol2 =
+		{
+			("vfx_hyperbeam", "Hyper Beam"),
+			("vfx_closecombat", "Close Combat"),
+			("vfx_shadowball", "Shadow Ball"),
+			("vfx_leafblade", "Leaf Blade"),
+			("vfx_protect", "Protect / Heal")
+		};
+		for (int i = 0; i < vfxCol2.Length; i++)
+		{
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 634, vfxStartY + i * 22, 192, 20), vfxCol2[i].tag, vfxCol2[i].label));
+		}
+
+		// Quadrant 3: Jukebox BGM (Bottom-Left, startX, contentY + 246)
+		int bgmStartY = contentY + 286;
+		(string tag, string label)[] bgmCol1 =
+		{
+			("bgm_wild", "Selvagem (Wild)"),
+			("bgm_trainer", "Treinador (Trainer)"),
+			("bgm_gym", "Ginasio (Hoenn)"),
+			("bgm_champion", "Campeao Steven"),
+			("bgm_kyogre_groudon", "Kyogre / Groudon")
+		};
+		for (int i = 0; i < bgmCol1.Length; i++)
+		{
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 14, bgmStartY + i * 28, 190, 24), bgmCol1[i].tag, bgmCol1[i].label));
+		}
+		(string tag, string label)[] bgmCol2 =
+		{
+			("bgm_rayquaza", "Batalha Rayquaza"),
+			("bgm_regis", "Trio Regis"),
+			("bgm_deoxys", "Deoxys (FRLG)"),
+			("bgm_mewtwo", "Mewtwo (FRLG)"),
+			("bgm_route101", "Rota 101 Overworld")
+		};
+		for (int i = 0; i < bgmCol2.Length; i++)
+		{
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 212, bgmStartY + i * 28, 190, 24), bgmCol2[i].tag, bgmCol2[i].label));
+		}
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 14, contentY + 440, 388, 30), "bgm_stop", "PARAR MUSICA / RESTAURAR VANILLA"));
+
+		// Quadrant 4: Cutscenes & Vinhetas (Bottom-Right, startX + 424, contentY + 246)
+		int cutStartY = contentY + 300;
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY, 392, 34), "cut_legendary", "1. Despertar do Tita Lendario (Rayquaza)"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 42, 392, 34), "cut_evolution", "2. Sequencia de Evolucao Pokemon"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 84, 392, 34), "cut_capture", "3. Captura com Sucesso (Master Ball)"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 126, 392, 34), "cut_status", "4. Aflicoes de Condicao (Status)"));
+	}
+
+	private void HandleAudioVfxClick(int x, int y)
+	{
+		var all = PokemonSpecies.AllSpecies();
+		int count = (all != null && all.Count > 0) ? all.Count : 1025;
+
+		foreach (var btn in _audioVfxButtons)
+		{
+			if (!btn.containsPoint(x, y)) continue;
+
+			if (btn.name == "cry_prev10")
+			{
+				_crySpeciesIndex = (_crySpeciesIndex - 10 + count) % count;
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+			if (btn.name == "cry_prev")
+			{
+				_crySpeciesIndex = (_crySpeciesIndex - 1 + count) % count;
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+			if (btn.name == "cry_next")
+			{
+				_crySpeciesIndex = (_crySpeciesIndex + 1) % count;
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+			if (btn.name == "cry_next10")
+			{
+				_crySpeciesIndex = (_crySpeciesIndex + 10) % count;
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+			if (btn.name == "cry_play")
+			{
+				if (all != null && _crySpeciesIndex >= 0 && _crySpeciesIndex < all.Count)
+				{
+					PokemonCryManager.PlayCry(all[_crySpeciesIndex].Name);
+				}
+				return;
+			}
+			if (btn.name.StartsWith("cry_quick_"))
+			{
+				string targetName = btn.name.Substring("cry_quick_".Length);
+				int idx = all.FindIndex(s => string.Equals(s.Name, targetName, StringComparison.OrdinalIgnoreCase));
+				if (idx >= 0)
+				{
+					_crySpeciesIndex = idx;
+					PokemonCryManager.PlayCry(all[idx].Name);
+					SetupButtons();
+				}
+				return;
+			}
+
+			// VFX Moves
+			if (btn.name == "vfx_flamethrower") { _activeVfxAnim = "Flamethrower"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("fireball"); return; }
+			if (btn.name == "vfx_hydropump") { _activeVfxAnim = "Hydro Pump"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("drop"); return; }
+			if (btn.name == "vfx_thunderbolt") { _activeVfxAnim = "Thunderbolt"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("thunder"); Rumble.rumble(0.5f, 200f); return; }
+			if (btn.name == "vfx_blizzard") { _activeVfxAnim = "Blizzard"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("freeze"); return; }
+			if (btn.name == "vfx_earthquake") { _activeVfxAnim = "Earthquake"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("rumble"); Rumble.rumble(0.8f, 500f); return; }
+			if (btn.name == "vfx_hyperbeam") { _activeVfxAnim = "Hyper Beam"; _vfxAnimTimer = 1.0f; Game1.playSound("explosion"); Rumble.rumble(0.9f, 600f); return; }
+			if (btn.name == "vfx_closecombat") { _activeVfxAnim = "Close Combat"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("clubhit"); Rumble.rumble(0.6f, 300f); return; }
+			if (btn.name == "vfx_shadowball") { _activeVfxAnim = "Shadow Ball"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("wand"); return; }
+			if (btn.name == "vfx_leafblade") { _activeVfxAnim = "Leaf Blade"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("swordswipe"); return; }
+			if (btn.name == "vfx_protect") { _activeVfxAnim = "Protect"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("reward"); return; }
+
+			// BGM
+			if (btn.name == "bgm_wild") { PokemonMusicManager.PlayMidiFile("mus_vs_wild.mid", loop: true); return; }
+			if (btn.name == "bgm_trainer") { PokemonMusicManager.PlayMidiFile("mus_vs_trainer.mid", loop: true); return; }
+			if (btn.name == "bgm_gym") { PokemonMusicManager.PlayMidiFile("mus_vs_gym_leader.mid", loop: true); return; }
+			if (btn.name == "bgm_champion") { PokemonMusicManager.PlayMidiFile("mus_vs_champion.mid", loop: true); return; }
+			if (btn.name == "bgm_kyogre_groudon") { PokemonMusicManager.PlayMidiFile("mus_vs_kyogre_groudon.mid", loop: true); return; }
+			if (btn.name == "bgm_rayquaza") { PokemonMusicManager.PlayMidiFile("mus_vs_rayquaza.mid", loop: true); return; }
+			if (btn.name == "bgm_regis") { PokemonMusicManager.PlayMidiFile("mus_vs_regi.mid", loop: true); return; }
+			if (btn.name == "bgm_deoxys") { PokemonMusicManager.PlayMidiFile("mus_rg_vs_deoxys.mid", loop: true); return; }
+			if (btn.name == "bgm_mewtwo") { PokemonMusicManager.PlayMidiFile("mus_rg_vs_mewtwo.mid", loop: true); return; }
+			if (btn.name == "bgm_route101") { PokemonMusicManager.PlayMidiFile("mus_route101.mid", loop: true); return; }
+			if (btn.name == "bgm_stop") { PokemonMusicManager.StopAndRestoreStardewMusic(); Game1.playSound("bigDeSelect"); return; }
+
+			// Cutscenes
+			if (btn.name == "cut_legendary")
+			{
+				_activeCutscene = "Legendary";
+				_cutsceneTimer = 2.5f;
+				Game1.playSound("thunder");
+				Game1.playSound("roar");
+				Rumble.rumble(0.95f, 1200f);
+				PokemonCryManager.PlayCry("Rayquaza", volumeMult: 1.0f);
+				return;
+			}
+			if (btn.name == "cut_evolution")
+			{
+				_activeCutscene = "Evolution";
+				_cutsceneTimer = 2.2f;
+				Game1.playSound("wand");
+				Game1.playSound("reward");
+				PokemonCryManager.PlayCry("Charizard", volumeMult: 1.0f);
+				return;
+			}
+			if (btn.name == "cut_capture")
+			{
+				_activeCutscene = "Capture";
+				_cutsceneTimer = 1.8f;
+				Game1.playSound("toolSwap");
+				Game1.playSound("reward");
+				return;
+			}
+			if (btn.name == "cut_status")
+			{
+				_activeCutscene = "Status";
+				_cutsceneTimer = 1.8f;
+				Game1.playSound("debuffHit");
+				Game1.playSound("paralyze");
+				return;
+			}
+		}
+	}
+
+	private void DrawAudioAndVfxTab(SpriteBatch b, int startX, int contentY, int mouseX, int mouseY)
+	{
+		var all = PokemonSpecies.AllSpecies();
+
+		// Quadrant 1: Cries (Top-Left, startX, contentY, W = 412, H = 236)
+		Rectangle q1Box = new Rectangle(startX, contentY, 412, 236);
+		IClickableMenu.drawTextureBox(b, q1Box.X, q1Box.Y, q1Box.Width, q1Box.Height, Color.White);
+		b.Draw(Game1.staminaRect, new Rectangle(startX + 8, contentY + 8, 396, 24), new Color(45, 60, 95));
+		PokemonUI.Text(b, Game1.smallFont, "TESTADOR DE CRIES (GEN 1 - 9)", new Rectangle(startX + 12, contentY + 10, 388, 20), Color.White, center: true, maxScale: 0.72f, shadow: false);
+
+		if (all != null && all.Count > 0)
+		{
+			_crySpeciesIndex = Math.Clamp(_crySpeciesIndex, 0, all.Count - 1);
+			var sp = all[_crySpeciesIndex];
+
+			Rectangle cardInfo = new Rectangle(startX + 12, contentY + 36, 388, 72);
+			b.Draw(Game1.staminaRect, cardInfo, new Color(242, 246, 252));
+			PokemonUI.DrawCardBorder(b, cardInfo, new Color(185, 200, 225), 1);
+
+			var inst = GetPreviewInstance(sp, false);
+			Texture2D icon = inst?.GetIconSprite(Game1.graphics.GraphicsDevice) ?? inst?.GetFrontSprite(Game1.graphics.GraphicsDevice);
+			if (icon != null)
+			{
+				bool isFront = icon == inst.GetFrontSprite(Game1.graphics.GraphicsDevice);
+				Rectangle src = isFront ? inst.GetFrontSourceRect() : inst.GetIconSourceRect();
+				float sc = isFront ? (48f / Math.Max(1, src.Width)) : 1.25f;
+				b.Draw(icon, new Vector2(startX + 18, contentY + 44), src, Color.White, 0f, Vector2.Zero, sc, SpriteEffects.None, 0.86f);
+			}
+
+			PokemonUI.Text(b, Game1.smallFont, $"#{sp.PokedexNumber:D4} {sp.Name}", new Rectangle(startX + 78, contentY + 40, 310, 20), Color.DarkSlateBlue, center: false, maxScale: 0.76f, shadow: false);
+			string tStr = $"Tipo: {sp.PrimaryType}" + (sp.SecondaryType.HasValue ? $" / {sp.SecondaryType.Value}" : "");
+			PokemonUI.Text(b, Game1.tinyFont, tStr, new Rectangle(startX + 78, contentY + 62, 310, 16), Color.DimGray, center: false, maxScale: 0.72f, shadow: false);
+			string cryStatus = PokemonCryManager.GetCryStatus(sp.Name);
+			Color stCol = PokemonCryManager.HasNativeCry(sp.Name) ? new Color(25, 130, 45) : new Color(175, 105, 20);
+			PokemonUI.Text(b, Game1.tinyFont, $"Audio: {cryStatus}", new Rectangle(startX + 78, contentY + 80, 310, 16), stCol, center: false, maxScale: 0.72f, shadow: false);
+		}
+
+		PokemonUI.Text(b, Game1.tinyFont, "Atalhos Rapidos de Especies Famosas:", new Rectangle(startX + 14, contentY + 152, 384, 18), Color.DimGray, center: false, maxScale: 0.72f, shadow: false);
+
+		// Quadrant 2: Move FX (Top-Right, startX + 424, contentY, W = 412, H = 236)
+		Rectangle q2Box = new Rectangle(startX + 424, contentY, 412, 236);
+		IClickableMenu.drawTextureBox(b, q2Box.X, q2Box.Y, q2Box.Width, q2Box.Height, Color.White);
+		b.Draw(Game1.staminaRect, new Rectangle(startX + 432, contentY + 8, 396, 24), new Color(135, 35, 35));
+		PokemonUI.Text(b, Game1.smallFont, "ANIMACOES DE GOLPES (VFX & SFX)", new Rectangle(startX + 436, contentY + 10, 388, 20), Color.White, center: true, maxScale: 0.72f, shadow: false);
+
+		// Mini Battle Arena Stage Box
+		Rectangle stageBox = new Rectangle(startX + 434, contentY + 36, 392, 78);
+		b.Draw(Game1.staminaRect, stageBox, new Color(18, 15, 26));
+		PokemonUI.DrawCardBorder(b, stageBox, new Color(75, 60, 95), 1);
+
+		// Attacker Platform & Silhouette
+		Rectangle platL = new Rectangle(stageBox.X + 38, stageBox.Y + 54, 58, 14);
+		b.Draw(Game1.staminaRect, platL, new Color(45, 65, 85));
+		b.Draw(Game1.staminaRect, new Rectangle(platL.Center.X - 10, platL.Y - 18, 20, 20), Color.MediumSeaGreen * 0.85f);
+
+		// Defender Platform & Silhouette
+		Rectangle platR = new Rectangle(stageBox.Right - 96, stageBox.Y + 54, 58, 14);
+		b.Draw(Game1.staminaRect, platR, new Color(85, 45, 45));
+		b.Draw(Game1.staminaRect, new Rectangle(platR.Center.X - 10, platR.Y - 18, 20, 20), Color.IndianRed * 0.85f);
+
+		// Dynamic Attack VFX Rendering
+		if (_activeVfxAnim != null)
+		{
+			float t = Math.Clamp(1.0f - (_vfxAnimTimer / _vfxAnimDuration), 0f, 1f);
+			Vector2 aPos = new Vector2(platL.Center.X, platL.Y - 10);
+			Vector2 dPos = new Vector2(platR.Center.X, platR.Y - 10);
+
+			if (_activeVfxAnim == "Flamethrower")
+			{
+				for (int i = 0; i < 5; i++)
+				{
+					float fT = Math.Clamp(t * 1.3f - i * 0.08f, 0f, 1f);
+					Vector2 fPos = Vector2.Lerp(aPos, dPos, fT);
+					float fSize = 12f + (float)Math.Sin(fT * Math.PI) * 14f;
+					b.Draw(Game1.staminaRect, new Rectangle((int)fPos.X - (int)fSize / 2, (int)fPos.Y - (int)fSize / 2, (int)fSize, (int)fSize), Color.OrangeRed * 0.9f);
+					b.Draw(Game1.staminaRect, new Rectangle((int)fPos.X - (int)fSize / 4, (int)fPos.Y - (int)fSize / 4, (int)fSize / 2, (int)fSize / 2), Color.Yellow);
+				}
+			}
+			else if (_activeVfxAnim == "Hydro Pump")
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					float wT = Math.Clamp(t * 1.3f - i * 0.08f, 0f, 1f);
+					Vector2 wPos = Vector2.Lerp(aPos, dPos, wT);
+					float waveOffset = (float)Math.Sin(wT * Math.PI * 4.0 + i) * 12f;
+					b.Draw(Game1.staminaRect, new Rectangle((int)wPos.X - 6, (int)(wPos.Y + waveOffset) - 6, 14, 14), Color.DeepSkyBlue * 0.9f);
+					b.Draw(Game1.staminaRect, new Rectangle((int)wPos.X - 3, (int)(wPos.Y + waveOffset) - 3, 6, 6), Color.White);
+				}
+			}
+			else if (_activeVfxAnim == "Thunderbolt")
+			{
+				int segs = 6;
+				Vector2 prev = aPos;
+				for (int s = 1; s <= segs; s++)
+				{
+					float segT = s / (float)segs;
+					Vector2 cur = Vector2.Lerp(aPos, dPos, segT);
+					if (s < segs) cur.Y += ((s % 2 == 0) ? -10f : 10f);
+					b.Draw(Game1.staminaRect, new Rectangle((int)cur.X - 4, (int)cur.Y - 4, 8, 8), Color.Gold);
+					prev = cur;
+				}
+				for (int p = 0; p < 4; p++)
+				{
+					b.Draw(Game1.staminaRect, new Rectangle((int)dPos.X - 16 + p * 8, (int)dPos.Y - 14 + (p % 2) * 8, 6, 6), Color.Yellow);
+				}
+			}
+			else if (_activeVfxAnim == "Blizzard")
+			{
+				for (int i = 0; i < 6; i++)
+				{
+					float iT = Math.Clamp(t * 1.2f - i * 0.06f, 0f, 1f);
+					Vector2 iPos = Vector2.Lerp(aPos, dPos, iT) + new Vector2(0, (float)Math.Sin(iT * 8f + i) * 10f);
+					b.Draw(Game1.staminaRect, new Rectangle((int)iPos.X - 5, (int)iPos.Y - 5, 10, 10), Color.LightCyan * 0.85f);
+				}
+			}
+			else if (_activeVfxAnim == "Earthquake")
+			{
+				float eqY = (float)Math.Sin(t * 25f) * 4f;
+				for (int i = -3; i <= 3; i++)
+				{
+					int spkH = (int)(Math.Sin(t * Math.PI) * (26 - Math.Abs(i) * 5));
+					b.Draw(Game1.staminaRect, new Rectangle((int)dPos.X + i * 14 - 4, (int)(dPos.Y + eqY) - spkH, 10, spkH), new Color(150, 100, 50));
+				}
+			}
+			else if (_activeVfxAnim == "Hyper Beam")
+			{
+				float beamW = (float)Math.Sin(t * Math.PI) * 28f;
+				b.Draw(Game1.staminaRect, new Rectangle((int)aPos.X, (int)aPos.Y - (int)beamW / 2, (int)(dPos.X - aPos.X), (int)beamW), Color.Crimson * 0.85f);
+				b.Draw(Game1.staminaRect, new Rectangle((int)aPos.X, (int)aPos.Y - (int)beamW / 4, (int)(dPos.X - aPos.X), (int)beamW / 2), Color.White);
+			}
+			else if (_activeVfxAnim == "Close Combat")
+			{
+				float len = MathHelper.Lerp(4f, 32f, t);
+				b.Draw(Game1.staminaRect, new Rectangle((int)(dPos.X - len), (int)(dPos.Y - len), (int)(len * 2), 4), Color.Cyan);
+				b.Draw(Game1.staminaRect, new Rectangle((int)(dPos.X - len), (int)(dPos.Y + len), (int)(len * 2), 4), Color.Gold);
+			}
+			else if (_activeVfxAnim == "Shadow Ball")
+			{
+				Vector2 sbPos = Vector2.Lerp(aPos, dPos, t);
+				float sbSize = 18f + (float)Math.Sin(t * 12f) * 6f;
+				b.Draw(Game1.staminaRect, new Rectangle((int)sbPos.X - (int)sbSize / 2, (int)sbPos.Y - (int)sbSize / 2, (int)sbSize, (int)sbSize), new Color(85, 35, 130));
+				b.Draw(Game1.staminaRect, new Rectangle((int)sbPos.X - (int)sbSize / 4, (int)sbPos.Y - (int)sbSize / 4, (int)sbSize / 2, (int)sbSize / 2), Color.MediumPurple);
+			}
+			else if (_activeVfxAnim == "Leaf Blade")
+			{
+				float lT = Math.Clamp(t * 1.3f, 0f, 1f);
+				Vector2 lPos = Vector2.Lerp(aPos, dPos, lT) + new Vector2(0, (float)Math.Sin(lT * Math.PI) * -16f);
+				b.Draw(Game1.staminaRect, new Rectangle((int)lPos.X - 8, (int)lPos.Y - 4, 16, 8), Color.LimeGreen);
+			}
+			else if (_activeVfxAnim == "Protect")
+			{
+				float rad = 18f + (float)Math.Sin(t * Math.PI) * 10f;
+				b.Draw(Game1.staminaRect, new Rectangle((int)aPos.X - (int)rad, (int)aPos.Y - (int)rad, (int)(rad * 2), (int)(rad * 2)), Color.LightSkyBlue * 0.45f);
+				b.Draw(Game1.staminaRect, new Rectangle((int)aPos.X - 4, (int)aPos.Y - (int)rad - 4, 8, 8), Color.Gold);
+			}
+		}
+		else
+		{
+			PokemonUI.Text(b, Game1.tinyFont, "[Selecione um golpe abaixo para testar o efeito visual e som]", new Rectangle(stageBox.X + 8, stageBox.Y + 28, stageBox.Width - 16, 20), Color.Gray * 0.75f, center: true, maxScale: 0.72f, shadow: false);
+		}
+
+		// Quadrant 3: Jukebox BGM (Bottom-Left, startX, contentY + 246, W = 412, H = 236)
+		Rectangle q3Box = new Rectangle(startX, contentY + 246, 412, 236);
+		IClickableMenu.drawTextureBox(b, q3Box.X, q3Box.Y, q3Box.Width, q3Box.Height, Color.White);
+		b.Draw(Game1.staminaRect, new Rectangle(startX + 8, contentY + 254, 396, 24), new Color(30, 45, 95));
+		PokemonUI.Text(b, Game1.smallFont, "JUKEBOX GBA / FRLG (531+ MIDIS NATIVOS)", new Rectangle(startX + 12, contentY + 256, 388, 20), Color.White, center: true, maxScale: 0.72f, shadow: false);
+
+		// Quadrant 4: Cutscenes (Bottom-Right, startX + 424, contentY + 246, W = 412, H = 236)
+		Rectangle q4Box = new Rectangle(startX + 424, contentY + 246, 412, 236);
+		IClickableMenu.drawTextureBox(b, q4Box.X, q4Box.Y, q4Box.Width, q4Box.Height, Color.White);
+		b.Draw(Game1.staminaRect, new Rectangle(startX + 432, contentY + 254, 396, 24), new Color(130, 95, 25));
+		PokemonUI.Text(b, Game1.smallFont, "VINHETAS & CUTSCENES ESPECIAIS", new Rectangle(startX + 436, contentY + 256, 388, 20), Color.White, center: true, maxScale: 0.72f, shadow: false);
+		PokemonUI.Text(b, Game1.tinyFont, "Simule as introducoes cinematograficas lendarias e fanfarras:", new Rectangle(startX + 434, contentY + 282, 392, 16), Color.DimGray, center: false, maxScale: 0.72f, shadow: false);
+
+		// Draw all buttons in _audioVfxButtons
+		foreach (var btn in _audioVfxButtons)
+		{
+			bool hov = btn.containsPoint(mouseX, mouseY);
+			Color bCol = Color.White;
+			Color txtCol = Color.Black;
+
+			if (btn.name == "cry_play")
+			{
+				bCol = hov ? Color.Gold : Color.PaleGoldenrod;
+				txtCol = Color.DarkSlateBlue;
+			}
+			else if (btn.name.StartsWith("cry_quick_"))
+			{
+				bCol = hov ? Color.LightSkyBlue : Color.AliceBlue;
+				txtCol = Color.DarkSlateGray;
+			}
+			else if (btn.name.StartsWith("vfx_"))
+			{
+				bCol = hov ? Color.MistyRose : Color.SeaShell;
+				txtCol = Color.DarkRed;
+			}
+			else if (btn.name.StartsWith("bgm_"))
+			{
+				if (btn.name == "bgm_stop")
+				{
+					bCol = hov ? new Color(255, 180, 180) : new Color(255, 220, 220);
+					txtCol = Color.DarkRed;
+				}
+				else
+				{
+					bCol = hov ? Color.Honeydew : Color.Ivory;
+					txtCol = Color.DarkGreen;
+				}
+			}
+			else if (btn.name.StartsWith("cut_"))
+			{
+				bCol = hov ? Color.PeachPuff : Color.FloralWhite;
+				txtCol = Color.SaddleBrown;
+			}
+			else if (btn.name.StartsWith("cry_"))
+			{
+				bCol = hov ? Color.LightYellow : Color.White;
+			}
+
+			IClickableMenu.drawTextureBox(b, btn.bounds.X, btn.bounds.Y, btn.bounds.Width, btn.bounds.Height, bCol);
+			PokemonUI.Text(b, Game1.smallFont, btn.label, new Rectangle(btn.bounds.X + 2, btn.bounds.Y + 2, btn.bounds.Width - 4, btn.bounds.Height - 4), txtCol, center: true, maxScale: 0.70f, shadow: false);
+		}
+	}
+
+	private void DrawCutsceneOverlay(SpriteBatch b)
+	{
+		int sw = Game1.uiViewport.Width;
+		int sh = Game1.uiViewport.Height;
+
+		if (_activeCutscene == "Legendary")
+		{
+			float alpha = Math.Clamp(_cutsceneTimer / 2.5f, 0f, 1f);
+			b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, sw, sh), Color.Black * 0.78f * alpha);
+
+			if (_cutsceneTimer > 1.9f && _cutsceneTimer < 2.1f)
+			{
+				b.Draw(Game1.staminaRect, new Rectangle(0, 0, sw, sh), Color.White * 0.90f);
+			}
+
+			Rectangle banner = new Rectangle(sw / 2 - 320, sh / 2 - 60, 640, 120);
+			IClickableMenu.drawTextureBox(b, banner.X, banner.Y, banner.Width, banner.Height, new Color(35, 25, 20));
+			PokemonUI.DrawCardBorder(b, banner, Color.Gold, 3);
+			PokemonUI.Text(b, Game1.dialogueFont, "O GUARDAO ANCESTRAL DESPERTOU!", new Rectangle(banner.X, banner.Y + 18, banner.Width, 36), Color.Gold, center: true, maxScale: 0.85f);
+			PokemonUI.Text(b, Game1.smallFont, "O ceu ruge e relampagos cortam o horizonte sobre o PokeValley!", new Rectangle(banner.X, banner.Y + 65, banner.Width, 28), Color.White, center: true, maxScale: 0.82f, shadow: false);
+		}
+		else if (_activeCutscene == "Evolution")
+		{
+			float alpha = Math.Clamp(_cutsceneTimer / 2.2f, 0f, 1f);
+			b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, sw, sh), Color.Indigo * 0.65f * alpha);
+
+			Rectangle banner = new Rectangle(sw / 2 - 300, sh / 2 - 50, 600, 100);
+			IClickableMenu.drawTextureBox(b, banner.X, banner.Y, banner.Width, banner.Height, new Color(25, 20, 45));
+			PokemonUI.DrawCardBorder(b, banner, Color.Cyan, 3);
+			PokemonUI.Text(b, Game1.dialogueFont, "O POKEMON ESTA EVOLUINDO!", new Rectangle(banner.X, banner.Y + 16, banner.Width, 34), Color.Yellow, center: true, maxScale: 0.85f);
+			PokemonUI.Text(b, Game1.smallFont, "Uma luz radiante transcende os limites e revela seu potencial definitivo!", new Rectangle(banner.X, banner.Y + 56, banner.Width, 26), Color.White, center: true, maxScale: 0.80f, shadow: false);
+		}
+		else if (_activeCutscene == "Capture")
+		{
+			float alpha = Math.Clamp(_cutsceneTimer / 1.8f, 0f, 1f);
+			b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, sw, sh), Color.Black * 0.50f * alpha);
+
+			Rectangle banner = new Rectangle(sw / 2 - 280, sh / 2 - 45, 560, 90);
+			IClickableMenu.drawTextureBox(b, banner.X, banner.Y, banner.Width, banner.Height, new Color(20, 35, 50));
+			PokemonUI.DrawCardBorder(b, banner, Color.DeepSkyBlue, 3);
+			PokemonUI.Text(b, Game1.dialogueFont, "GOTCHA! CAPTURA CONCLUIDA!", new Rectangle(banner.X, banner.Y + 14, banner.Width, 32), Color.LightSkyBlue, center: true, maxScale: 0.85f);
+			PokemonUI.Text(b, Game1.smallFont, "Todos os dados da criatura foram salvos com maestria na sua Pokedex!", new Rectangle(banner.X, banner.Y + 52, banner.Width, 24), Color.White, center: true, maxScale: 0.78f, shadow: false);
+		}
+		else if (_activeCutscene == "Status")
+		{
+			float alpha = Math.Clamp(_cutsceneTimer / 1.8f, 0f, 1f);
+			b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, sw, sh), Color.Black * 0.40f * alpha);
+
+			Rectangle banner = new Rectangle(sw / 2 - 280, sh / 2 - 45, 560, 90);
+			IClickableMenu.drawTextureBox(b, banner.X, banner.Y, banner.Width, banner.Height, new Color(40, 20, 50));
+			PokemonUI.DrawCardBorder(b, banner, Color.MediumPurple, 3);
+			PokemonUI.Text(b, Game1.dialogueFont, "AFLICAO DE STATUS DE COMBATE", new Rectangle(banner.X, banner.Y + 14, banner.Width, 32), Color.Thistle, center: true, maxScale: 0.85f);
+			PokemonUI.Text(b, Game1.smallFont, "Particulas de Sono, Paralisia, Veneno e Queimadura ativas!", new Rectangle(banner.X, banner.Y + 52, banner.Width, 24), Color.White, center: true, maxScale: 0.78f, shadow: false);
+		}
+	}
+
+	#endregion
 }

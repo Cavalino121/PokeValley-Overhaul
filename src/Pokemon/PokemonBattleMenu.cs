@@ -779,6 +779,7 @@ private PokemonMove SelectEnemyMove()
 		EnemyIndex = 0;
 
 		InitBattle();
+		if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name);
 
 		QueueMessage($"O(A) Treinador(a) {TrainerName} desafiou você para uma batalha!", () =>
 		{
@@ -814,6 +815,7 @@ private PokemonMove SelectEnemyMove()
 		EnemyIndex = 0;
 
 		InitBattle();
+		if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name);
 
 		QueueMessage($"Batalha PvP contra {TrainerName} começou!", () =>
 		{
@@ -848,6 +850,7 @@ private PokemonMove SelectEnemyMove()
 		EnemyIndex = 0;
 
 		InitBattle();
+		if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name);
 
 		QueueMessage($"Um {EnemyPokemon?.Species?.Name} selvagem apareceu!", () =>
 		{
@@ -2796,6 +2799,18 @@ private PokemonMove SelectEnemyMove()
 					defender.Status = PokemonStatusCondition.None;
 				}
 
+				string launchSfx = move.Type switch
+				{
+					PokemonType.Fire => "fireball",
+					PokemonType.Water => "drop",
+					PokemonType.Electric => "thunder",
+					PokemonType.Ice => "freeze",
+					PokemonType.Psychic or PokemonType.Ghost => "wand",
+					PokemonType.Ground or PokemonType.Rock => "rumble",
+					_ => "swordswipe"
+				};
+				Game1.playSound(launchSfx);
+
 				_activeAttackFx = new AttackFx
 				{
 					Type = move.Type,
@@ -2893,6 +2908,7 @@ private PokemonMove SelectEnemyMove()
 		}
 
 		Game1.playSound("monsterdead");
+		if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name, volumeMult: 0.8f, pitch: -0.4f);
 		if (!IsWild)
 		{
 			_isEnemyRetrieving = true;
@@ -3045,6 +3061,7 @@ private PokemonMove SelectEnemyMove()
 				{
 					_enemyPokemonScale = 3.2f;
 					_isEnemySending = false;
+				if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name);
 					TriggerSwitchInAbility(EnemyPokemon, PlayerPokemon, () =>
 					{
 						Phase = BattlePhase.ActionSelect;
@@ -3136,6 +3153,8 @@ private PokemonMove SelectEnemyMove()
 
 	private void HandlePlayerFainted()
 	{
+		if (PlayerPokemon?.Species != null) PokemonCryManager.PlayCry(PlayerPokemon.Species.Name, volumeMult: 0.8f, pitch: -0.4f);
+
 		Game1.playSound("ow");
 		_isSwitching = true;
 		_switchStage = SwitchStage.Retrieve;
@@ -4084,7 +4103,19 @@ private PokemonMove SelectEnemyMove()
 					Position = fx.DefenderPos + new Vector2(-20, -30)
 				});
 
-				Game1.playSound("hitEnemy");
+				if (fx.TypeMult > 1.0f || fx.IsCrit)
+				{
+					Game1.playSound("crit");
+					Rumble.rumble(0.6f, 250f);
+				}
+				else if (fx.TypeMult < 1.0f && fx.TypeMult > 0f)
+				{
+					Game1.playSound("clubhit");
+				}
+				else
+				{
+					Game1.playSound("hitEnemy");
+				}
 
 				// 3. Post-attack messages (Crit and Effectiveness AFTER damage impact!)
 				QueuePostAttackMessages(fx);
@@ -4118,7 +4149,9 @@ private PokemonMove SelectEnemyMove()
 			if (_playerThrowTimer >= 0.85f)
 			{
 				_isPlayerThrowing = false;
+				if (PlayerPokemon?.Species != null) PokemonCryManager.PlayCry(PlayerPokemon.Species.Name);
 				_playerTrainerSlide = 400f;
+				if (PlayerPokemon?.Species != null) PokemonCryManager.PlayCry(PlayerPokemon.Species.Name);
 				_playerSpriteScale = 3.2f;
 				_playerSpriteTint = Color.White;
 			}
@@ -4143,6 +4176,7 @@ private PokemonMove SelectEnemyMove()
 			if (_enemySendTimer >= 0.65f)
 			{
 				_isEnemySending = false;
+				if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name);
 				_enemyTrainerSlide = 400f;
 				_enemyPokemonScale = 3.2f;
 			}
@@ -5947,6 +5981,7 @@ private PokemonMove SelectEnemyMove()
 	private void HandleEnemyFaintedPvP()
 	{
 		Game1.playSound("monsterdead");
+		if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name, volumeMult: 0.8f, pitch: -0.4f);
 		_isEnemyRetrieving = true;
 		_enemyRetrieveTimer = 0f;
 		Game1.playSound("wand");
@@ -6027,6 +6062,7 @@ private PokemonMove SelectEnemyMove()
 			{
 				_playerSpriteScale = 3.2f;
 				_isPlayerThrowing = false;
+				if (PlayerPokemon?.Species != null) PokemonCryManager.PlayCry(PlayerPokemon.Species.Name);
 				TriggerSwitchInAbility(PlayerPokemon, EnemyPokemon, onDone);
 			});
 		}
@@ -6052,6 +6088,7 @@ private PokemonMove SelectEnemyMove()
 			{
 				_enemyPokemonScale = 3.2f;
 				_isEnemySending = false;
+				if (EnemyPokemon?.Species != null) PokemonCryManager.PlayCry(EnemyPokemon.Species.Name);
 				TriggerSwitchInAbility(EnemyPokemon, PlayerPokemon, onDone);
 			});
 		}

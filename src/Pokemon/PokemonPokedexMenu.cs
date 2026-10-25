@@ -202,6 +202,10 @@ public class PokemonPokedexMenu : IClickableMenu
 				_cachedDummy = null;
 				_cachedSpriteSpecies = null;
 				Game1.playSound("select");
+				if (_selectedSpecies != null)
+				{
+					PokemonCryManager.PlayCry(_selectedSpecies.Name);
+				}
 				return;
 			}
 		}
