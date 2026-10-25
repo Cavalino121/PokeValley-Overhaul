@@ -13,7 +13,8 @@ public enum PokemonSaveSection
 	All,
 	Party,
 	Pokedex,
-	Storage
+	Storage,
+	Daycare
 }
 
 /// <summary>
@@ -43,6 +44,8 @@ public static class PokemonSaveStore
 	public const string ModDataPokedexKey = "PokeValley.Pokemon.Pokedex";
 	/// <summary>Player modData key that holds the PC boxes section.</summary>
 	public const string ModDataStorageKey = "PokeValley.Pokemon.Storage";
+	/// <summary>Player modData key that holds the Daycare section.</summary>
+	public const string ModDataDaycareKey = "PokeValley.Pokemon.Daycare";
 	/// <summary>Player modData key with the UTC ticks of the last flush.</summary>
 	public const string ModDataStampKey = "PokeValley.Pokemon.SavedAt";
 
@@ -291,7 +294,8 @@ public static class PokemonSaveStore
 			if (modData == null) return false;
 			return (modData.ContainsKey(ModDataPartyKey) && !string.IsNullOrWhiteSpace(modData[ModDataPartyKey]))
 				|| (modData.ContainsKey(ModDataPokedexKey) && !string.IsNullOrWhiteSpace(modData[ModDataPokedexKey]))
-				|| (modData.ContainsKey(ModDataStorageKey) && !string.IsNullOrWhiteSpace(modData[ModDataStorageKey]));
+				|| (modData.ContainsKey(ModDataStorageKey) && !string.IsNullOrWhiteSpace(modData[ModDataStorageKey]))
+				|| (modData.ContainsKey(ModDataDaycareKey) && !string.IsNullOrWhiteSpace(modData[ModDataDaycareKey]));
 		}
 		catch
 		{
@@ -399,6 +403,23 @@ public static class PokemonSaveStore
 					data.Storage ?? new PokemonStorageSaveDto(), CompactOptions);
 			}
 
+			if (section is PokemonSaveSection.All or PokemonSaveSection.Daycare)
+			{
+				var daycare = new PokemonDaycareSaveDto
+				{
+					Parent1 = PokemonBreeding.DaycareParent1 != null ? PokemonDtoMapper.ToDto(PokemonBreeding.DaycareParent1) : null,
+					Parent2 = PokemonBreeding.DaycareParent2 != null ? PokemonDtoMapper.ToDto(PokemonBreeding.DaycareParent2) : null,
+					ReadyEgg = PokemonBreeding.ReadyEgg != null ? PokemonDtoMapper.ToDto(PokemonBreeding.ReadyEgg) : null,
+					IncubatingEggs = new Dictionary<string, PokemonSaveDto>()
+				};
+				foreach (var kvp in PokemonBreeding.GetAllIncubatingEggs())
+				{
+					if (kvp.Value != null) daycare.IncubatingEggs[kvp.Key] = PokemonDtoMapper.ToDto(kvp.Value);
+				}
+				data.Daycare = daycare;
+				farmer.modData[ModDataDaycareKey] = JsonSerializer.Serialize(daycare, CompactOptions);
+			}
+
 			farmer.modData[ModDataStampKey] = data.SavedAtUtc.ToString();
 		}
 		catch (Exception ex)
@@ -417,6 +438,7 @@ public static class PokemonSaveStore
 			any |= ReadPartySection(farmer.modData, file);
 			any |= ReadPokedexSection(farmer.modData, file);
 			any |= ReadStorageSection(farmer.modData, file);
+			any |= ReadDaycareSection(farmer.modData, file);
 			return any;
 		}
 		catch (Exception ex)
@@ -488,6 +510,38 @@ public static class PokemonSaveStore
 		}
 	}
 
+	private static bool ReadDaycareSection(StardewValley.Mods.ModDataDictionary modData, PokemonSaveFile file)
+	{
+		if (!modData.ContainsKey(ModDataDaycareKey)) return false;
+		string json = modData[ModDataDaycareKey];
+		if (string.IsNullOrWhiteSpace(json)) return false;
+		try
+		{
+			var section = JsonSerializer.Deserialize<PokemonDaycareSaveDto>(json, CompactOptions);
+			if (section == null) return false;
+			file.Daycare = section;
+			PokemonBreeding.DaycareParent1 = section.Parent1 != null ? PokemonDtoMapper.FromDto(section.Parent1) : null;
+			PokemonBreeding.DaycareParent2 = section.Parent2 != null ? PokemonDtoMapper.FromDto(section.Parent2) : null;
+			PokemonBreeding.ReadyEgg = section.ReadyEgg != null ? PokemonDtoMapper.FromDto(section.ReadyEgg) : null;
+			var dict = new Dictionary<string, PokemonInstance>();
+			if (section.IncubatingEggs != null)
+			{
+				foreach (var kvp in section.IncubatingEggs)
+				{
+					var inst = PokemonDtoMapper.FromDto(kvp.Value);
+					if (inst != null) dict[kvp.Key] = inst;
+				}
+			}
+			PokemonBreeding.SetIncubatingEggs(dict);
+			return true;
+		}
+		catch (Exception ex)
+		{
+			Log($"embedded daycare section ignored: {ex.Message}");
+			return false;
+		}
+	}
+
 	private static void ClearPlayerModData(Farmer farmer)
 	{
 		try
@@ -496,7 +550,9 @@ public static class PokemonSaveStore
 			farmer.modData.Remove(ModDataPartyKey);
 			farmer.modData.Remove(ModDataPokedexKey);
 			farmer.modData.Remove(ModDataStorageKey);
+			farmer.modData.Remove(ModDataDaycareKey);
 			farmer.modData.Remove(ModDataStampKey);
+			PokemonBreeding.Reset();
 		}
 		catch (Exception ex)
 		{
@@ -726,6 +782,15 @@ public class PokemonSaveFile
 	public int ActiveIndex { get; set; }
 	public PokedexSaveData Pokedex { get; set; } = new();
 	public PokemonStorageSaveDto Storage { get; set; } = new();
+	public PokemonDaycareSaveDto Daycare { get; set; } = new();
+}
+
+public class PokemonDaycareSaveDto
+{
+	public PokemonSaveDto Parent1 { get; set; }
+	public PokemonSaveDto Parent2 { get; set; }
+	public PokemonSaveDto ReadyEgg { get; set; }
+	public Dictionary<string, PokemonSaveDto> IncubatingEggs { get; set; } = new();
 }
 
 /// <summary>Party slice stored under <see cref="PokemonSaveStore.ModDataPartyKey"/>.</summary>

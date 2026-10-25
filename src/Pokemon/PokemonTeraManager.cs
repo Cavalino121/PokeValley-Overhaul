@@ -12,21 +12,35 @@ namespace StardewValley.Pokemon;
 /// </summary>
 public static class PokemonTeraManager
 {
+	private static void ShowClintMessage(string msg)
+	{
+		try
+		{
+			NPC clint = Game1.getCharacterFromName("Clint");
+			if (clint != null)
+			{
+				clint.CurrentDialogue.Clear();
+				clint.CurrentDialogue.Push(new Dialogue(clint, null, msg));
+				Game1.drawDialogue(clint);
+			}
+			else
+			{
+				Game1.drawDialogueBox(msg);
+			}
+		}
+		catch
+		{
+			Game1.drawDialogueBox(msg);
+		}
+	}
+
 	public static void HandleClintTeraForge()
 	{
 		var party = PlayerParty.Instance;
 		var lead = party.ActivePokemon;
 		if (lead == null)
 		{
-			NPC clint = Game1.getCharacterFromName("Clint");
-			if (clint != null)
-			{
-				Game1.DrawDialogue(clint, "Você precisa de um Pokémon consciente na sua equipe para que eu possa forjar sua gema Tera!");
-			}
-			else
-			{
-				Game1.drawObjectDialogue("Você precisa de um Pokémon consciente na sua equipe para forjar a gema Tera!");
-			}
+			ShowClintMessage("Você precisa de um Pokémon consciente na sua equipe para que eu possa forjar sua gema Tera!");
 			return;
 		}
 
@@ -45,15 +59,7 @@ public static class PokemonTeraManager
 		if (availableTypes.Count == 0)
 		{
 			string msg = $"Posso forjar uma nova jóia elemental para {lead.Nickname} (Tera Type atual: {lead.TeraType}), mas preciso de pelo menos 50 Tera Shards de um mesmo tipo. Junte os fragmentos nas minas e volte aqui!";
-			NPC clint = Game1.getCharacterFromName("Clint");
-			if (clint != null)
-			{
-				Game1.DrawDialogue(clint, msg);
-			}
-			else
-			{
-				Game1.drawObjectDialogue(msg);
-			}
+			ShowClintMessage(msg);
 			return;
 		}
 
@@ -90,15 +96,7 @@ public static class PokemonTeraManager
 		int count = Game1.player.Items.CountId("(O)" + shardId);
 		if (count < 50)
 		{
-			NPC clint = Game1.getCharacterFromName("Clint");
-			if (clint != null)
-			{
-				Game1.DrawDialogue(clint, "Você não tem os 50 fragmentos necessários!");
-			}
-			else
-			{
-				Game1.drawObjectDialogue("Você não tem os 50 fragmentos necessários!");
-			}
+			ShowClintMessage("Você não tem os 50 fragmentos necessários!");
 			return true;
 		}
 
@@ -115,15 +113,7 @@ public static class PokemonTeraManager
 		Game1.playSound("crystal");
 
 		string successMsg = $"*CLANG! CLANG!* Pronto! A energia dos 50 cristais foi lapidada e fundida na jóia de {lead.Nickname}! Seu novo Tera Type é {chosenType}!";
-		NPC clintObj = Game1.getCharacterFromName("Clint");
-		if (clintObj != null)
-		{
-			Game1.DrawDialogue(clintObj, successMsg);
-		}
-		else
-		{
-			Game1.drawObjectDialogue(successMsg);
-		}
+		ShowClintMessage(successMsg);
 		Game1.addHUDMessage(new HUDMessage($"✨ Tera Type de {lead.Nickname} alterado para {chosenType}!", 2));
 		return true;
 	}

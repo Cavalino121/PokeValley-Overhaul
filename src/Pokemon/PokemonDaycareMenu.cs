@@ -128,6 +128,8 @@ public class PokemonDaycareMenu : IClickableMenu
 							PokemonBreeding.DaycareParent2 = chosen;
 						}
 
+						Party.SaveParty();
+						PokemonSaveStore.SaveForFarmer(Game1.player?.UniqueMultiplayerID ?? 0L, PokemonSaveSection.Daycare);
 						Game1.playSound("reward");
 						Game1.addHUDMessage(new HUDMessage($"{chosen.Nickname} foi deixado na Creche aos cuidados da Marnie!", 1));
 						_selectingParent1 = false;
@@ -168,6 +170,8 @@ public class PokemonDaycareMenu : IClickableMenu
 				var mon = PokemonBreeding.DaycareParent1;
 				PokemonBreeding.DaycareParent1 = null;
 				Party.AddPokemon(mon);
+				Party.SaveParty();
+				PokemonSaveStore.SaveForFarmer(Game1.player?.UniqueMultiplayerID ?? 0L, PokemonSaveSection.Daycare);
 				Game1.playSound("coin");
 				Game1.addHUDMessage(new HUDMessage($"{mon.Nickname} voltou para a sua equipe!", 1));
 				SetupComponents();
@@ -203,6 +207,8 @@ public class PokemonDaycareMenu : IClickableMenu
 				var mon = PokemonBreeding.DaycareParent2;
 				PokemonBreeding.DaycareParent2 = null;
 				Party.AddPokemon(mon);
+				Party.SaveParty();
+				PokemonSaveStore.SaveForFarmer(Game1.player?.UniqueMultiplayerID ?? 0L, PokemonSaveSection.Daycare);
 				Game1.playSound("coin");
 				Game1.addHUDMessage(new HUDMessage($"{mon.Nickname} voltou para a sua equipe!", 1));
 				SetupComponents();
@@ -223,6 +229,8 @@ public class PokemonDaycareMenu : IClickableMenu
 			var egg = PokemonBreeding.ReadyEgg;
 			PokemonBreeding.ReadyEgg = null;
 			Party.AddPokemon(egg);
+			Party.SaveParty();
+			PokemonSaveStore.SaveForFarmer(Game1.player?.UniqueMultiplayerID ?? 0L, PokemonSaveSection.Daycare);
 			Game1.playSound("reward");
 			Game1.addHUDMessage(new HUDMessage($"Você recebeu um Ovo Pokémon da Creche!", 2));
 			SetupComponents();

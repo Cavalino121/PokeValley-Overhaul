@@ -1163,8 +1163,15 @@ private PokemonMove SelectEnemyMove()
 		catch { }
 	}
 
+	public static ArenaTheme? DebugForcedArenaTheme = null;
+
 	private ArenaTheme DetermineArenaTheme()
 	{
+		if (DebugForcedArenaTheme.HasValue)
+		{
+			return DebugForcedArenaTheme.Value;
+		}
+
 		// 1. Cosmic Distortion World for Primordial/Dimensional Titans
 		string enemyName = EnemyPokemon?.Species?.Name ?? "";
 		if (enemyName is "Giratina" or "Arceus" or "Dialga" or "Palkia" or "Deoxys" or "Necrozma" or "Eternatus")

@@ -97,14 +97,53 @@ public static class PokemonItemUse
 			"ZygardeCube" or "IndigoDisk";
 	}
 
+	public static bool HasItemInInventoryOrHeld(PokemonInstance p, params string[] itemIds)
+	{
+		string held = PokemonHeldItemManager.NormalizeId(p?.HeldItem ?? "");
+		foreach (var id in itemIds)
+		{
+			string clean = LocalId(id);
+			if (clean.StartsWith("Poke_", StringComparison.OrdinalIgnoreCase)) clean = clean.Substring(5);
+			if (string.Equals(held, clean, StringComparison.OrdinalIgnoreCase)) return true;
+			if (Game1.player != null)
+			{
+				if (Game1.player.Items.ContainsId(clean) ||
+					Game1.player.Items.ContainsId("(O)" + clean) ||
+					Game1.player.Items.ContainsId("Poke_" + clean) ||
+					Game1.player.Items.ContainsId("(O)Poke_" + clean))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	public static bool CanSwitchFormInSummary(PokemonInstance p)
 	{
 		if (p?.Species == null) return false;
 		string baseSp = (p.Species.BaseSpeciesName ?? p.Species.InternalName ?? "").ToLowerInvariant();
-		return baseSp is "deoxys" or "hoopa" or "kyurem" or "necrozma" or "calyrex" or
-			"zacian" or "zamazenta" or "giratina" or "dialga" or "palkia" or "shaymin" or
-			"tornadus" or "thundurus" or "landorus" or "enamorus" or "ogerpon" or "zygarde" or
-			"terapagos" or "urshifu";
+
+		return baseSp switch
+		{
+			"shaymin" => HasItemInInventoryOrHeld(p, "Gracidea", "GracideaFlower") && (Game1.timeOfDay >= 600 && Game1.timeOfDay < 1800),
+			"deoxys" => HasItemInInventoryOrHeld(p, "MeteoritePiece", "Rayquazite"),
+			"hoopa" => HasItemInInventoryOrHeld(p, "PrisonBottle"),
+			"kyurem" => HasItemInInventoryOrHeld(p, "DNA_Splicers", "DNASplicers"),
+			"necrozma" => HasItemInInventoryOrHeld(p, "NSolarizer", "NLunarizer"),
+			"calyrex" => HasItemInInventoryOrHeld(p, "ReinsOfUnity"),
+			"zygarde" => HasItemInInventoryOrHeld(p, "ZygardeCube"),
+			"tornadus" or "thundurus" or "landorus" or "enamorus" => HasItemInInventoryOrHeld(p, "RevealGlass", "RevealGlass_Love", "CycloneMirror", "BoltMirror", "FertilityMirror"),
+			"terapagos" => HasItemInInventoryOrHeld(p, "IndigoDisk"),
+			"giratina" => HasItemInInventoryOrHeld(p, "GriseousCore", "GriseousOrb"),
+			"dialga" => HasItemInInventoryOrHeld(p, "AdamantCrystal", "AdamantOrb"),
+			"palkia" => HasItemInInventoryOrHeld(p, "LustrousGlobe", "LustrousOrb"),
+			"zacian" => HasItemInInventoryOrHeld(p, "RustedSword"),
+			"zamazenta" => HasItemInInventoryOrHeld(p, "RustedShield"),
+			"ogerpon" => HasItemInInventoryOrHeld(p, "TealMask", "WellspringMask", "HearthflameMask", "CornerstoneMask"),
+			"urshifu" => HasItemInInventoryOrHeld(p, "ScrollOfDarkness", "ScrollOfWaters"),
+			_ => false
+		};
 	}
 
 	public static bool CanApplyFormChange(string localId, PokemonInstance p)
@@ -716,6 +755,13 @@ public static class PokemonItemUse
 	public static void ApplyFormChangeOrMenu(PokemonInstance p, string itemId, IClickableMenu returnMenu = null)
 	{
 		if (p?.Species == null) return;
+		if (!CanSwitchFormInSummary(p) && string.Equals(itemId, "SummarySwitch", StringComparison.OrdinalIgnoreCase))
+		{
+			Game1.playSound("cancel");
+			Game1.addHUDMessage(new HUDMessage($"Você não possui o item sagrado necessário para alternar a forma de {p.Nickname}!", 3));
+			return;
+		}
+
 		string baseSp = (p.Species.BaseSpeciesName ?? p.Species.InternalName ?? "").ToLowerInvariant();
 		string curSp = (p.Species.InternalName ?? "").ToLowerInvariant();
 		string cleanItem = LocalId(itemId ?? "");

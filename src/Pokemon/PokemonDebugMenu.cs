@@ -92,7 +92,17 @@ public class PokemonDebugMenu : IClickableMenu
 	private ClickableComponent _fePrevPageButton;
 	private ClickableComponent _feNextPageButton;
 	private ClickableComponent _clearSpawnsBottomButton;
+	private ClickableComponent _clearInventoryBottomButton;
 	private ClickableTextureComponent _closeButton;
+
+	private static int _cutsceneSpeciesIdx = 0;
+	private static readonly string[] _cutsceneLegendaryList = new[]
+	{
+		"Rayquaza", "Kyogre", "Groudon", "Mewtwo", "Mew", "Lugia", "Ho-Oh",
+		"Dialga", "Palkia", "Giratina", "Arceus", "Reshiram", "Zekrom", "Kyurem",
+		"Xerneas", "Yveltal", "Zygarde", "Solgaleo", "Lunala", "Necrozma",
+		"Zacian", "Zamazenta", "Eternatus", "Koraidon", "Miraidon", "Terapagos"
+	};
 
 	public record LegendaryFormEvoEntry(
 		string BaseName,
@@ -259,6 +269,7 @@ public class PokemonDebugMenu : IClickableMenu
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX, bottomTabY, bottomW, 34), "FormsAndEvos", "9. 🧬 Formas & Fusões"));
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + bottomW + bottomGap, bottomTabY, bottomW, 34), "AudioAndVfx", "10. 🎬 Sons, Cries & FX"));
 		_clearSpawnsBottomButton = new ClickableComponent(new Rectangle(startX + (bottomW + bottomGap) * 2, bottomTabY, bottomW, 34), "clear_active_spawns", "🧹 Resetar Spawns");
+		_clearInventoryBottomButton = new ClickableComponent(new Rectangle(startX + (bottomW + bottomGap) * 3, bottomTabY, bottomW, 34), "clear_inventory", "🗑️ Limpar Mochila");
 
 		int contentY = startY + 50;
 
@@ -369,6 +380,10 @@ public class PokemonDebugMenu : IClickableMenu
 		_battleButtons.Add(new ClickableComponent(new Rectangle(col2X, bStartY, btnW, 40), "wild_gyarados", "Selvagem: Gyarados (Lv. 25)"));
 		_battleButtons.Add(new ClickableComponent(new Rectangle(startX, bStartY + 44, btnW * 2 + 16, 40), "trainer_custom", "⚔️ Escolher Pokémon Selvagem Sob Demanda (Abre Seletor)"));
 		_battleButtons.Add(new ClickableComponent(new Rectangle(startX, bStartY + 88, btnW * 2 + 16, 40), "sim_player_battle", "🎮 Simular Batalha vs Treinador Player (Escolher Avatar Jogável)"));
+		string arenaLabel = PokemonBattleMenu.DebugForcedArenaTheme.HasValue
+			? $"🏟️ Arena Forçada: {PokemonBattleMenu.DebugForcedArenaTheme.Value} (Clique p/ Trocar)"
+			: "🏟️ Arena: Automática / Canônica do Local (Clique p/ Forçar)";
+		_battleButtons.Add(new ClickableComponent(new Rectangle(startX, bStartY + 128, btnW * 2 + 16, 36), "cycle_battle_arena", arenaLabel));
 
 		// Paginated NPC trainers
 		var allNpcs = NPCTeams.GetAllNPCNames();
@@ -428,7 +443,8 @@ public class PokemonDebugMenu : IClickableMenu
 		_mechanicButtons.Add(new ClickableComponent(new Rectangle(col2X, mStartY + 264, btnW, 40), "mech_trigger_friend_evo", "7. 💖 Iniciar Teste de Evolução Amizade"));
 		_mechanicButtons.Add(new ClickableComponent(new Rectangle(startX, mStartY + 308, btnW, 40), "mech_toggle_spirits_luck", "7. 🍀 Alternar Sorte dos Espíritos (Spawns)"));
 		_mechanicButtons.Add(new ClickableComponent(new Rectangle(col2X, mStartY + 308, btnW, 40), "mech_give_tera_pack", "8. 🔮 Orbe Tera + 50 de Todos Tera Shards"));
-		_mechanicButtons.Add(new ClickableComponent(new Rectangle(startX, mStartY + 352, btnW * 2 + 16, 42), "mech_cycle_tera_type", "8. 💎 Ciclar Tera Type do Pokémon Ativo da Equipe"));
+		_mechanicButtons.Add(new ClickableComponent(new Rectangle(startX, mStartY + 352, btnW * 2 + 16, 38), "mech_cycle_tera_type", "8. 💎 Ciclar Tera Type do Pokémon Ativo da Equipe"));
+		_mechanicButtons.Add(new ClickableComponent(new Rectangle(startX, mStartY + 394, btnW * 2 + 16, 38), "mech_open_daycare", "🧺 Abrir Menu Daycare (Creche & Cruzamento de Ovos)"));
 
 		// 8. UpdatesV2 Buttons (Tab 7: Novidades v2.0, v1.4 e v1.3)
 		int uStartY = contentY + 2;
@@ -561,6 +577,17 @@ public class PokemonDebugMenu : IClickableMenu
 			int removed = PokemonEncounterManager.ClearAllActiveSpawns();
 			Game1.playSound("trashcan");
 			Game1.addHUDMessage(new HUDMessage($"🧹 {removed} instâncias ativas de Pokémon removidas de todos os mapas!", 2));
+			return;
+		}
+
+		if (_clearInventoryBottomButton != null && _clearInventoryBottomButton.containsPoint(x, y))
+		{
+			for (int i = 0; i < Game1.player.Items.Count; i++)
+			{
+				Game1.player.Items[i] = null;
+			}
+			Game1.playSound("trashcan");
+			Game1.addHUDMessage(new HUDMessage("🗑️ Todo o inventário da mochila foi esvaziado!", 2));
 			return;
 		}
 
@@ -1356,6 +1383,29 @@ public class PokemonDebugMenu : IClickableMenu
 			return;
 		}
 
+		if (action == "cycle_battle_arena")
+		{
+			if (!PokemonBattleMenu.DebugForcedArenaTheme.HasValue)
+			{
+				PokemonBattleMenu.DebugForcedArenaTheme = PokemonBattleMenu.ArenaTheme.Farm;
+			}
+			else
+			{
+				int next = (int)PokemonBattleMenu.DebugForcedArenaTheme.Value + 1;
+				if (next > (int)PokemonBattleMenu.ArenaTheme.Gym)
+				{
+					PokemonBattleMenu.DebugForcedArenaTheme = null;
+				}
+				else
+				{
+					PokemonBattleMenu.DebugForcedArenaTheme = (PokemonBattleMenu.ArenaTheme)next;
+				}
+			}
+			Game1.playSound("smallSelect");
+			SetupButtons();
+			return;
+		}
+
 		if (action == "sim_player_battle")
 		{
 			if (Party.Team.Count == 0)
@@ -1857,6 +1907,11 @@ public class PokemonDebugMenu : IClickableMenu
 			lead.IsTerastallized = false;
 			Game1.playSound("crystal");
 			Game1.addHUDMessage(new HUDMessage($"8. Tera Type de {lead.Nickname ?? lead.Species.Name} alterado para: {lead.TeraType}!", 2));
+		}
+		else if (action == "mech_open_daycare")
+		{
+			Game1.playSound("bigSelect");
+			Game1.activeClickableMenu = new PokemonDaycareMenu();
 		}
 	}
 
@@ -2360,6 +2415,14 @@ public class PokemonDebugMenu : IClickableMenu
 			Color col = hovered ? new Color(255, 200, 200) : new Color(255, 238, 238);
 			IClickableMenu.drawTextureBox(b, _clearSpawnsBottomButton.bounds.X, _clearSpawnsBottomButton.bounds.Y, _clearSpawnsBottomButton.bounds.Width, _clearSpawnsBottomButton.bounds.Height, col);
 			PokemonUI.Text(b, Game1.smallFont, _clearSpawnsBottomButton.label, _clearSpawnsBottomButton.bounds, hovered ? Color.DarkRed : new Color(140, 25, 25), center: true, maxScale: 0.76f, shadow: false);
+		}
+
+		if (_clearInventoryBottomButton != null)
+		{
+			bool hovered = _clearInventoryBottomButton.containsPoint(mouseX, mouseY);
+			Color col = hovered ? new Color(255, 215, 200) : new Color(255, 242, 235);
+			IClickableMenu.drawTextureBox(b, _clearInventoryBottomButton.bounds.X, _clearInventoryBottomButton.bounds.Y, _clearInventoryBottomButton.bounds.Width, _clearInventoryBottomButton.bounds.Height, col);
+			PokemonUI.Text(b, Game1.smallFont, _clearInventoryBottomButton.label, _clearInventoryBottomButton.bounds, hovered ? Color.DarkRed : new Color(150, 45, 20), center: true, maxScale: 0.74f, shadow: false);
 		}
 
 		int startX = xPositionOnScreen + 30;
@@ -3074,11 +3137,14 @@ public class PokemonDebugMenu : IClickableMenu
 		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 14, contentY + 440, 388, 30), "bgm_stop", "PARAR MUSICA / RESTAURAR VANILLA"));
 
 		// Quadrant 4: Cutscenes & Vinhetas (Bottom-Right, startX + 424, contentY + 246)
-		int cutStartY = contentY + 300;
-		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY, 392, 34), "cut_legendary", "1. Despertar do Tita Lendario (Rayquaza)"));
-		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 42, 392, 34), "cut_evolution", "2. Sequencia de Evolucao Pokemon"));
-		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 84, 392, 34), "cut_capture", "3. Captura com Sucesso (Master Ball)"));
-		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 126, 392, 34), "cut_status", "4. Aflicoes de Condicao (Status)"));
+		string cutSpecies = _cutsceneLegendaryList[_cutsceneSpeciesIdx % _cutsceneLegendaryList.Length];
+		int cutStartY = contentY + 288;
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY, 392, 30), "cut_cycle_species", $"⚡ Lendário Cutscene: {cutSpecies} (Trocar)"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 33, 392, 32), "cut_overworld_awakening", $"🎬 EXECUTAR DESPERTAR NO MAPA ({cutSpecies})"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 68, 392, 28), "cut_legendary", $"1. Prévia Menu: Despertar de {cutSpecies}"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 99, 392, 26), "cut_evolution", "2. Prévia Menu: Sequência de Evolução"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 128, 392, 26), "cut_capture", "3. Prévia Menu: Captura Master Ball"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, cutStartY + 157, 392, 26), "cut_status", "4. Prévia Menu: Condições de Status"));
 	}
 
 	private void HandleAudioVfxClick(int x, int y)
@@ -3165,14 +3231,33 @@ public class PokemonDebugMenu : IClickableMenu
 			if (btn.name == "bgm_stop") { PokemonMusicManager.StopAndRestoreStardewMusic(); Game1.playSound("bigDeSelect"); return; }
 
 			// Cutscenes
+			if (btn.name == "cut_cycle_species")
+			{
+				_cutsceneSpeciesIdx = (_cutsceneSpeciesIdx + 1) % _cutsceneLegendaryList.Length;
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+			if (btn.name == "cut_overworld_awakening")
+			{
+				string selSpecies = _cutsceneLegendaryList[_cutsceneSpeciesIdx % _cutsceneLegendaryList.Length];
+				var spec = PokemonSpecies.Get(selSpecies) ?? PokemonSpecies.Get("Rayquaza");
+				Game1.exitActiveMenu();
+				PokemonCutsceneManager.PlayLegendaryAwakening(Game1.currentLocation, Game1.player.TilePoint, spec, "Artefato Ancestral", () =>
+				{
+					Game1.addHUDMessage(new HUDMessage($"✨ Despertar lendário de {spec.Name} finalizado!", 1));
+				});
+				return;
+			}
 			if (btn.name == "cut_legendary")
 			{
+				string selSpecies = _cutsceneLegendaryList[_cutsceneSpeciesIdx % _cutsceneLegendaryList.Length];
 				_activeCutscene = "Legendary";
 				_cutsceneTimer = 2.5f;
 				Game1.playSound("thunder");
 				Game1.playSound("roar");
 				Rumble.rumble(0.95f, 1200f);
-				PokemonCryManager.PlayCry("Rayquaza", volumeMult: 1.0f);
+				PokemonCryManager.PlayCry(selSpecies, volumeMult: 1.0f);
 				return;
 			}
 			if (btn.name == "cut_evolution")
@@ -3445,8 +3530,9 @@ public class PokemonDebugMenu : IClickableMenu
 			Rectangle banner = new Rectangle(sw / 2 - 320, sh / 2 - 60, 640, 120);
 			IClickableMenu.drawTextureBox(b, banner.X, banner.Y, banner.Width, banner.Height, new Color(35, 25, 20));
 			PokemonUI.DrawCardBorder(b, banner, Color.Gold, 3);
-			PokemonUI.Text(b, Game1.dialogueFont, "O GUARDAO ANCESTRAL DESPERTOU!", new Rectangle(banner.X, banner.Y + 18, banner.Width, 36), Color.Gold, center: true, maxScale: 0.85f);
-			PokemonUI.Text(b, Game1.smallFont, "O ceu ruge e relampagos cortam o horizonte sobre o PokeValley!", new Rectangle(banner.X, banner.Y + 65, banner.Width, 28), Color.White, center: true, maxScale: 0.82f, shadow: false);
+			string cutSpecName = _cutsceneLegendaryList[_cutsceneSpeciesIdx % _cutsceneLegendaryList.Length];
+			PokemonUI.Text(b, Game1.dialogueFont, $"O GUARDIÃO {cutSpecName.ToUpperInvariant()} DESPERTOU!", new Rectangle(banner.X, banner.Y + 18, banner.Width, 36), Color.Gold, center: true, maxScale: 0.85f);
+			PokemonUI.Text(b, Game1.smallFont, $"O céu ruge e relâmpagos cortam o horizonte sobre o PokeValley!", new Rectangle(banner.X, banner.Y + 65, banner.Width, 28), Color.White, center: true, maxScale: 0.82f, shadow: false);
 		}
 		else if (_activeCutscene == "Evolution")
 		{

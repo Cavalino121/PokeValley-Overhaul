@@ -838,6 +838,28 @@ public static class PokemonBreeding
 
 	private static readonly Dictionary<string, PokemonInstance> _incubatingEggs = new(StringComparer.OrdinalIgnoreCase);
 
+	public static Dictionary<string, PokemonInstance> GetAllIncubatingEggs() => _incubatingEggs;
+
+	public static void SetIncubatingEggs(Dictionary<string, PokemonInstance> eggs)
+	{
+		_incubatingEggs.Clear();
+		if (eggs != null)
+		{
+			foreach (var kvp in eggs)
+			{
+				if (kvp.Value != null) _incubatingEggs[kvp.Key] = kvp.Value;
+			}
+		}
+	}
+
+	public static void Reset()
+	{
+		DaycareParent1 = null;
+		DaycareParent2 = null;
+		ReadyEgg = null;
+		_incubatingEggs.Clear();
+	}
+
 	private static string KeyForTile(Vector2 tile) => $"{(int)tile.X}_{(int)tile.Y}";
 
 	public static void AddIncubatingEgg(Vector2 tile, PokemonInstance egg)

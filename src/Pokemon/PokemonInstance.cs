@@ -468,6 +468,164 @@ public class PokemonInstance
 		return true;
 	}
 
+	public void OnHeldItemChanged(string oldHeld, string newHeld)
+	{
+		string oldClean = PokemonHeldItemManager.NormalizeId(oldHeld ?? "").ToLowerInvariant();
+		string newClean = PokemonHeldItemManager.NormalizeId(newHeld ?? "").ToLowerInvariant();
+		if (string.Equals(oldClean, newClean, StringComparison.OrdinalIgnoreCase)) return;
+
+		string baseSp = (Species?.BaseSpeciesName ?? Species?.InternalName ?? "").ToLowerInvariant();
+
+		// 1. Mega Rayquaza revert upon removing Meteorite
+		if (baseSp == "rayquaza" && (oldClean is "meteoritepiece" or "rayquazite") && newClean is not ("meteoritepiece" or "rayquazite"))
+		{
+			RevertMegaEvolution(out _);
+			var baseRay = PokemonSpecies.Get("rayquaza");
+			if (baseRay != null)
+			{
+				Species = baseRay;
+				if (Nickname == "Mega Rayquaza" || Nickname == "Rayquaza") Nickname = "Rayquaza";
+				Ability = PokemonAbility.GetDefaultAbility(baseRay, isMega: false);
+			}
+			RecalculateStats();
+			InvalidateSpriteCache();
+		}
+
+		// 2. Giratina Origin <-> Altered
+		if (baseSp == "giratina")
+		{
+			bool hadOrb = oldClean is "griseousorb" or "griseouscore";
+			bool hasOrb = newClean is "griseousorb" or "griseouscore";
+			if (hasOrb && !hadOrb)
+			{
+				var origin = PokemonSpecies.Get("giratina/origin");
+				if (origin != null) ChangeForm(origin);
+			}
+			else if (hadOrb && !hasOrb)
+			{
+				var altered = PokemonSpecies.Get("giratina");
+				if (altered != null) ChangeForm(altered);
+			}
+		}
+
+		// 3. Dialga Origin <-> Normal
+		if (baseSp == "dialga")
+		{
+			bool hadItem = oldClean is "adamantcrystal" or "adamantorb";
+			bool hasItem = newClean is "adamantcrystal" or "adamantorb";
+			if (hasItem && !hadItem)
+			{
+				var origin = PokemonSpecies.Get("dialga/origin");
+				if (origin != null) ChangeForm(origin);
+			}
+			else if (hadItem && !hasItem)
+			{
+				var normal = PokemonSpecies.Get("dialga");
+				if (normal != null) ChangeForm(normal);
+			}
+		}
+
+		// 4. Palkia Origin <-> Normal
+		if (baseSp == "palkia")
+		{
+			bool hadItem = oldClean is "lustrousglobe" or "lustrousorb";
+			bool hasItem = newClean is "lustrousglobe" or "lustrousorb";
+			if (hasItem && !hadItem)
+			{
+				var origin = PokemonSpecies.Get("palkia/origin");
+				if (origin != null) ChangeForm(origin);
+			}
+			else if (hadItem && !hasItem)
+			{
+				var normal = PokemonSpecies.Get("palkia");
+				if (normal != null) ChangeForm(normal);
+			}
+		}
+
+		// 5. Zacian Crowned <-> Hero
+		if (baseSp == "zacian")
+		{
+			bool hadItem = oldClean == "rustedsword";
+			bool hasItem = newClean == "rustedsword";
+			if (hasItem && !hadItem)
+			{
+				var crowned = PokemonSpecies.Get("zacian/crowned");
+				if (crowned != null) ChangeForm(crowned);
+			}
+			else if (hadItem && !hasItem)
+			{
+				var normal = PokemonSpecies.Get("zacian");
+				if (normal != null) ChangeForm(normal);
+			}
+		}
+
+		// 6. Zamazenta Crowned <-> Hero
+		if (baseSp == "zamazenta")
+		{
+			bool hadItem = oldClean == "rustedshield";
+			bool hasItem = newClean == "rustedshield";
+			if (hasItem && !hadItem)
+			{
+				var crowned = PokemonSpecies.Get("zamazenta/crowned");
+				if (crowned != null) ChangeForm(crowned);
+			}
+			else if (hadItem && !hasItem)
+			{
+				var normal = PokemonSpecies.Get("zamazenta");
+				if (normal != null) ChangeForm(normal);
+			}
+		}
+
+		// 7. Ogerpon Masks
+		if (baseSp == "ogerpon")
+		{
+			string targetFormKey = newClean switch
+			{
+				"wellspringmask" => "ogerpon/wellspring",
+				"hearthflamemask" => "ogerpon/hearthflame",
+				"cornerstonemask" => "ogerpon/cornerstone",
+				_ => "ogerpon"
+			};
+			var targetSpec = PokemonSpecies.Get(targetFormKey);
+			if (targetSpec != null) ChangeForm(targetSpec);
+		}
+
+		// 8. Shaymin Flor Gracidea
+		if (baseSp == "shaymin")
+		{
+			bool hadItem = oldClean is "gracidea" or "gracideaflower";
+			bool hasItem = newClean is "gracidea" or "gracideaflower";
+			if (hasItem && !hadItem && (Game1.timeOfDay >= 600 && Game1.timeOfDay < 1800))
+			{
+				var sky = PokemonSpecies.Get("shaymin/sky");
+				if (sky != null) ChangeForm(sky, "Air Slash");
+			}
+			else if (hadItem && !hasItem)
+			{
+				var land = PokemonSpecies.Get("shaymin");
+				if (land != null) ChangeForm(land, "Seed Flare");
+			}
+		}
+
+		// 9. Kyogre & Groudon Primal abilities safety check
+		if (baseSp == "kyogre")
+		{
+			if (newClean != "blueorb" && Ability == "Primordial Sea")
+			{
+				Ability = "Drizzle";
+			}
+		}
+		if (baseSp == "groudon")
+		{
+			if (newClean != "redorb" && Ability == "Desolate Land")
+			{
+				Ability = "Drought";
+			}
+		}
+
+		InvalidateSpriteCache();
+	}
+
 	public bool ActivateDynamax(bool asGigantamax = false)
 	{
 		if (DynamaxTurns > 0 || IsFainted) return false;

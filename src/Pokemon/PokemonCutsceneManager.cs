@@ -171,50 +171,22 @@ public static class PokemonCutsceneManager
 			b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, sw, sh), Color.Black * darkAlpha);
 		}
 
-		// 3. Central Awakening Title Card Banner (visible between 0.8s and 2.7s)
-		if (_awakeningTimer >= 0.8f)
+		// 3. Overworld Aura Particles (Floating around player without obstructive central box)
+		if (_awakeningTimer >= 0.5f)
 		{
-			float bannerT = Math.Clamp((_awakeningTimer - 0.8f) / 0.3f, 0f, 1f);
-			float fadeOutT = (_awakeningTimer > 2.4f) ? Math.Clamp(1f - ((_awakeningTimer - 2.4f) / 0.4f), 0f, 1f) : 1f;
-			float bannerAlpha = bannerT * fadeOutT;
+			float auraAlpha = Math.Clamp((_awakeningTimer - 0.5f) / 0.4f, 0f, 1f);
+			if (_awakeningTimer > 2.2f) auraAlpha = Math.Clamp(1f - ((_awakeningTimer - 2.2f) / 0.6f), 0f, 1f);
 
-			int bannerW = Math.Min(780, sw - 64);
-			int bannerH = 136;
-			int bannerX = (sw - bannerW) / 2;
-			int bannerY = (sh - bannerH) / 2 - 30;
-			Rectangle bannerRect = new Rectangle(bannerX, bannerY, bannerW, bannerH);
-
-			// Shadow & Box Background
-			PokemonUI.SoftShadow(b, bannerRect, 0.45f * bannerAlpha);
-			IClickableMenu.drawTextureBox(b, bannerRect.X, bannerRect.Y, bannerRect.Width, bannerRect.Height, new Color(22, 18, 30) * bannerAlpha);
-			PokemonUI.DrawCardBorder(b, bannerRect, _awakeningAuraColor * bannerAlpha, 3);
-
-			// Inner Header Accent Ribbon
-			Rectangle ribbonRect = new Rectangle(bannerX + 16, bannerY + 12, bannerW - 32, 28);
-			b.Draw(Game1.staminaRect, ribbonRect, new Color(_awakeningAuraColor.R / 4, _awakeningAuraColor.G / 4, _awakeningAuraColor.B / 4) * bannerAlpha);
-			PokemonUI.Text(b, Game1.smallFont, $"★ {_awakeningTitle} ★", ribbonRect, _awakeningAuraColor * bannerAlpha, center: true, maxScale: 0.76f, shadow: true);
-
-			// Titan Name in Bold Font
-			string speciesUpper = _awakeningSpecies != null ? _awakeningSpecies.Name.ToUpperInvariant() : "LENDÁRIO";
-			Rectangle nameRect = new Rectangle(bannerX + 16, bannerY + 44, bannerW - 32, 44);
-			PokemonUI.Text(b, Game1.dialogueFont, speciesUpper, nameRect, Color.White * bannerAlpha, center: true, maxScale: 1.05f, shadow: true);
-
-			// Subtitle / Lore Hint
-			string subText = $"O poder ancestral da relíquia '{_awakeningRelicName}' ressoou através das eras!";
-			Rectangle subRect = new Rectangle(bannerX + 20, bannerY + 92, bannerW - 40, 32);
-			PokemonUI.Text(b, Game1.smallFont, subText, subRect, new Color(220, 230, 245) * bannerAlpha, center: true, maxScale: 0.74f, shadow: false);
-
-			// Sparkling particles around the banner
-			Vector2 center = new Vector2(bannerRect.Center.X, bannerRect.Center.Y);
+			Vector2 center = new Vector2(sw / 2f, sh / 2f);
 			for (int i = 0; i < _awakeningParticles.Count; i++)
 			{
-				Vector2 pPos = center + _awakeningParticles[i] * (1.0f + (float)Math.Sin(_awakeningTimer * 4.0 + i) * 0.15f);
-				b.Draw(Game1.staminaRect, new Rectangle((int)pPos.X - 3, (int)pPos.Y - 3, 6, 6), _awakeningAuraColor * bannerAlpha * 0.9f);
+				Vector2 pPos = center + _awakeningParticles[i] * (1.0f + (float)Math.Sin(_awakeningTimer * 4.0 + i) * 0.25f);
+				b.Draw(Game1.staminaRect, new Rectangle((int)pPos.X - 3, (int)pPos.Y - 3, 6, 6), _awakeningAuraColor * auraAlpha * 0.85f);
 			}
 		}
 	}
 
-	private static Color DetermineElementalColor(PokemonSpecies spec)
+	public static Color DetermineElementalColor(PokemonSpecies spec)
 	{
 		if (spec == null) return Color.Gold;
 		string name = spec.Name;

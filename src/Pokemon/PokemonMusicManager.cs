@@ -17,16 +17,13 @@ public enum PokemonMusicTrack
 
 /// <summary>
 /// Synthesizes authentic GBA-style Pokémon chiptune battle, victory & route overworld tracks in-memory using MonoGame SoundEffect
-/// while pausing Stardew Valley's active song during battle and yielding to Stardew's soundtrack in the overworld so the two never overlap.
+/// <summary>
+/// Gerencia a reprodução das trilhas sonoras autênticas de batalha, vitória e rotas de Pokémon,
+/// pausando a música do Stardew Valley durante as batalhas e integrando-se nativamente ao SoundEffect do MonoGame.
+/// Respeita estritamente as opções de volume de música do jogo.
 /// </summary>
 public static class PokemonMusicManager
 {
-	[System.Runtime.InteropServices.DllImport("winmm.dll", EntryPoint = "mciSendStringA", CharSet = System.Runtime.InteropServices.CharSet.Ansi)]
-	private static extern int mciSendString(string lpstrCommand, System.Text.StringBuilder lpstrReturnString, int uReturnLength, IntPtr hwndCallback);
-
-	private static bool _isMciPlaying = false;
-	private static string _currentMciFile = null;
-
 	private static readonly Dictionary<PokemonMusicTrack, SoundEffect> _cachedEffects = new();
 	private static SoundEffectInstance _activeInstance;
 	private static PokemonMusicTrack _currentTrack = PokemonMusicTrack.None;
@@ -37,68 +34,18 @@ public static class PokemonMusicManager
 
 	public static PokemonMusicTrack CurrentTrack => _currentTrack;
 
-	public static string ResolveMidiPath(string fileName)
-	{
-		try
-		{
-			string p = PokemonUI.FindInProject("pokeemerald", "sound", "songs", "midi", fileName);
-			if (p != null && System.IO.File.Exists(p)) return p;
-			p = PokemonUI.FindInProject("pokefirered", "sound", "songs", "midi", fileName);
-			if (p != null && System.IO.File.Exists(p)) return p;
-		}
-		catch { }
-		return null;
-	}
-
-	public static bool PlayMidiFile(string fileName, bool loop)
-	{
-		try
-		{
-			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-			{
-				string fullPath = ResolveMidiPath(fileName);
-				if (!string.IsNullOrEmpty(fullPath) && System.IO.File.Exists(fullPath))
-				{
-					// Close previous MCI playback
-					mciSendString("close poke_midi", null, 0, IntPtr.Zero);
-
-					string openCmd = $"open \"{fullPath}\" type sequencer alias poke_midi";
-					int err = mciSendString(openCmd, null, 0, IntPtr.Zero);
-					if (err == 0)
-					{
-						int vol1000 = (int)Math.Clamp((Game1.options?.musicVolumeLevel ?? 0.7f) * 1000f, 0, 1000);
-						mciSendString($"setaudio poke_midi volume to {vol1000}", null, 0, IntPtr.Zero);
-
-						string playCmd = loop ? "play poke_midi repeat" : "play poke_midi";
-						mciSendString(playCmd, null, 0, IntPtr.Zero);
-						_isMciPlaying = true;
-						_currentMciFile = fileName;
-						return true;
-					}
-				}
-			}
-		}
-		catch { }
-		return false;
-	}
-
 	public static void TickLoop()
 	{
 		try
 		{
-			if (_isMciPlaying)
+			if (_activeInstance != null && !_activeInstance.IsDisposed && _currentTrack != PokemonMusicTrack.None)
 			{
-				int vol1000 = (int)Math.Clamp((Game1.options?.musicVolumeLevel ?? 0.7f) * 1000f, 0, 1000);
-				mciSendString($"setaudio poke_midi volume to {vol1000}", null, 0, IntPtr.Zero);
-				return;
-			}
+				float volMult = (_currentTrack == PokemonMusicTrack.RouteOverworld) ? 0.28f : 0.42f;
+				float targetVol = Math.Clamp(Game1.options?.musicVolumeLevel ?? 0.7f, 0f, 1f) * volMult;
+				_activeInstance.Volume = targetVol;
 
-			if (_currentTrack != PokemonMusicTrack.None && _currentTrackLooped && _activeInstance != null && !_activeInstance.IsDisposed)
-			{
-				if (_activeInstance.State == SoundState.Stopped)
+				if (_currentTrackLooped && _activeInstance.State == SoundState.Stopped)
 				{
-					float volMult = (_currentTrack == PokemonMusicTrack.RouteOverworld) ? 0.28f : 0.42f;
-					_activeInstance.Volume = Math.Clamp(Game1.options?.musicVolumeLevel ?? 0.7f, 0f, 1f) * volMult;
 					_activeInstance.Play();
 				}
 			}
@@ -128,7 +75,7 @@ public static class PokemonMusicManager
 			}
 
 			// Stardew's song finished naturally and the overworld is currently silent
-			if (_currentTrack == PokemonMusicTrack.RouteOverworld && ((_isMciPlaying) || (_activeInstance != null && !_activeInstance.IsDisposed && _activeInstance.State == SoundState.Playing)))
+			if (_currentTrack == PokemonMusicTrack.RouteOverworld && (_activeInstance != null && !_activeInstance.IsDisposed && _activeInstance.State == SoundState.Playing))
 			{
 				return;
 			}
@@ -137,15 +84,7 @@ public static class PokemonMusicManager
 			if (_overworldSilenceTimer >= 4.0f)
 			{
 				_overworldSilenceTimer = 0f;
-				if (PlayMidiFile("mus_route101.mid", loop: true))
-				{
-					_currentTrack = PokemonMusicTrack.RouteOverworld;
-					_currentTrackLooped = true;
-				}
-				else
-				{
-					PlayTrack(PokemonMusicTrack.RouteOverworld, loop: true, pauseStardew: false);
-				}
+				PlayTrack(PokemonMusicTrack.RouteOverworld, loop: true, pauseStardew: false);
 			}
 		}
 		catch { }
@@ -158,55 +97,33 @@ public static class PokemonMusicManager
 			PauseStardewMusic();
 			StopActivePokemonTrackOnly();
 
-			string midi = "mus_vs_wild.mid";
+			PokemonMusicTrack track = isWild ? PokemonMusicTrack.WildBattle : PokemonMusicTrack.TrainerBattle;
 			if (!isWild)
 			{
-				bool isChampion = !string.IsNullOrEmpty(trainerName) && (trainerName.Equals("Red", StringComparison.OrdinalIgnoreCase) || trainerName.Equals("Champion", StringComparison.OrdinalIgnoreCase) || trainerName.Equals("Steven", StringComparison.OrdinalIgnoreCase) || trainerName.Equals("Wallace", StringComparison.OrdinalIgnoreCase));
-				bool isAquaMagma = !string.IsNullOrEmpty(trainerName) && (trainerName.Contains("Aqua", StringComparison.OrdinalIgnoreCase) || trainerName.Contains("Magma", StringComparison.OrdinalIgnoreCase) || trainerName.Equals("Archie", StringComparison.OrdinalIgnoreCase) || trainerName.Equals("Maxie", StringComparison.OrdinalIgnoreCase));
-				bool isMegaBoss = !string.IsNullOrEmpty(trainerName) && (
+				bool isSpecial = !string.IsNullOrEmpty(trainerName) && (
+					trainerName.Equals("Red", StringComparison.OrdinalIgnoreCase) ||
+					trainerName.Equals("Champion", StringComparison.OrdinalIgnoreCase) ||
+					trainerName.Equals("Steven", StringComparison.OrdinalIgnoreCase) ||
+					trainerName.Equals("Wallace", StringComparison.OrdinalIgnoreCase) ||
+					trainerName.Contains("Aqua", StringComparison.OrdinalIgnoreCase) ||
+					trainerName.Contains("Magma", StringComparison.OrdinalIgnoreCase) ||
 					trainerName.Equals("Wizard", StringComparison.OrdinalIgnoreCase) ||
-					trainerName.Equals("Dwarf", StringComparison.OrdinalIgnoreCase) ||
-					trainerName.Equals("Krobus", StringComparison.OrdinalIgnoreCase) ||
-					trainerName.Equals("Demetrius", StringComparison.OrdinalIgnoreCase) ||
-					trainerName.Equals("Lewis", StringComparison.OrdinalIgnoreCase) ||
-					trainerName.Equals("Morris", StringComparison.OrdinalIgnoreCase) ||
-					trainerName.Equals("Marlon", StringComparison.OrdinalIgnoreCase) ||
 					trainerName.Equals("Qi", StringComparison.OrdinalIgnoreCase));
-
-				if (isChampion) midi = "mus_vs_champion.mid";
-				else if (isAquaMagma) midi = "mus_vs_aqua_magma.mid";
-				else if (isMegaBoss) midi = "mus_vs_gym_leader.mid";
-				else midi = "mus_vs_trainer.mid";
+				if (isSpecial) track = PokemonMusicTrack.MegaBossBattle;
 			}
 			else if (enemyMon?.Species != null)
 			{
-				string name = enemyMon.Species.Name;
-				if (name.Equals("Rayquaza", StringComparison.OrdinalIgnoreCase)) midi = "mus_vs_rayquaza.mid";
-				else if (name.Equals("Groudon", StringComparison.OrdinalIgnoreCase) || name.Equals("Kyogre", StringComparison.OrdinalIgnoreCase)) midi = "mus_vs_kyogre_groudon.mid";
-				else if (name.StartsWith("Regi", StringComparison.OrdinalIgnoreCase)) midi = "mus_vs_regi.mid";
-				else if (name.Equals("Mewtwo", StringComparison.OrdinalIgnoreCase)) midi = "mus_rg_vs_mewtwo.mid";
-				else if (name.Equals("Deoxys", StringComparison.OrdinalIgnoreCase)) midi = "mus_rg_vs_deoxys.mid";
-				else if (name.Equals("Mew", StringComparison.OrdinalIgnoreCase)) midi = "mus_vs_mew.mid";
-				else
+				string monName = enemyMon.Species.Name;
+				var entry = PokemonPokedex.Instance?.GetEntry(monName);
+				bool isLegendary = (entry != null && (entry.Tier == "Legendary" || entry.Tier == "Mythical"))
+					|| monName is "Rayquaza" or "Groudon" or "Kyogre" or "Mewtwo" or "Mew" or "Deoxys" or "Arceus" or "Giratina" or "Dialga" or "Palkia";
+				if (isLegendary)
 				{
-					var entry = PokemonPokedex.Instance.GetEntry(enemyMon.Species.Name);
-					if (entry != null && (entry.Tier == "Legendary" || entry.Tier == "Mythical"))
-					{
-						midi = "mus_vs_kyogre_groudon.mid";
-					}
+					track = PokemonMusicTrack.LegendaryBattle;
 				}
 			}
 
-			if (PlayMidiFile(midi, loop: true))
-			{
-				_currentTrack = isWild ? PokemonMusicTrack.WildBattle : PokemonMusicTrack.TrainerBattle;
-				_currentTrackLooped = true;
-				return;
-			}
-
-			// Fallback to synthesized PCM if MIDI unavailable
-			PokemonMusicTrack fallbackTrack = isWild ? PokemonMusicTrack.WildBattle : PokemonMusicTrack.TrainerBattle;
-			PlayTrack(fallbackTrack, loop: true, pauseStardew: false);
+			PlayTrack(track, loop: true, pauseStardew: true);
 		}
 		catch (Exception ex)
 		{
@@ -220,15 +137,26 @@ public static class PokemonMusicManager
 		{
 			PauseStardewMusic();
 			StopActivePokemonTrackOnly();
-			if (PlayMidiFile("mus_victory_trainer.mid", loop: false))
-			{
-				_currentTrack = PokemonMusicTrack.VictoryFanfare;
-				_currentTrackLooped = false;
-				return;
-			}
-			PlayTrack(PokemonMusicTrack.VictoryFanfare, loop: false, pauseStardew: false);
+			PlayTrack(PokemonMusicTrack.VictoryFanfare, loop: false, pauseStardew: true);
 		}
 		catch { }
+	}
+
+	public static void PlayMidiFile(string fileName, bool loop = true)
+	{
+		string lower = (fileName ?? "").ToLowerInvariant();
+		PokemonMusicTrack track = lower switch
+		{
+			var s when s.Contains("wild") => PokemonMusicTrack.WildBattle,
+			var s when s.Contains("trainer") => PokemonMusicTrack.TrainerBattle,
+			var s when s.Contains("gym") => PokemonMusicTrack.MegaBossBattle,
+			var s when s.Contains("champion") || s.Contains("steven") => PokemonMusicTrack.MegaBossBattle,
+			var s when s.Contains("kyogre") || s.Contains("groudon") || s.Contains("rayquaza") || s.Contains("regi") || s.Contains("deoxys") || s.Contains("mewtwo") => PokemonMusicTrack.LegendaryBattle,
+			var s when s.Contains("route") => PokemonMusicTrack.RouteOverworld,
+			var s when s.Contains("victory") => PokemonMusicTrack.VictoryFanfare,
+			_ => PokemonMusicTrack.WildBattle
+		};
+		PlayTrack(track, loop);
 	}
 
 	public static void PlayTrack(PokemonMusicTrack track, bool loop, bool pauseStardew = true)
@@ -243,7 +171,7 @@ public static class PokemonMusicManager
 
 			float volMult = (track == PokemonMusicTrack.RouteOverworld) ? 0.28f : 0.42f;
 			float vol = Math.Clamp(Game1.options?.musicVolumeLevel ?? 0.7f, 0f, 1f) * volMult;
-			if (vol <= 0.01f)
+			if (vol <= 0.005f)
 			{
 				_currentTrack = track;
 				_currentTrackLooped = loop;
@@ -260,7 +188,6 @@ public static class PokemonMusicManager
 			{
 				_activeInstance = sfx.CreateInstance();
 				_activeInstance.Volume = vol;
-				_activeInstance.LoopCount = loop ? 255u : 0u;
 				_activeInstance.Play();
 				_currentTrack = track;
 				_currentTrackLooped = loop;
@@ -286,13 +213,6 @@ public static class PokemonMusicManager
 	{
 		try
 		{
-			if (_isMciPlaying)
-			{
-				mciSendString("stop poke_midi", null, 0, IntPtr.Zero);
-				mciSendString("close poke_midi", null, 0, IntPtr.Zero);
-				_isMciPlaying = false;
-				_currentMciFile = null;
-			}
 			if (_activeInstance != null)
 			{
 				if (!_activeInstance.IsDisposed)

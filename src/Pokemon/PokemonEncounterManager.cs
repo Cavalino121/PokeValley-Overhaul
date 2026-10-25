@@ -9,6 +9,82 @@ namespace StardewValley.Pokemon;
 
 public static class PokemonEncounterManager
 {
+	public static int GetCanonicalLegendaryEncounterLevel(string speciesName)
+	{
+		string name = (speciesName ?? "").Trim().ToLowerInvariant();
+		return name switch
+		{
+			"phione" => 1,
+			"cosmog" => 5,
+			"kubfu" => 10,
+			"meltan" => 15,
+			"poipole" or "type: null" or "type_null" or "typenull" => 40,
+			"cosmoem" => 43,
+			"urshifu" => 50,
+			"silvally" => 50,
+			"naganadel" => 50,
+			"melmetal" => 50,
+			"articuno" or "zapdos" or "moltres" => 50,
+			"raikou" or "entei" or "suicune" => 50,
+			"regirock" or "regice" or "registeel" => 50,
+			"uxie" or "mesprit" or "azelf" => 50,
+			"cobalion" or "terrakion" or "virizion" or "keldeo" => 50,
+			"tornadus" or "thundurus" or "landorus" => 50,
+			"latios" or "latias" => 60,
+			"heatran" or "cresselia" or "regigigas" => 60,
+			"tapu koko" or "tapu lele" or "tapu bulu" or "tapu fini" => 60,
+			"nihilego" or "buzzwole" or "pheromosa" or "xurkitree" or "celesteela" or "kartana" or "guzzlord" or "stakataka" or "blacephalon" => 60,
+			"regieleki" or "regidrago" or "glastrier" or "spectrier" => 60,
+			"enamorus" => 60,
+			"wo-chien" or "chien-pao" or "ting-lu" or "chi-yu" => 60,
+			"okidogi" or "munkidori" or "fezandipiti" or "ogerpon" or "pecharunt" => 60,
+			"roaring moon" or "iron valiant" or "walking wake" or "iron leaves" or "gouging fire" or "raging bolt" or "iron boulder" or "iron crown" => 65,
+			_ => 70
+		};
+	}
+
+	private static float _randomLegendarySpawnTimer = 0f;
+
+	public static void CheckRandomWildLegendarySpawn(float dt)
+	{
+		_randomLegendarySpawnTimer += dt;
+		if (_randomLegendarySpawnTimer < 120f) return;
+		_randomLegendarySpawnTimer = 0f;
+
+		if (Game1.random.NextDouble() > 0.02) return;
+
+		var allSummons = new List<LegendarySummonDef>();
+		foreach (var kv in LegendarySummonsByRelic)
+		{
+			allSummons.AddRange(kv.Value);
+		}
+		if (allSummons.Count == 0) return;
+
+		var candidate = allSummons[Game1.random.Next(allSummons.Count)];
+		var spec = PokemonSpecies.Get(candidate.SpeciesName);
+		if (spec == null) return;
+
+		var targetLoc = Game1.getLocationFromName(candidate.Location);
+		if (targetLoc == null) return;
+
+		string locKey = targetLoc.NameOrUniqueName ?? targetLoc.Name;
+		if (_spawnsByLocation.TryGetValue(locKey, out var st) && st != null)
+		{
+			if (st.Spawns.Any(s => string.Equals(s.Instance?.Species?.Name, spec.Name, StringComparison.OrdinalIgnoreCase)))
+				return;
+		}
+
+		Point targetTile = new Point(candidate.TargetX, candidate.TargetY);
+		int level = GetCanonicalLegendaryEncounterLevel(spec.Name);
+		var spawned = SpawnWildAt(targetLoc, targetTile, spec.InternalName, level: level, isShiny: RollWildShiny());
+		if (spawned != null)
+		{
+			Color chatCol = PokemonCutsceneManager.DetermineElementalColor(spec);
+			Game1.chatBox?.addMessage($"★ Um {spec.Name} ancestral surgiu em algum lugar do vale...", chatCol);
+		}
+	}
+
+
 	public const float WildRate = 0.04f; // 4% step encounter rate
 
 	private static readonly Dictionary<long, int> _lastEncounterTickByFarmer = new();
@@ -386,7 +462,10 @@ public static class PokemonEncounterManager
 			// Play full cinematic cutscene: letterboxing, screen darkening, elemental storm flash, rumbling, roar & cry
 			PokemonCutsceneManager.PlayLegendaryAwakening(loc, new Point(tileX, tileY), spec, matchedDef.RelicName, () =>
 			{
-				var spawn = SpawnWildAt(loc, new Point(tileX, tileY), spec.InternalName, level: 70, isShiny: RollWildShiny());
+				int spawnLv = GetCanonicalLegendaryEncounterLevel(spec.Name);
+				var spawn = SpawnWildAt(loc, new Point(tileX, tileY), spec.InternalName, level: spawnLv, isShiny: RollWildShiny());
+				Color chatColor = PokemonCutsceneManager.DetermineElementalColor(spec);
+				Game1.chatBox?.addMessage($"★ {who.Name} invocou o lendário {spec.Name}!", chatColor);
 				if (spawn != null)
 				{
 					spawn.ContactCooldown = 1.2f;
@@ -499,6 +578,7 @@ public static class PokemonEncounterManager
 
 		float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 		PokemonMusicManager.UpdateOverworldMusic(dt);
+		CheckRandomWildLegendarySpawn(dt);
 		string locKey = loc.NameOrUniqueName;
 
 		bool hasExistingSpawns = _spawnsByLocation.TryGetValue(locKey, out var existingState) && existingState.Spawns.Count > 0;

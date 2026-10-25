@@ -2161,6 +2161,7 @@ public class Object : Item
 
 					heldObject.Value = ItemRegistry.Create<Object>("(O)107") ?? new Object("107", 1);
 					StardewValley.Pokemon.PokemonBreeding.AddIncubatingEgg(TileLocation, eggToIncubate);
+					StardewValley.Pokemon.PokemonSaveStore.SaveForFarmer(who?.UniqueMultiplayerID ?? 0L, StardewValley.Pokemon.PokemonSaveSection.Daycare);
 					MinutesUntilReady = 480;
 					showNextIndex.Value = true;
 					Game1.playSound("Ship");
@@ -4128,6 +4129,7 @@ public class Object : Item
 
 					heldObject.Value = ItemRegistry.Create<Object>("(O)107") ?? new Object("107", 1);
 					StardewValley.Pokemon.PokemonBreeding.AddIncubatingEgg(TileLocation, activeEgg);
+					StardewValley.Pokemon.PokemonSaveStore.SaveForFarmer(Game1.player?.UniqueMultiplayerID ?? 0L, StardewValley.Pokemon.PokemonSaveSection.Daycare);
 					MinutesUntilReady = 480;
 					showNextIndex.Value = true;
 					Game1.playSound("Ship");
@@ -4143,6 +4145,7 @@ public class Object : Item
 					{
 						var hatchedEgg = StardewValley.Pokemon.PokemonBreeding.GetIncubatingEgg(TileLocation);
 						StardewValley.Pokemon.PokemonBreeding.RemoveIncubatingEgg(TileLocation);
+						StardewValley.Pokemon.PokemonSaveStore.SaveForFarmer(Game1.player?.UniqueMultiplayerID ?? 0L, StardewValley.Pokemon.PokemonSaveSection.Daycare);
 						heldObject.Value = null;
 						readyForHarvest.Value = false;
 						showNextIndex.Value = false;

@@ -2990,6 +2990,7 @@ public class NPC : Character, IComparable
 
 		bool isHarvey = base.Name.Equals("Harvey", StringComparison.OrdinalIgnoreCase);
 		bool isDwarf = base.Name.Equals("Dwarf", StringComparison.OrdinalIgnoreCase);
+		bool isMarnie = base.Name.Equals("Marnie", StringComparison.OrdinalIgnoreCase);
 		Response[] choices = isHarvey
 			? new Response[3]
 			{
@@ -3004,15 +3005,26 @@ public class NPC : Character, IComparable
 					new Response("Battle", "Batalhar Pokémon!"),
 					new Response("DwarfHints", "⛏️ Comprar Dicas da Pokédex (Normal/Inicial/Lendário/Mítico)")
 				}
-				: new Response[2]
-				{
-					new Response("Talk", "Conversar"),
-					new Response("Battle", "Batalhar Pokémon!")
-				});
+				: (isMarnie
+					? new Response[3]
+					{
+						new Response("Talk", "Conversar"),
+						new Response("Battle", "Batalhar Pokémon!"),
+						new Response("Daycare", "🐣 Creche Pokémon (Cruzamento & Ovos)")
+					}
+					: new Response[2]
+					{
+						new Response("Talk", "Conversar"),
+						new Response("Battle", "Batalhar Pokémon!")
+					}));
 
 		l.createQuestionDialogue($"Olá, {who.Name}! O que gostaria de fazer?", choices, delegate(Farmer f, string whichAnswer)
 		{
-			if (whichAnswer == "DwarfHints")
+			if (whichAnswer == "Daycare")
+			{
+				Game1.activeClickableMenu = new StardewValley.Pokemon.PokemonDaycareMenu();
+			}
+			else if (whichAnswer == "DwarfHints")
 			{
 				Game1.activeClickableMenu = new StardewValley.Pokemon.PokemonDwarfHintMenu();
 			}

@@ -116,6 +116,46 @@ public static class PokemonCryManager
 	}
 
 	/// <summary>
+	/// Procura o arquivo .ogg autêntico de Gen 4-9 na pasta Content/Pokemon/Audio/cries.
+	/// </summary>
+	public static string ResolveOggPath(string speciesName)
+	{
+		try
+		{
+			var entry = PokemonPokedex.Instance?.GetEntry(speciesName);
+			int dex = entry?.Number ?? 0;
+			string key = NormalizeSpeciesKey(speciesName);
+
+			string[] candidateDirs =
+			{
+				Path.Combine(Game1.content.RootDirectory, "Pokemon", "Audio", "cries"),
+				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Pokemon", "Audio", "cries"),
+				@"D:\SteamLibrary\steamapps\common\Stardew Valley\Content\Pokemon\Audio\cries",
+				@"D:\Projetos\Nova pasta\PokeValley-Overhaul\src\Content\Pokemon\Audio\cries"
+			};
+
+			foreach (var dir in candidateDirs)
+			{
+				if (!Directory.Exists(dir)) continue;
+
+				if (dex > 0)
+				{
+					string byDex = Path.Combine(dir, $"{dex}.ogg");
+					if (File.Exists(byDex)) return byDex;
+				}
+
+				string byKey = Path.Combine(dir, $"{key}.ogg");
+				if (File.Exists(byKey)) return byKey;
+
+				string byWav = Path.Combine(dir, $"{key}.wav");
+				if (File.Exists(byWav)) return byWav;
+			}
+		}
+		catch { }
+		return null;
+	}
+
+	/// <summary>
 	/// Verifica se a espécie possui arquivo de cry nativo .wav.
 	/// </summary>
 	public static bool HasNativeCry(string speciesName)
@@ -131,6 +171,10 @@ public static class PokemonCryManager
 		if (HasNativeCry(speciesName))
 		{
 			return "WAV Original GBA (pokeemerald)";
+		}
+		if (!string.IsNullOrEmpty(ResolveOggPath(speciesName)))
+		{
+			return "Áudio Canônico Oficial (Gen 4-9)";
 		}
 		return "Síntese Chiptune Procedural (Gen 4-9)";
 	}
@@ -148,7 +192,7 @@ public static class PokemonCryManager
 				return cached;
 			}
 
-			// Tenta carregar WAV nativo
+			// 1. Tenta carregar WAV nativo GBA (Gen 1-3)
 			string wavPath = ResolveNativeWavPath(speciesName);
 			if (!string.IsNullOrEmpty(wavPath) && File.Exists(wavPath))
 			{
@@ -168,7 +212,27 @@ public static class PokemonCryManager
 				}
 			}
 
-			// Se não existe arquivo .wav nativo, sintetiza cry procedural com base no dex number
+			// 2. Tenta carregar OGG canônico oficial (Gen 4-9)
+			string oggPath = ResolveOggPath(speciesName);
+			if (!string.IsNullOrEmpty(oggPath) && File.Exists(oggPath))
+			{
+				try
+				{
+					using var stream = File.OpenRead(oggPath);
+					var sfx = SoundEffect.FromStream(stream, true);
+					if (sfx != null)
+					{
+						_cryCache[key] = sfx;
+						return sfx;
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"[PokemonCryManager] Erro ao carregar OGG '{oggPath}': {ex.Message}");
+				}
+			}
+
+			// 3. Fallback: síntese procedural diferenciada
 			try
 			{
 				var synth = GenerateProceduralCry(speciesName);
@@ -188,7 +252,7 @@ public static class PokemonCryManager
 	}
 
 	/// <summary>
-	/// Executa o cry da espécie com controle de volume e pitch.
+	/// Executa o cry da espécie com controle estrito de volume e master gain balanceado.
 	/// </summary>
 	public static bool PlayCry(string speciesName, float volumeMult = 1.0f, float pitch = 0.0f)
 	{
@@ -198,8 +262,10 @@ public static class PokemonCryManager
 			if (sfx != null)
 			{
 				float baseVol = Game1.options?.soundVolumeLevel ?? 0.7f;
-				float finalVol = Math.Clamp(baseVol * volumeMult, 0f, 1f);
-				if (finalVol > 0.01f)
+				// Master gain calibrado para alinhar perfeitamente com os SFX originais do Stardew Valley
+				const float CryMasterGain = 0.38f;
+				float finalVol = Math.Clamp(baseVol * volumeMult * CryMasterGain, 0f, 1f);
+				if (finalVol > 0.005f)
 				{
 					sfx.Play(finalVol, Math.Clamp(pitch, -1f, 1f), 0f);
 					return true;

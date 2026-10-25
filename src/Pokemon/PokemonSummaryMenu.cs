@@ -278,6 +278,7 @@ public class PokemonSummaryMenu : IClickableMenu
 
 				// Perform Swap
 				_mon.HeldItem = normalizedNew;
+				_mon.OnHeldItemChanged(oldHeld, normalizedNew);
 				ConsumeActiveItem(activeItem, isCursor);
 
 				string fullOldId = "(O)" + oldHeld;
@@ -301,6 +302,7 @@ public class PokemonSummaryMenu : IClickableMenu
 				if (Game1.player.addItemToInventoryBool(unequipped))
 				{
 					_mon.HeldItem = null;
+					_mon.OnHeldItemChanged(oldHeldItem, null);
 					PlayerParty.GetForFarmer(_farmer).SaveParty();
 					Game1.playSound("coin");
 					Game1.addHUDMessage(new HUDMessage($"Desequipou {unequipped.DisplayName} de {_mon.Nickname}!", 2));
@@ -320,6 +322,7 @@ public class PokemonSummaryMenu : IClickableMenu
 			if (PokemonHeldItemManager.IsHoldable(activeItem.ItemId))
 			{
 				_mon.HeldItem = PokemonHeldItemManager.NormalizeId(activeItem.ItemId);
+				_mon.OnHeldItemChanged(null, _mon.HeldItem);
 				ConsumeActiveItem(activeItem, isCursor);
 				PlayerParty.GetForFarmer(_farmer).SaveParty();
 				Game1.playSound("reward");
@@ -382,6 +385,7 @@ public class PokemonSummaryMenu : IClickableMenu
 			string fullId = "(O)" + oldHeld;
 			Item returned = ItemRegistry.Create(fullId, 1, 0, allowNull: true) ?? new StardewValley.Object(oldHeld, 1);
 			_mon.HeldItem = null;
+			_mon.OnHeldItemChanged(oldHeld, null);
 			if (returned != null)
 			{
 				Game1.player.addItemToInventoryBool(returned);
@@ -415,6 +419,7 @@ public class PokemonSummaryMenu : IClickableMenu
 		if (itemToEquip != null)
 		{
 			_mon.HeldItem = PokemonHeldItemManager.NormalizeId(itemToEquip.ItemId);
+			_mon.OnHeldItemChanged(null, _mon.HeldItem);
 			Game1.player.Items.ReduceId(itemToEquip.QualifiedItemId, 1);
 			PlayerParty.GetForFarmer(_farmer).SaveParty();
 			Game1.playSound("reward");

@@ -932,8 +932,10 @@ public class FishingRod : Tool
 				var spec = PokemonSpecies.Get("Lugia");
 				if (spec != null)
 				{
-					var wildInst = new PokemonInstance(spec, 70, isShiny: PokemonEncounterManager.RollWildShiny());
-					Game1.addHUDMessage(new HUDMessage("🌊 O Sino das Marés ressoou... O guardião dos mares Lugia mordeu a isca!", 2));
+					int encLevel = PokemonEncounterManager.GetCanonicalLegendaryEncounterLevel(spec.Name);
+					var wildInst = new PokemonInstance(spec, encLevel, isShiny: PokemonEncounterManager.RollWildShiny());
+					Color chatColor = PokemonCutsceneManager.DetermineElementalColor(spec);
+					Game1.chatBox?.addMessage($"★ {farmerUser.Name} pescou o lendário {spec.Name}!", chatColor);
 					doneFishing(farmerUser, consumeBaitAndTackle: true);
 					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
 					return;
@@ -954,8 +956,10 @@ public class FishingRod : Tool
 				var spec = PokemonSpecies.Get("Kyogre");
 				if (spec != null)
 				{
-					var wildInst = new PokemonInstance(spec, 70, isShiny: PokemonEncounterManager.RollWildShiny());
-					Game1.addHUDMessage(new HUDMessage("⛈️ As águas rugiram com a Esfera Azul... O titã primordial Kyogre mordeu a isca!", 2));
+					int encLevel = PokemonEncounterManager.GetCanonicalLegendaryEncounterLevel(spec.Name);
+					var wildInst = new PokemonInstance(spec, encLevel, isShiny: PokemonEncounterManager.RollWildShiny());
+					Color chatColor = PokemonCutsceneManager.DetermineElementalColor(spec);
+					Game1.chatBox?.addMessage($"★ {farmerUser.Name} pescou o lendário {spec.Name}!", chatColor);
 					doneFishing(farmerUser, consumeBaitAndTackle: true);
 					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
 					return;
@@ -972,8 +976,10 @@ public class FishingRod : Tool
 				var spec = PokemonSpecies.Get("Manaphy");
 				if (spec != null)
 				{
-					var wildInst = new PokemonInstance(spec, 70, isShiny: PokemonEncounterManager.RollWildShiny());
-					Game1.addHUDMessage(new HUDMessage("👑 A Coroa do Oceano brilhou! O Príncipe dos Mares Manaphy foi fisgado!", 2));
+					int encLevel = PokemonEncounterManager.GetCanonicalLegendaryEncounterLevel(spec.Name);
+					var wildInst = new PokemonInstance(spec, encLevel, isShiny: PokemonEncounterManager.RollWildShiny());
+					Color chatColor = PokemonCutsceneManager.DetermineElementalColor(spec);
+					Game1.chatBox?.addMessage($"★ {farmerUser.Name} pescou o lendário {spec.Name}!", chatColor);
 					doneFishing(farmerUser, consumeBaitAndTackle: true);
 					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
 					return;
@@ -990,8 +996,10 @@ public class FishingRod : Tool
 				var spec = PokemonSpecies.Get("Phione");
 				if (spec != null)
 				{
-					var wildInst = new PokemonInstance(spec, 70, isShiny: PokemonEncounterManager.RollWildShiny());
-					Game1.addHUDMessage(new HUDMessage("💧 A Lágrima das Correntes atraiu Phione à sua linha de pesca!", 2));
+					int encLevel = PokemonEncounterManager.GetCanonicalLegendaryEncounterLevel(spec.Name);
+					var wildInst = new PokemonInstance(spec, encLevel, isShiny: PokemonEncounterManager.RollWildShiny());
+					Color chatColor = PokemonCutsceneManager.DetermineElementalColor(spec);
+					Game1.chatBox?.addMessage($"★ {farmerUser.Name} pescou o lendário {spec.Name}!", chatColor);
 					doneFishing(farmerUser, consumeBaitAndTackle: true);
 					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
 					return;
