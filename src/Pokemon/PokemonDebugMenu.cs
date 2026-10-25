@@ -794,7 +794,34 @@ public class PokemonDebugMenu : IClickableMenu
 							? lb.name.Substring("leg_habitat_".Length)
 							: lb.name.Substring("leg_spawn_".Length);
 
-						var (loc, tx, ty, itemId, itemName) = GetLegendaryHabitat(monName);
+						var (loc, tx, ty, itemId, itemName, weather, targetTime, targetSeason) = GetLegendaryHabitat(monName);
+
+						// Environmental Triggers: Apply weather, time of day and season automatically for in-game testing
+						if (weather == "Tempestade")
+						{
+							Game1.isRaining = true;
+							Game1.isLightning = true;
+						}
+						else if (weather == "Chuva")
+						{
+							Game1.isRaining = true;
+							Game1.isLightning = false;
+						}
+						else if (weather == "Ensolarado")
+						{
+							Game1.isRaining = false;
+							Game1.isLightning = false;
+						}
+
+						if (targetTime > 0)
+						{
+							Game1.timeOfDay = targetTime;
+						}
+
+						if (targetSeason.HasValue)
+						{
+							Game1.season = targetSeason.Value;
+						}
 
 						// Grant summon relic item
 						if (!string.IsNullOrEmpty(itemId))
@@ -802,11 +829,11 @@ public class PokemonDebugMenu : IClickableMenu
 							Game1.player.addItemToInventory(ItemRegistry.Create<Object>("(O)" + itemId) ?? new Object(itemId, 1));
 						}
 
-						// Teleport directly to lore-accurate Valley habitat
+						// Teleport directly to 100% verified walkable habitat coordinates
 						Game1.warpFarmer(loc, tx, ty, 2);
 						Game1.playSound("wand");
 						exitThisMenuNoSound();
-						Game1.addHUDMessage(new HUDMessage($"🧭 Teleportado para o habitat de {monName} em {loc} ({tx}, {ty})! Relíquia '{itemName}' concedida.", 2));
+						Game1.addHUDMessage(new HUDMessage($"🧭 Habitat de {monName} em {loc} ({tx}, {ty})! Clima/horário ajustados. Segure '{itemName}' na mão para invocar!", 2));
 						return;
 					}
 				}
@@ -2461,51 +2488,124 @@ public class PokemonDebugMenu : IClickableMenu
 		return pillW;
 	}
 
-	public static (string loc, int x, int y, string itemId, string itemName) GetLegendaryHabitat(string name)
+	public static (string loc, int x, int y, string itemId, string itemName, string weather, int timeOfDay, Season? season) GetLegendaryHabitat(string name)
 	{
 		return name switch
 		{
-			"Articuno" => ("UndergroundMine", 18, 13, "Poke_FreezingFeather", "Pena Glacial"),
-			"Zapdos" => ("Mountain", 32, 44, "Poke_ElectricFeather", "Pena Elétrica"),
-			"Moltres" => ("Caldera", 28, 28, "Poke_FlameFeather", "Pena de Chamas"),
-			"Mewtwo" => ("SkullCave", 18, 18, "Poke_BerserkGene", "Gene Berserk"),
-			"Mew" => ("IslandSouthEast", 22, 18, "Poke_OldSeaMap", "Mapa do Mar Antigo"),
-			"Raikou" => ("Woods", 15, 20, "Poke_ClearBell", "Sino Claro"),
-			"Entei" => ("Mountain", 25, 30, "Poke_ClearBell", "Sino Claro"),
-			"Suicune" => ("Beach", 20, 15, "Poke_ClearBell", "Sino Claro"),
-			"Lugia" => ("Submarine", 12, 12, "Poke_TidalBell", "Sino das Marés"),
-			"Ho-Oh" => ("Summit", 22, 14, "Poke_RainbowWing", "Asa do Arco-Íris"),
-			"Celebi" => ("Woods", 28, 15, "Poke_GSBall", "GS Ball"),
-			"Regirock" => ("UndergroundMine", 15, 10, "Poke_RelicCrown", "Coroa Relíquia"),
-			"Regice" => ("UndergroundMine", 15, 10, "Poke_RelicCrown", "Coroa Relíquia"),
-			"Registeel" => ("UndergroundMine", 15, 10, "Poke_RelicCrown", "Coroa Relíquia"),
-			"Latias" => ("IslandWest", 30, 40, "Poke_EonFlute", "Flauta Eon"),
-			"Latios" => ("Beach", 40, 20, "Poke_EonFlute", "Flauta Eon"),
-			"Kyogre" => ("Beach", 28, 35, "Poke_BlueOrb", "Orbe Azul"),
-			"Groudon" => ("Caldera", 16, 22, "Poke_RedOrb", "Orbe Vermelho"),
-			"Rayquaza" => ("Summit", 21, 10, "Poke_JadeOrb", "Orbe de Jade"),
-			"Jirachi" => ("Mountain", 50, 10, "Poke_CometShard", "Fragmento de Cometa"),
-			"Deoxys" => ("Railroad", 15, 52, "Poke_MeteoritePiece", "Pedaço de Meteorito"),
-			"Dialga" => ("Summit", 21, 12, "Poke_AdamantOrb", "Orbe Diamante"),
-			"Palkia" => ("Summit", 23, 12, "Poke_LustrousOrb", "Orbe Pérola"),
-			"Giratina" => ("SkullCave", 15, 15, "Poke_GriseousOrb", "Orbe Platina"),
-			"Darkrai" => ("Town", 55, 18, "Poke_DarkraiNightmare", "Pesadelo Obscuro"),
-			"Shaymin" => ("Forest", 60, 40, "Poke_GracideaFlower", "Flor Gracídea"),
-			"Arceus" => ("Summit", 22, 8, "Poke_AzureFlute", "Flauta Azure"),
-			"Reshiram" => ("Caldera", 24, 24, "Poke_LightStone", "Pedra da Luz"),
-			"Zekrom" => ("Desert", 18, 32, "Poke_DarkStone", "Pedra das Trevas"),
-			"Kyurem" => ("UndergroundMine", 18, 13, "Poke_DNA_Splicers", "Fundidores de DNA"),
-			"Xerneas" => ("Woods", 35, 18, "Poke_FairyFeather", "Pena Feérica"),
-			"Yveltal" => ("SkullCave", 25, 25, "Poke_DarkFeather", "Pena Sombria"),
-			"Zygarde" => ("UndergroundMine", 15, 15, "Poke_ZygardeCube", "Cubo Zygarde"),
-			"Solgaleo" => ("Desert", 34, 42, "Poke_SunFlute", "Flauta do Sol"),
-			"Lunala" => ("Beach", 18, 25, "Poke_MoonFlute", "Flauta da Lua"),
-			"Necrozma" => ("SkullCave", 30, 30, "Poke_UltranecroziumZ", "Ultralnecrozium Z"),
-			"Zacian" => ("Forest", 45, 50, "Poke_RustedSword", "Espada Enferrujada"),
-			"Zamazenta" => ("Mountain", 35, 30, "Poke_RustedShield", "Escudo Enferrujado"),
-			"Koraidon" => ("Caldera", 20, 20, "Poke_KoraidonFeather", "Asa Passada"),
-			"Miraidon" => ("Railroad", 25, 45, "Poke_MiraidonCore", "Núcleo Futuro"),
-			_ => ("Mountain", 48, 12, "Poke_RainbowWing", "Relíquia Lendária")
+			"Articuno" => ("Mine", 18, 10, "Poke_FreezingFeather", "Pena Glacial", "Qualquer", 0, Season.Winter),
+			"Zapdos" => ("Mountain", 32, 8, "Poke_ElectricFeather", "Pena Elétrica", "Tempestade", 0, null),
+			"Moltres" => ("Caldera", 25, 31, "Poke_FlameFeather", "Pena de Chamas", "Qualquer", 0, Season.Summer),
+			"Mewtwo" => ("SkullCave", 3, 4, "Poke_BerserkGene", "Gene Berserk", "Qualquer", 2200, null),
+			"Mew" => ("Island_SE", 22, 18, "Poke_OldSeaMap", "Mapa do Mar Antigo", "Ensolarado", 1200, Season.Spring),
+			"Raikou" => ("Woods", 28, 15, "Poke_RaikouBell", "Sino do Trovão", "Tempestade", 2200, null),
+			"Entei" => ("Mountain", 48, 12, "Poke_EnteiBell", "Sino do Magma", "Ensolarado", 1200, Season.Summer),
+			"Suicune" => ("Beach", 28, 35, "Poke_SuicuneBell", "Sino das Ondas", "Chuva", 2200, Season.Fall),
+			"Lugia" => ("Submarine", 12, 5, "Poke_TidalBell", "Sino das Marés", "Qualquer", 2200, Season.Winter),
+			"Ho-Oh" => ("Summit", 11, 13, "Poke_RainbowWing", "Asa do Arco-Íris", "Ensolarado", 1200, null),
+			"Celebi" => ("Woods", 15, 15, "Poke_GSBall", "GS Ball", "Ensolarado", 1200, Season.Spring),
+			"Regirock" => ("Mine", 21, 12, "Poke_RelicRock", "Núcleo de Pedra Ancestral", "Qualquer", 0, null),
+			"Regice" => ("Mine", 18, 10, "Poke_RelicIce", "Núcleo de Gelo Eterno", "Qualquer", 0, Season.Winter),
+			"Registeel" => ("Mine", 21, 12, "Poke_RelicSteel", "Núcleo de Aço Cósmico", "Qualquer", 0, null),
+			"Latias" => ("Island_W", 30, 40, "Poke_EonFlute_Latias", "Flauta Eon Escarlate", "Ensolarado", 1200, Season.Spring),
+			"Latios" => ("Beach", 40, 20, "Poke_EonFlute_Latios", "Flauta Eon Anil", "Ensolarado", 1200, Season.Summer),
+			"Kyogre" => ("Beach", 28, 35, "Poke_BlueOrb", "Esfera Azul Primordial", "Tempestade", 0, null),
+			"Groudon" => ("Caldera", 21, 38, "Poke_RedOrb", "Esfera Vermelha Primordial", "Ensolarado", 1200, Season.Summer),
+			"Rayquaza" => ("Summit", 11, 13, "Poke_JadeOrb", "Esfera de Jade", "Tempestade", 2200, null),
+			"Jirachi" => ("Mountain", 48, 12, "Poke_CometShard", "Fragmento de Cometa", "Ensolarado", 2200, Season.Summer),
+			"Deoxys" => ("Railroad", 18, 42, "Poke_MeteoritePiece", "Pedaço de Meteorito", "Qualquer", 2200, null),
+			"Uxie" => ("Mountain", 48, 12, "Poke_MindGem", "Gema da Sabedoria", "Qualquer", 2200, null),
+			"Mesprit" => ("Woods", 15, 15, "Poke_EmotionGem", "Gema da Emoção", "Qualquer", 1200, Season.Spring),
+			"Azelf" => ("Forest", 45, 50, "Poke_ValorGem", "Gema da Bravura", "Qualquer", 1200, null),
+			"Dialga" => ("Summit", 11, 13, "Poke_AdamantOrb", "Adamant Orb", "Qualquer", 1200, null),
+			"Palkia" => ("Summit", 10, 15, "Poke_LustrousOrb", "Lustrous Orb", "Qualquer", 2200, null),
+			"Heatran" => ("Caldera", 25, 31, "Poke_MagmaStone", "Pedra de Magma", "Qualquer", 0, Season.Summer),
+			"Regigigas" => ("Mine", 18, 10, "Poke_ColossalKey", "Chave Colossal", "Qualquer", 0, null),
+			"Giratina" => ("Sewer", 16, 12, "Poke_GriseousCore", "Griseous Core", "Qualquer", 2200, null),
+			"Cresselia" => ("Beach", 28, 35, "Poke_LunarWing", "Pena Lunar", "Ensolarado", 2200, null),
+			"Phione" => ("Beach", 60, 35, "Poke_SeaDriftTear", "Lágrima das Correntes", "Chuva", 1200, Season.Summer),
+			"Manaphy" => ("Beach", 80, 40, "Poke_SeaCrown", "Coroa do Oceano", "Chuva", 1200, Season.Summer),
+			"Darkrai" => ("Railroad", 25, 45, "Poke_MemberCard", "Cartão de Membro Sombrio", "Qualquer", 2200, Season.Fall),
+			"Shaymin" => ("Forest", 60, 40, "Poke_GracideaFlower", "Flor Gracídea", "Ensolarado", 1200, Season.Spring),
+			"Arceus" => ("Summit", 11, 13, "Poke_AzureFlute", "Flauta Azure", "Ensolarado", 1200, null),
+			"Victini" => ("Island_SE", 22, 18, "Poke_LibertyPass", "Passe da Liberdade", "Ensolarado", 1200, null),
+			"Cobalion" => ("Mine", 21, 12, "Poke_IronWillRelic", "Relíquia da Lâmina de Ferro", "Qualquer", 0, null),
+			"Terrakion" => ("Mountain", 103, 14, "Poke_StoneWillRelic", "Relíquia da Lâmina de Rocha", "Qualquer", 0, null),
+			"Virizion" => ("Woods", 28, 15, "Poke_GrassWillRelic", "Relíquia da Lâmina Esmeralda", "Ensolarado", 1200, Season.Spring),
+			"Tornadus" => ("Mountain", 32, 8, "Poke_CycloneMirror", "Espelho dos Ciclones", "Tempestade", 0, Season.Fall),
+			"Thundurus" => ("Railroad", 18, 42, "Poke_BoltMirror", "Espelho dos Trovões", "Tempestade", 2200, Season.Summer),
+			"Reshiram" => ("Caldera", 25, 31, "Poke_LightStone", "Light Stone", "Ensolarado", 1200, Season.Summer),
+			"Zekrom" => ("Desert", 18, 32, "Poke_DarkStone", "Dark Stone", "Qualquer", 2200, null),
+			"Landorus" => ("Forest", 60, 40, "Poke_FertilityMirror", "Espelho da Fertilidade", "Ensolarado", 1200, Season.Spring),
+			"Kyurem" => ("Mine", 18, 10, "Poke_DNA_Splicers", "Fundidores de DNA", "Qualquer", 0, Season.Winter),
+			"Keldeo" => ("Forest", 45, 50, "Poke_SecretSwordRelic", "Relíquia da Espada Secreta", "Chuva", 1200, null),
+			"Meloetta" => ("Town", 55, 16, "Poke_RelicSongSheet", "Partitura Ancestral", "Qualquer", 2200, Season.Spring),
+			"Genesect" => ("Mine", 21, 12, "Poke_DriveBurn", "Burn Drive Tecnológico", "Qualquer", 0, null),
+			"Xerneas" => ("Woods", 28, 15, "Poke_LifeTreeRoot", "Raiz da Árvore da Vida", "Ensolarado", 1200, Season.Spring),
+			"Yveltal" => ("SkullCave", 3, 4, "Poke_DestructionCocoon", "Fragmento de Casulo Noturno", "Qualquer", 2200, Season.Fall),
+			"Zygarde" => ("Mine", 21, 12, "Poke_ZygardeCube", "Cubo de Zygarde", "Qualquer", 0, null),
+			"Diancie" => ("Mine", 18, 10, "Poke_PinkDiamondRelic", "Diamante Cor-de-Rosa", "Qualquer", 0, null),
+			"Hoopa" => ("Desert", 33, 43, "Poke_PrisonBottle", "Garrafa da Prisão", "Qualquer", 2200, null),
+			"Volcanion" => ("Caldera", 21, 38, "Poke_SteamCore", "Núcleo de Caldeira Térmica", "Chuva", 0, Season.Summer),
+			"Type: Null" => ("Mine", 21, 12, "Poke_SyntheticHelmet", "Máscara de Controle de Fera", "Qualquer", 0, null),
+			"Silvally" => ("Mine", 21, 12, "Poke_MemoryDrive_Normal", "Disco de Memória RKS", "Qualquer", 0, null),
+			"Tapu Koko" => ("Mountain", 32, 8, "Poke_KokoMask", "Máscara Trovejante de Tapu", "Tempestade", 1200, Season.Summer),
+			"Tapu Lele" => ("Woods", 28, 15, "Poke_LeleMask", "Máscara Floral de Tapu", "Ensolarado", 1200, Season.Spring),
+			"Tapu Bulu" => ("Forest", 60, 40, "Poke_BuluMask", "Máscara Telúrica de Tapu", "Ensolarado", 1200, Season.Fall),
+			"Tapu Fini" => ("Beach", 28, 35, "Poke_FiniMask", "Máscara das Névoas de Tapu", "Chuva", 2200, null),
+			"Cosmog" => ("Summit", 11, 13, "Poke_NebulaCore", "Núcleo de Poeira Estelar", "Ensolarado", 2200, null),
+			"Cosmoem" => ("Summit", 10, 15, "Poke_CosmicCocoon", "Crisálida das Estrelas", "Ensolarado", 2200, null),
+			"Solgaleo" => ("Desert", 33, 43, "Poke_SunFlute", "Flauta do Sol", "Ensolarado", 1200, Season.Summer),
+			"Lunala" => ("Beach", 28, 35, "Poke_MoonFlute", "Flauta da Lua", "Ensolarado", 2200, null),
+			"Nihilego" => ("Mine", 18, 10, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Qualquer", 2200, null),
+			"Buzzwole" => ("Forest", 45, 50, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Ensolarado", 1200, Season.Summer),
+			"Pheromosa" => ("Desert", 18, 32, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Qualquer", 2200, null),
+			"Xurkitree" => ("Railroad", 18, 42, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Tempestade", 2200, null),
+			"Celesteela" => ("Summit", 11, 13, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Qualquer", 2200, null),
+			"Kartana" => ("Woods", 28, 15, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Ensolarado", 1200, Season.Fall),
+			"Guzzlord" => ("Sewer", 30, 20, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Qualquer", 2200, null),
+			"Necrozma" => ("SkullCave", 3, 4, "Poke_UltranecroziumZ", "Ultralnecrozium Z", "Qualquer", 2200, null),
+			"Magearna" => ("Town", 55, 16, "Poke_SoulHeartRelic", "Alma Coração Mecânica", "Qualquer", 1200, null),
+			"Marshadow" => ("BugLand", 31, 20, "Poke_MarshadiumZ", "Marshadium Z", "Qualquer", 2200, null),
+			"Poipole" => ("BugLand", 31, 20, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Qualquer", 0, null),
+			"Naganadel" => ("BugLand", 31, 20, "Poke_DragonPoisonBarb", "Ferrão Venenoso de Dragão", "Qualquer", 2200, null),
+			"Stakataka" => ("Mountain", 103, 14, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Qualquer", 0, null),
+			"Blacephalon" => ("Railroad", 25, 45, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Ensolarado", 2200, Season.Summer),
+			"Zeraora" => ("Mountain", 32, 8, "Poke_ThunderClawRelic", "Garra da Fagulha Plasma", "Tempestade", 1200, Season.Summer),
+			"Meltan" => ("Mine", 18, 10, "Poke_MysteryBox_Steel", "Caixa Misteriosa de Aço Líquido", "Qualquer", 0, null),
+			"Melmetal" => ("Mine", 21, 12, "Poke_GigantamaxNut", "Porca Hexagonal Titânica", "Qualquer", 0, null),
+			"Zacian" => ("Forest", 45, 50, "Poke_RustedSword", "Espada Enferrujada", "Ensolarado", 1200, null),
+			"Zamazenta" => ("Mountain", 48, 12, "Poke_RustedShield", "Escudo Enferrujado", "Ensolarado", 1200, null),
+			"Eternatus" => ("Summit", 11, 13, "Poke_WishingStar", "Estrela dos Desejos Corrompida", "Tempestade", 2200, null),
+			"Kubfu" => ("Desert", 18, 32, "Poke_MartialScroll", "Pergaminho das Artes Marciais", "Ensolarado", 1200, null),
+			"Urshifu" => ("Caldera", 25, 31, "Poke_ScrollOfDarkness", "Pergaminho das Trevas", "Qualquer", 2200, null),
+			"Zarude" => ("Woods", 28, 15, "Poke_JungleVineRelic", "Cipó da Selva Primordial", "Qualquer", 2200, Season.Summer),
+			"Regieleki" => ("Railroad", 18, 42, "Poke_ElekiPattern", "Padrão de Raios em Braille", "Tempestade", 0, null),
+			"Regidrago" => ("Caldera", 21, 38, "Poke_DragoPattern", "Mandíbula de Dragão em Braille", "Qualquer", 0, null),
+			"Glastrier" => ("Summit", 11, 13, "Poke_IcerootCarrot", "Cenoura Gélida da Tundra", "Qualquer", 1200, Season.Winter),
+			"Spectrier" => ("Woods", 15, 15, "Poke_ShaderootCarrot", "Cenoura Espectral das Sombras", "Qualquer", 2200, Season.Fall),
+			"Calyrex" => ("Forest", 60, 40, "Poke_ReinsOfUnity", "Rédeas da Unidade Sagrada", "Ensolarado", 1200, Season.Spring),
+			"Enamorus" => ("Woods", 28, 15, "Poke_RevealGlass_Love", "Espelho do Amor da Primavera", "Ensolarado", 1200, Season.Spring),
+			"Wo-Chien" => ("Forest", 45, 50, "Poke_RuinousLeaves", "Tábua de Madeira da Ruína", "Chuva", 2200, Season.Fall),
+			"Chien-Pao" => ("Summit", 11, 13, "Poke_RuinousSword", "Espada Fraturada de Gelo", "Qualquer", 2200, Season.Winter),
+			"Ting-Lu" => ("Mountain", 103, 14, "Poke_RuinousVessel", "Vaso de Pedra da Ruína", "Qualquer", 0, null),
+			"Chi-Yu" => ("Caldera", 25, 31, "Poke_RuinousBeads", "Contas de Fogo da Ruína", "Qualquer", 2200, Season.Summer),
+			"Roaring Moon" => ("SkullCave", 3, 4, "Poke_BoosterEnergy_Past", "Cápsula de Energia Ancestral", "Qualquer", 2200, null),
+			"Iron Valiant" => ("Mine", 21, 12, "Poke_BoosterEnergy_Future", "Cápsula de Energia Futurista", "Qualquer", 0, null),
+			"Koraidon" => ("Caldera", 25, 31, "Poke_KoraidonFeather", "Pena do Passado Selvagem", "Ensolarado", 1200, Season.Summer),
+			"Miraidon" => ("Railroad", 25, 45, "Poke_MiraidonCore", "Núcleo de Propulsão Futura", "Tempestade", 2200, null),
+			"Walking Wake" => ("Beach", 28, 35, "Poke_BoosterEnergy_Past", "Cápsula de Energia Ancestral", "Ensolarado", 1200, Season.Summer),
+			"Iron Leaves" => ("Woods", 28, 15, "Poke_BoosterEnergy_Future", "Cápsula de Energia Futurista", "Qualquer", 1200, null),
+			"Okidogi" => ("Mountain", 48, 12, "Poke_ToxicChain_Oki", "Corrente Tóxica de Força", "Qualquer", 1200, null),
+			"Munkidori" => ("Woods", 15, 15, "Poke_ToxicChain_Munk", "Corrente Tóxica da Astúcia", "Qualquer", 2200, null),
+			"Fezandipiti" => ("Forest", 45, 50, "Poke_ToxicChain_Fez", "Corrente Tóxica da Beleza", "Qualquer", 1200, Season.Spring),
+			"Ogerpon" => ("Woods", 28, 15, "Poke_TealMask", "Máscara Turquesa de Hera", "Ensolarado", 1200, Season.Spring),
+			"Gouging Fire" => ("Caldera", 21, 38, "Poke_BoosterEnergy_Past", "Cápsula de Energia Ancestral", "Ensolarado", 1200, Season.Summer),
+			"Raging Bolt" => ("Mountain", 32, 8, "Poke_BoosterEnergy_Past", "Cápsula de Energia Ancestral", "Tempestade", 1200, null),
+			"Iron Boulder" => ("Mountain", 103, 14, "Poke_BoosterEnergy_Future", "Cápsula de Energia Futurista", "Qualquer", 0, null),
+			"Iron Crown" => ("Mine", 21, 12, "Poke_BoosterEnergy_Future", "Cápsula de Energia Futurista", "Qualquer", 0, null),
+			"Terapagos" => ("Caldera", 25, 31, "Poke_IndigoDisk", "Disco Índigo Cristalino", "Qualquer", 0, null),
+			"Pecharunt" => ("Town", 55, 16, "Poke_MythicalPechaMochi", "Mochi Venenoso de Pêssego", "Qualquer", 2200, Season.Fall),
+			_ => ("Mountain", 48, 12, "Poke_RainbowWing", "Relíquia Lendária", "Qualquer", 0, null)
 		};
 	}
 

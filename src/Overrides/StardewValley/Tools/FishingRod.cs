@@ -19,6 +19,7 @@ using StardewValley.Network;
 using StardewValley.Objects;
 using StardewValley.SpecialOrders;
 using StardewValley.TokenizableStrings;
+using StardewValley.Pokemon;
 
 namespace StardewValley.Tools;
 
@@ -905,6 +906,121 @@ public class FishingRod : Tool
 
 	public void startMinigameEndFunction(Item fish)
 	{
+		// PokeValley: Marine Legendary Fishing Encounters (Lugia, Kyogre, Manaphy, Phione)
+		Farmer farmerUser = lastUser;
+		if (farmerUser != null && farmerUser.IsLocalPlayer)
+		{
+			GameLocation loc = farmerUser.currentLocation;
+			string locName = loc?.NameOrUniqueName ?? "";
+
+			// 1. Lugia: Submarine or Beach at night with Tidal Bell / Silver Wing
+			bool isLugiaSpot = (loc is Submarine || locName.Contains("Submarine") || (loc is Beach && Game1.timeOfDay >= 1800));
+			bool hasTidalBell = farmerUser.Items.ContainsId("Poke_TidalBell") || farmerUser.Items.ContainsId("(O)Poke_TidalBell") ||
+			                    farmerUser.Items.ContainsId("Poke_SilverWing") || farmerUser.Items.ContainsId("(O)Poke_SilverWing") ||
+			                    (farmerUser.ActiveObject != null && (farmerUser.ActiveObject.ItemId == "Poke_TidalBell" || farmerUser.ActiveObject.ItemId == "Poke_SilverWing"));
+			if (isLugiaSpot && hasTidalBell)
+			{
+				farmerUser.removeFirstOfThisItemFromInventory("Poke_TidalBell");
+				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_TidalBell");
+				farmerUser.removeFirstOfThisItemFromInventory("Poke_SilverWing");
+				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_SilverWing");
+				if (farmerUser.ActiveObject != null && (farmerUser.ActiveObject.ItemId == "Poke_TidalBell" || farmerUser.ActiveObject.ItemId == "Poke_SilverWing"))
+				{
+					farmerUser.ActiveObject.ConsumeStack(1);
+					if (farmerUser.ActiveObject.Stack <= 0) farmerUser.ActiveObject = null;
+				}
+
+				Game1.playSound("thunder");
+				Rumble.rumble(0.9f, 600f);
+				Game1.screenGlowOnce(Color.DeepSkyBlue, hold: false);
+				var spec = PokemonSpecies.Get("Lugia");
+				if (spec != null)
+				{
+					var wildInst = new PokemonInstance(spec, 70, isShiny: PokemonEncounterManager.RollWildShiny());
+					Game1.addHUDMessage(new HUDMessage("🌊 O Sino das Marés ressoou... O guardião dos mares Lugia mordeu a isca!", 2));
+					doneFishing(farmerUser, consumeBaitAndTackle: true);
+					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
+					return;
+				}
+			}
+
+			// 2. Kyogre: Beach/Ocean during Rain/Storm with Blue Orb
+			bool isKyogreSpot = (loc is Beach || locName.Contains("Beach") || locName.Contains("Island")) && Game1.isRaining;
+			bool hasBlueOrb = farmerUser.Items.ContainsId("Poke_BlueOrb") || farmerUser.Items.ContainsId("(O)Poke_BlueOrb") ||
+			                  (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_BlueOrb");
+			if (isKyogreSpot && hasBlueOrb)
+			{
+				farmerUser.removeFirstOfThisItemFromInventory("Poke_BlueOrb");
+				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_BlueOrb");
+				if (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_BlueOrb")
+				{
+					farmerUser.ActiveObject.ConsumeStack(1);
+					if (farmerUser.ActiveObject.Stack <= 0) farmerUser.ActiveObject = null;
+				}
+
+				Game1.playSound("thunder");
+				Rumble.rumble(0.95f, 700f);
+				Game1.screenGlowOnce(Color.RoyalBlue, hold: false);
+				var spec = PokemonSpecies.Get("Kyogre");
+				if (spec != null)
+				{
+					var wildInst = new PokemonInstance(spec, 70, isShiny: PokemonEncounterManager.RollWildShiny());
+					Game1.addHUDMessage(new HUDMessage("⛈️ As águas rugiram com a Esfera Azul... O titã primordial Kyogre mordeu a isca!", 2));
+					doneFishing(farmerUser, consumeBaitAndTackle: true);
+					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
+					return;
+				}
+			}
+
+			// 3. Manaphy: Beach during Rain with Sea Crown
+			bool hasSeaCrown = farmerUser.Items.ContainsId("Poke_SeaCrown") || farmerUser.Items.ContainsId("(O)Poke_SeaCrown") ||
+			                   (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_SeaCrown");
+			if ((loc is Beach || locName.Contains("Beach")) && Game1.isRaining && hasSeaCrown)
+			{
+				farmerUser.removeFirstOfThisItemFromInventory("Poke_SeaCrown");
+				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_SeaCrown");
+				if (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_SeaCrown")
+				{
+					farmerUser.ActiveObject.ConsumeStack(1);
+					if (farmerUser.ActiveObject.Stack <= 0) farmerUser.ActiveObject = null;
+				}
+
+				var spec = PokemonSpecies.Get("Manaphy");
+				if (spec != null)
+				{
+					var wildInst = new PokemonInstance(spec, 70, isShiny: PokemonEncounterManager.RollWildShiny());
+					Game1.addHUDMessage(new HUDMessage("👑 A Coroa do Oceano brilhou! O Príncipe dos Mares Manaphy foi fisgado!", 2));
+					doneFishing(farmerUser, consumeBaitAndTackle: true);
+					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
+					return;
+				}
+			}
+
+			// 4. Phione: Beach with Sea Drift Tear
+			bool hasSeaTear = farmerUser.Items.ContainsId("Poke_SeaDriftTear") || farmerUser.Items.ContainsId("(O)Poke_SeaDriftTear") ||
+			                  (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_SeaDriftTear");
+			if ((loc is Beach || locName.Contains("Beach")) && hasSeaTear)
+			{
+				farmerUser.removeFirstOfThisItemFromInventory("Poke_SeaDriftTear");
+				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_SeaDriftTear");
+				if (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_SeaDriftTear")
+				{
+					farmerUser.ActiveObject.ConsumeStack(1);
+					if (farmerUser.ActiveObject.Stack <= 0) farmerUser.ActiveObject = null;
+				}
+
+				var spec = PokemonSpecies.Get("Phione");
+				if (spec != null)
+				{
+					var wildInst = new PokemonInstance(spec, 70, isShiny: PokemonEncounterManager.RollWildShiny());
+					Game1.addHUDMessage(new HUDMessage("💧 A Lágrima das Correntes atraiu Phione à sua linha de pesca!", 2));
+					doneFishing(farmerUser, consumeBaitAndTackle: true);
+					Game1.activeClickableMenu = new PokemonBattleMenu(wildInst, isWild: true);
+					return;
+				}
+			}
+		}
+
 		fish.TryGetTempData<bool>("IsBossFish", out bossFish);
 		Farmer farmer = lastUser;
 		beginReelingEvent.Fire();
