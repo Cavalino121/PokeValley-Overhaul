@@ -337,202 +337,238 @@ public static class PokemonItemManager
 		RegisterSimple(objectData, "Poke_TeraShard_Stellar", "Tera Shard (Stellar)", "Fragmento cristalino prismático supremo. Permite despertar a forma estelar.", 1500, 72);
 
 		// Register All 113 Legendary & Mythical Encounter Relics (Complete Matrix)
-		RegisterSimple(objectData, "Poke_AdamantOrb", "Adamant Orb", "Esfera que distorce o espaço-tempo com o poder de Dialga.", 15000, 74);
-		RegisterSimple(objectData, "AdamantOrb", "Adamant Orb", "Esfera que distorce o espaço-tempo com o poder de Dialga.", 15000, 74);
-		RegisterSimple(objectData, "Poke_AzureFlute", "Flauta Azure", "Flauta de som transcendental que cria uma escadaria de luz até o trono de Arceus.", 15000, 74);
-		RegisterSimple(objectData, "AzureFlute", "Flauta Azure", "Flauta de som transcendental que cria uma escadaria de luz até o trono de Arceus.", 15000, 74);
-		RegisterSimple(objectData, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Palhaço cósmico explosivo que arranca sua própria cabeça de fogos de artifício.", 15000, 74);
-		RegisterSimple(objectData, "BeastBall_Relic", "Ultra Esfera Transdimensional", "Palhaço cósmico explosivo que arranca sua própria cabeça de fogos de artifício.", 15000, 74);
-		RegisterSimple(objectData, "Poke_BerserkGene", "Gene Berserk", "Material genético instável pulsando com imenso poder psíquico. Desperta Mewtwo.", 15000, 74);
-		RegisterSimple(objectData, "BerserkGene", "Gene Berserk", "Material genético instável pulsando com imenso poder psíquico. Desperta Mewtwo.", 15000, 74);
-		RegisterSimple(objectData, "Poke_BlueOrb", "Esfera Azul Primordial", "Orbe místico das marés primordiais. Fisga Kyogre emergindo das águas revoltadas!", 15000, 74);
-		RegisterSimple(objectData, "BlueOrb", "Esfera Azul Primordial", "Orbe místico das marés primordiais. Fisga Kyogre emergindo das águas revoltadas!", 15000, 74);
-		RegisterSimple(objectData, "Poke_BoltMirror", "Espelho dos Trovões", "Espelho revelador de tempestades elétricas. Desperta Thundurus.", 15000, 74);
-		RegisterSimple(objectData, "BoltMirror", "Espelho dos Trovões", "Espelho revelador de tempestades elétricas. Desperta Thundurus.", 15000, 74);
-		RegisterSimple(objectData, "Poke_BoosterEnergy_Future", "Cápsula de Energia Futurista", "Besta mecatrônica com chifres reluzentes que disparam lâminas de táquions.", 15000, 74);
-		RegisterSimple(objectData, "BoosterEnergy_Future", "Cápsula de Energia Futurista", "Besta mecatrônica com chifres reluzentes que disparam lâminas de táquions.", 15000, 74);
-		RegisterSimple(objectData, "Poke_BoosterEnergy_Past", "Cápsula de Energia Ancestral", "Saurópode ancestral gigante envolto em tufões de plasma.", 15000, 74);
-		RegisterSimple(objectData, "BoosterEnergy_Past", "Cápsula de Energia Ancestral", "Saurópode ancestral gigante envolto em tufões de plasma.", 15000, 74);
-		RegisterSimple(objectData, "Poke_BuluMask", "Máscara Telúrica de Tapu", "Máscara sagrada de madeira tribal com a força telúrica da vegetação de Tapu Bulu.", 15000, 74);
-		RegisterSimple(objectData, "BuluMask", "Máscara Telúrica de Tapu", "Máscara sagrada de madeira tribal com a força telúrica da vegetação de Tapu Bulu.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ColossalKey", "Chave Colossal", "Chave colossal entalhada em três elementos. Desperta o mestre dos titãs Regigigas.", 15000, 74);
-		RegisterSimple(objectData, "ColossalKey", "Chave Colossal", "Chave colossal entalhada em três elementos. Desperta o mestre dos titãs Regigigas.", 15000, 74);
-		RegisterSimple(objectData, "Poke_CometShard", "Fragmento de Cometa", "Fragmento brilhante de cometa milenar. Desperta Jirachi de seu sono de 1.000 anos.", 15000, 74);
-		RegisterSimple(objectData, "CometShard", "Fragmento de Cometa", "Fragmento brilhante de cometa milenar. Desperta Jirachi de seu sono de 1.000 anos.", 15000, 74);
-		RegisterSimple(objectData, "Poke_CosmicCocoon", "Crisálida das Estrelas", "Carapaça astral de densidade incomensurável de Cosmoem.", 15000, 74);
-		RegisterSimple(objectData, "CosmicCocoon", "Crisálida das Estrelas", "Carapaça astral de densidade incomensurável de Cosmoem.", 15000, 74);
-		RegisterSimple(objectData, "Poke_CycloneMirror", "Espelho dos Ciclones", "Espelho revelador de tempestades de vento. Desperta Tornadus.", 15000, 74);
-		RegisterSimple(objectData, "CycloneMirror", "Espelho dos Ciclones", "Espelho revelador de tempestades de vento. Desperta Tornadus.", 15000, 74);
-		RegisterSimple(objectData, "Poke_DNA_Splicers", "Fundidores de DNA", "Instrumento científico antigo capaz de unir dragões ancestrais com Kyurem.", 15000, 74);
-		RegisterSimple(objectData, "DNA_Splicers", "Fundidores de DNA", "Instrumento científico antigo capaz de unir dragões ancestrais com Kyurem.", 15000, 74);
-		RegisterSimple(objectData, "Poke_DarkStone", "Dark Stone", "Pedra negra fosca que crepita com raios e ideais com Zekrom.", 15000, 74);
-		RegisterSimple(objectData, "DarkStone", "Dark Stone", "Pedra negra fosca que crepita com raios e ideais com Zekrom.", 15000, 74);
-		RegisterSimple(objectData, "Poke_DestructionCocoon", "Fragmento de Casulo Noturno", "Casulo petrificado emanando a fria foice do esquecimento de Yveltal.", 15000, 74);
-		RegisterSimple(objectData, "DestructionCocoon", "Fragmento de Casulo Noturno", "Casulo petrificado emanando a fria foice do esquecimento de Yveltal.", 15000, 74);
-		RegisterSimple(objectData, "Poke_DragoPattern", "Mandíbula de Dragão em Braille", "Crânio de dragão ancestral condensado em energia pura.", 15000, 74);
-		RegisterSimple(objectData, "DragoPattern", "Mandíbula de Dragão em Braille", "Crânio de dragão ancestral condensado em energia pura.", 15000, 74);
-		RegisterSimple(objectData, "Poke_DragonPoisonBarb", "Ferrão Venenoso de Dragão", "Vespa dragão cósmica com ferrão ejetor de toxinas.", 15000, 74);
-		RegisterSimple(objectData, "DragonPoisonBarb", "Ferrão Venenoso de Dragão", "Vespa dragão cósmica com ferrão ejetor de toxinas.", 15000, 74);
-		RegisterSimple(objectData, "Poke_DriveBurn", "Burn Drive Tecnológico", "Cartucho de canhão tecnológico da Equipe Plasma. Reativa Genesect.", 15000, 74);
-		RegisterSimple(objectData, "DriveBurn", "Burn Drive Tecnológico", "Cartucho de canhão tecnológico da Equipe Plasma. Reativa Genesect.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ElectricFeather", "Pena Elétrica", "Pena crepitante de eletricidade estática pura. Invoca Zapdos nos céus da Montanha.", 15000, 74);
-		RegisterSimple(objectData, "ElectricFeather", "Pena Elétrica", "Pena crepitante de eletricidade estática pura. Invoca Zapdos nos céus da Montanha.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ElekiPattern", "Padrão de Raios em Braille", "Inscrição de pura energia elétrica contida por aros magnéticos de isolamento.", 15000, 74);
-		RegisterSimple(objectData, "ElekiPattern", "Padrão de Raios em Braille", "Inscrição de pura energia elétrica contida por aros magnéticos de isolamento.", 15000, 74);
-		RegisterSimple(objectData, "Poke_EmotionGem", "Gema da Emoção", "Gema cristalina que ressoa com os sentimentos humanos. Desperta Mesprit no espelho d'água.", 15000, 74);
-		RegisterSimple(objectData, "EmotionGem", "Gema da Emoção", "Gema cristalina que ressoa com os sentimentos humanos. Desperta Mesprit no espelho d'água.", 15000, 74);
-		RegisterSimple(objectData, "Poke_EnteiBell", "Sino do Magma", "Sino forjado em cinzas vulcânicas puras. Desperta a fúria ardente de Entei.", 15000, 74);
-		RegisterSimple(objectData, "EnteiBell", "Sino do Magma", "Sino forjado em cinzas vulcânicas puras. Desperta a fúria ardente de Entei.", 15000, 74);
-		RegisterSimple(objectData, "Poke_EonFlute_Latias", "Flauta Eon Escarlate", "Flauta melodiosa de penas escarlates. Chama Latias através dos céus do oceano.", 15000, 74);
-		RegisterSimple(objectData, "EonFlute_Latias", "Flauta Eon Escarlate", "Flauta melodiosa de penas escarlates. Chama Latias através dos céus do oceano.", 15000, 74);
-		RegisterSimple(objectData, "Poke_EonFlute_Latios", "Flauta Eon Anil", "Flauta melodiosa com aerodinâmica perfeita. Chama Latios rasgando os ventos litorâneos.", 15000, 74);
-		RegisterSimple(objectData, "EonFlute_Latios", "Flauta Eon Anil", "Flauta melodiosa com aerodinâmica perfeita. Chama Latios rasgando os ventos litorâneos.", 15000, 74);
-		RegisterSimple(objectData, "Poke_FertilityMirror", "Espelho da Fertilidade", "Espelho sagrado da abundância e colheita. Desperta Landorus.", 15000, 74);
-		RegisterSimple(objectData, "FertilityMirror", "Espelho da Fertilidade", "Espelho sagrado da abundância e colheita. Desperta Landorus.", 15000, 74);
-		RegisterSimple(objectData, "Poke_FiniMask", "Máscara das Névoas de Tapu", "Máscara sagrada de madeira tribal que purifica as águas de Tapu Fini.", 15000, 74);
-		RegisterSimple(objectData, "FiniMask", "Máscara das Névoas de Tapu", "Máscara sagrada de madeira tribal que purifica as águas de Tapu Fini.", 15000, 74);
-		RegisterSimple(objectData, "Poke_FlameFeather", "Pena de Chamas", "Pena eternamente em brasas vivas. Desperta Moltres no topo do Vulcão.", 15000, 74);
-		RegisterSimple(objectData, "FlameFeather", "Pena de Chamas", "Pena eternamente em brasas vivas. Desperta Moltres no topo do Vulcão.", 15000, 74);
-		RegisterSimple(objectData, "Poke_FreezingFeather", "Pena Glacial", "Pena ancestral emanando frio glacial absoluto. Atrai Articuno nas Minas.", 15000, 74);
-		RegisterSimple(objectData, "FreezingFeather", "Pena Glacial", "Pena ancestral emanando frio glacial absoluto. Atrai Articuno nas Minas.", 15000, 74);
-		RegisterSimple(objectData, "Poke_GSBall", "GS Ball", "A lendária esfera dourada e prateada de Ilex. Desperta o guardião da floresta Celebi.", 15000, 74);
-		RegisterSimple(objectData, "GSBall", "GS Ball", "A lendária esfera dourada e prateada de Ilex. Desperta o guardião da floresta Celebi.", 15000, 74);
-		RegisterSimple(objectData, "Poke_GigantamaxNut", "Porca Hexagonal Titânica", "Porca de aço puro gigantesca forjada pelos artesãos mais antigos.", 15000, 74);
-		RegisterSimple(objectData, "GigantamaxNut", "Porca Hexagonal Titânica", "Porca de aço puro gigantesca forjada pelos artesãos mais antigos.", 15000, 74);
-		RegisterSimple(objectData, "Poke_GracideaFlower", "Flor Gracídea", "Flor perfumada que desabrocha no Vale na primavera. Revela Shaymin.", 15000, 74);
-		RegisterSimple(objectData, "GracideaFlower", "Flor Gracídea", "Flor perfumada que desabrocha no Vale na primavera. Revela Shaymin.", 15000, 74);
-		RegisterSimple(objectData, "Poke_GrassWillRelic", "Relíquia da Lâmina Esmeralda", "Selo da espada verde da justiça que corta os ventos. Convoca Virizion.", 15000, 74);
-		RegisterSimple(objectData, "GrassWillRelic", "Relíquia da Lâmina Esmeralda", "Selo da espada verde da justiça que corta os ventos. Convoca Virizion.", 15000, 74);
-		RegisterSimple(objectData, "Poke_GriseousCore", "Griseous Core", "Núcleo de antimatéria distorcida do Mundo Reverso pertencente a Giratina.", 15000, 74);
-		RegisterSimple(objectData, "GriseousCore", "Griseous Core", "Núcleo de antimatéria distorcida do Mundo Reverso pertencente a Giratina.", 15000, 74);
-		RegisterSimple(objectData, "Poke_IcerootCarrot", "Cenoura Gélida da Tundra", "Cenoura colhida nas neves eternas, alimento do corcel gélido Glastrier.", 15000, 74);
-		RegisterSimple(objectData, "IcerootCarrot", "Cenoura Gélida da Tundra", "Cenoura colhida nas neves eternas, alimento do corcel gélido Glastrier.", 15000, 74);
-		RegisterSimple(objectData, "Poke_IndigoDisk", "Disco Índigo Cristalino", "Disco prismático de Teracristalização profunda que desperta Terapagos.", 15000, 74);
-		RegisterSimple(objectData, "IndigoDisk", "Disco Índigo Cristalino", "Disco prismático de Teracristalização profunda que desperta Terapagos.", 15000, 74);
-		RegisterSimple(objectData, "Poke_IronWillRelic", "Relíquia da Lâmina de Ferro", "Selo da espada de ferro da justiça. Convoca Cobalion.", 15000, 74);
-		RegisterSimple(objectData, "IronWillRelic", "Relíquia da Lâmina de Ferro", "Selo da espada de ferro da justiça. Convoca Cobalion.", 15000, 74);
-		RegisterSimple(objectData, "Poke_JadeOrb", "Esfera de Jade", "Orbe cósmico da camada de ozônio. Invoca o dragão celestial Rayquaza.", 15000, 74);
-		RegisterSimple(objectData, "JadeOrb", "Esfera de Jade", "Orbe cósmico da camada de ozônio. Invoca o dragão celestial Rayquaza.", 15000, 74);
-		RegisterSimple(objectData, "Poke_JungleVineRelic", "Cipó da Selva Primordial", "Cipó elástico transbordante de seiva curativa e agressão selvagem de Zarude.", 15000, 74);
-		RegisterSimple(objectData, "JungleVineRelic", "Cipó da Selva Primordial", "Cipó elástico transbordante de seiva curativa e agressão selvagem de Zarude.", 15000, 74);
-		RegisterSimple(objectData, "Poke_KokoMask", "Máscara Trovejante de Tapu", "Máscara sagrada de madeira tribal com o trovão de Tapu Koko.", 15000, 74);
-		RegisterSimple(objectData, "KokoMask", "Máscara Trovejante de Tapu", "Máscara sagrada de madeira tribal com o trovão de Tapu Koko.", 15000, 74);
-		RegisterSimple(objectData, "Poke_KoraidonFeather", "Pena do Passado Selvagem", "Pena primordial escarlate pertencente ao dragão ápice Koraidon.", 15000, 74);
-		RegisterSimple(objectData, "KoraidonFeather", "Pena do Passado Selvagem", "Pena primordial escarlate pertencente ao dragão ápice Koraidon.", 15000, 74);
-		RegisterSimple(objectData, "Poke_LeleMask", "Máscara Floral de Tapu", "Máscara sagrada de madeira tribal com o brilho psíquico curativo de Tapu Lele.", 15000, 74);
-		RegisterSimple(objectData, "LeleMask", "Máscara Floral de Tapu", "Máscara sagrada de madeira tribal com o brilho psíquico curativo de Tapu Lele.", 15000, 74);
-		RegisterSimple(objectData, "Poke_LibertyPass", "Passe da Liberdade", "Passe para a Ilha da Liberdade onde habita a chama da vitória de Victini.", 15000, 74);
-		RegisterSimple(objectData, "LibertyPass", "Passe da Liberdade", "Passe para a Ilha da Liberdade onde habita a chama da vitória de Victini.", 15000, 74);
-		RegisterSimple(objectData, "Poke_LifeTreeRoot", "Raiz da Árvore da Vida", "Raiz viva pulsando com energia radiante da imortalidade. Desperta Xerneas.", 15000, 74);
-		RegisterSimple(objectData, "LifeTreeRoot", "Raiz da Árvore da Vida", "Raiz viva pulsando com energia radiante da imortalidade. Desperta Xerneas.", 15000, 74);
-		RegisterSimple(objectData, "Poke_LightStone", "Light Stone", "Pedra branca imaculada que entra em combustão divina com Reshiram.", 15000, 74);
-		RegisterSimple(objectData, "LightStone", "Light Stone", "Pedra branca imaculada que entra em combustão divina com Reshiram.", 15000, 74);
-		RegisterSimple(objectData, "Poke_LunarWing", "Pena Lunar", "Pena etérea reluzente que dissipa pesadelos e convoca Cresselia.", 15000, 74);
-		RegisterSimple(objectData, "LunarWing", "Pena Lunar", "Pena etérea reluzente que dissipa pesadelos e convoca Cresselia.", 15000, 74);
-		RegisterSimple(objectData, "Poke_LustrousOrb", "Lustrous Orb", "Esfera perolada que dobra as dimensões espaciais de Palkia.", 15000, 74);
-		RegisterSimple(objectData, "LustrousOrb", "Lustrous Orb", "Esfera perolada que dobra as dimensões espaciais de Palkia.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MagmaStone", "Pedra de Magma", "Rocha magmática incandescente contendo o núcleo vulcânico de Heatran.", 15000, 74);
-		RegisterSimple(objectData, "MagmaStone", "Pedra de Magma", "Rocha magmática incandescente contendo o núcleo vulcânico de Heatran.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MarshadiumZ", "Marshadium Z", "Espírito das sombras que imita os passos dos grandes lutadores.", 15000, 74);
-		RegisterSimple(objectData, "MarshadiumZ", "Marshadium Z", "Espírito das sombras que imita os passos dos grandes lutadores.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MartialScroll", "Pergaminho das Artes Marciais", "Pergaminho de disciplina e foco estrito para jovens discípulos marciais.", 15000, 74);
-		RegisterSimple(objectData, "MartialScroll", "Pergaminho das Artes Marciais", "Pergaminho de disciplina e foco estrito para jovens discípulos marciais.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MemberCard", "Cartão de Membro Sombrio", "Cartão misterioso de uma pousada abandonada. Desperta Darkrai das sombras.", 15000, 74);
-		RegisterSimple(objectData, "MemberCard", "Cartão de Membro Sombrio", "Cartão misterioso de uma pousada abandonada. Desperta Darkrai das sombras.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MemoryDrive_Normal", "Disco de Memória RKS", "Sistema operacional de combate RKS que remove os grilhões de Silvally.", 15000, 74);
-		RegisterSimple(objectData, "MemoryDrive_Normal", "Disco de Memória RKS", "Sistema operacional de combate RKS que remove os grilhões de Silvally.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MeteoritePiece", "Pedaço de Meteorito", "Fragmento de rocha espacial pulsando com DNA mutante extraterrestre. Invoca Deoxys.", 15000, 74);
-		RegisterSimple(objectData, "MeteoritePiece", "Pedaço de Meteorito", "Fragmento de rocha espacial pulsando com DNA mutante extraterrestre. Invoca Deoxys.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MindGem", "Gema da Sabedoria", "Gema brilhante conectada à mente e sabedoria cósmica. Desperta Uxie no lago.", 15000, 74);
-		RegisterSimple(objectData, "MindGem", "Gema da Sabedoria", "Gema brilhante conectada à mente e sabedoria cósmica. Desperta Uxie no lago.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MiraidonCore", "Núcleo de Propulsão Futura", "Turbina de prótons futurista pertencente à máquina ápice Miraidon.", 15000, 74);
-		RegisterSimple(objectData, "MiraidonCore", "Núcleo de Propulsão Futura", "Turbina de prótons futurista pertencente à máquina ápice Miraidon.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MoonFlute", "Flauta da Lua", "Flauta lunar que banha a noite com as asas estelares de Lunala.", 15000, 74);
-		RegisterSimple(objectData, "MoonFlute", "Flauta da Lua", "Flauta lunar que banha a noite com as asas estelares de Lunala.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MysteryBox_Steel", "Caixa Misteriosa de Aço Líquido", "Caixa ancestral pulsando com gotículas de metal vivo e porcas de aço.", 15000, 74);
-		RegisterSimple(objectData, "MysteryBox_Steel", "Caixa Misteriosa de Aço Líquido", "Caixa ancestral pulsando com gotículas de metal vivo e porcas de aço.", 15000, 74);
-		RegisterSimple(objectData, "Poke_MythicalPechaMochi", "Mochi Venenoso de Pêssego", "Doce doce e tóxico que controla a mente e desperta o pequeno lorde Pecharunt.", 15000, 74);
-		RegisterSimple(objectData, "MythicalPechaMochi", "Mochi Venenoso de Pêssego", "Doce doce e tóxico que controla a mente e desperta o pequeno lorde Pecharunt.", 15000, 74);
-		RegisterSimple(objectData, "Poke_NebulaCore", "Núcleo de Poeira Estelar", "Gás cósmico condensado que originou a pequena nebulosa Cosmog.", 15000, 74);
-		RegisterSimple(objectData, "NebulaCore", "Núcleo de Poeira Estelar", "Gás cósmico condensado que originou a pequena nebulosa Cosmog.", 15000, 74);
-		RegisterSimple(objectData, "Poke_OldSeaMap", "Mapa do Mar Antigo", "Mapa milenar com coordenadas da Ilha da Miragem. Atrai a presença brincalhona de Mew.", 15000, 74);
-		RegisterSimple(objectData, "OldSeaMap", "Mapa do Mar Antigo", "Mapa milenar com coordenadas da Ilha da Miragem. Atrai a presença brincalhona de Mew.", 15000, 74);
-		RegisterSimple(objectData, "Poke_PinkDiamondRelic", "Diamante Cor-de-Rosa", "Diamante reluzente mutado de Carbink. Convoca a princesa real Diancie.", 15000, 74);
-		RegisterSimple(objectData, "PinkDiamondRelic", "Diamante Cor-de-Rosa", "Diamante reluzente mutado de Carbink. Convoca a princesa real Diancie.", 15000, 74);
-		RegisterSimple(objectData, "Poke_PrisonBottle", "Garrafa da Prisão", "Garrafa selada milenar que aprisiona o poder do gênio dimensional Hoopa.", 15000, 74);
-		RegisterSimple(objectData, "PrisonBottle", "Garrafa da Prisão", "Garrafa selada milenar que aprisiona o poder do gênio dimensional Hoopa.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RaikouBell", "Sino do Trovão", "Sino de bronze que tilinta com ressonância de relâmpagos. Convoca Raikou.", 15000, 74);
-		RegisterSimple(objectData, "RaikouBell", "Sino do Trovão", "Sino de bronze que tilinta com ressonância de relâmpagos. Convoca Raikou.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RainbowWing", "Asa do Arco-Íris", "Asa prismática cintilando com as sete cores divinas. Invoca Ho-Oh no altar dos céus.", 15000, 74);
-		RegisterSimple(objectData, "RainbowWing", "Asa do Arco-Íris", "Asa prismática cintilando com as sete cores divinas. Invoca Ho-Oh no altar dos céus.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RedOrb", "Esfera Vermelha Primordial", "Orbe místico do calor do manto da Terra. Desperta Groudon em meio ao magma vulcânico.", 15000, 74);
-		RegisterSimple(objectData, "RedOrb", "Esfera Vermelha Primordial", "Orbe místico do calor do manto da Terra. Desperta Groudon em meio ao magma vulcânico.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ReinsOfUnity", "Rédeas da Unidade Sagrada", "Rédeas sagradas que restauram o vínculo entre o Rei e suas montarias.", 15000, 74);
-		RegisterSimple(objectData, "ReinsOfUnity", "Rédeas da Unidade Sagrada", "Rédeas sagradas que restauram o vínculo entre o Rei e suas montarias.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RelicIce", "Núcleo de Gelo Eterno", "Gelo milenar da era do gelo que nunca derrete. Desperta o titã Regice.", 15000, 74);
-		RegisterSimple(objectData, "RelicIce", "Núcleo de Gelo Eterno", "Gelo milenar da era do gelo que nunca derrete. Desperta o titã Regice.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RelicRock", "Núcleo de Pedra Ancestral", "Placa de rocha sedimentar com inscrições em braille. Desperta o titã Regirock.", 15000, 74);
-		RegisterSimple(objectData, "RelicRock", "Núcleo de Pedra Ancestral", "Placa de rocha sedimentar com inscrições em braille. Desperta o titã Regirock.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RelicSongSheet", "Partitura Ancestral", "Partitura com a canção milenar Relic Song. Desperta a melodia de Meloetta.", 15000, 74);
-		RegisterSimple(objectData, "RelicSongSheet", "Partitura Ancestral", "Partitura com a canção milenar Relic Song. Desperta a melodia de Meloetta.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RelicSteel", "Núcleo de Aço Cósmico", "Metal alienígena forjado sob pressão colossal. Desperta o titã Registeel.", 15000, 74);
-		RegisterSimple(objectData, "RelicSteel", "Núcleo de Aço Cósmico", "Metal alienígena forjado sob pressão colossal. Desperta o titã Registeel.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RevealGlass_Love", "Espelho do Amor da Primavera", "Espelho antigo de Hisui que celebra o despertar da primavera com Enamorus.", 15000, 74);
-		RegisterSimple(objectData, "RevealGlass_Love", "Espelho do Amor da Primavera", "Espelho antigo de Hisui que celebra o despertar da primavera com Enamorus.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RuinousBeads", "Contas de Fogo da Ruína", "Colar de contas de jade que nada nas chamas do desejo e cobiça.", 15000, 74);
-		RegisterSimple(objectData, "RuinousBeads", "Contas de Fogo da Ruína", "Colar de contas de jade que nada nas chamas do desejo e cobiça.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RuinousLeaves", "Tábua de Madeira da Ruína", "Tabuletas de madeira escritas com a amargura e ressentimento do antigo rei.", 15000, 74);
-		RegisterSimple(objectData, "RuinousLeaves", "Tábua de Madeira da Ruína", "Tabuletas de madeira escritas com a amargura e ressentimento do antigo rei.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RuinousSword", "Espada Fraturada de Gelo", "Lâmina partida que comanda o ódio e as neves desoladoras de Chien-Pao.", 15000, 74);
-		RegisterSimple(objectData, "RuinousSword", "Espada Fraturada de Gelo", "Lâmina partida que comanda o ódio e as neves desoladoras de Chien-Pao.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RuinousVessel", "Vaso de Pedra da Ruína", "Vaso ritualístico pesado que afunda a terra com o peso do medo.", 15000, 74);
-		RegisterSimple(objectData, "RuinousVessel", "Vaso de Pedra da Ruína", "Vaso ritualístico pesado que afunda a terra com o peso do medo.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RustedShield", "Escudo Enferrujado", "Escudo lendário imbuído de lendas heroicas que ergue a Muralha Suprema de Zamazenta.", 15000, 74);
-		RegisterSimple(objectData, "RustedShield", "Escudo Enferrujado", "Escudo lendário imbuído de lendas heroicas que ergue a Muralha Suprema de Zamazenta.", 15000, 74);
-		RegisterSimple(objectData, "Poke_RustedSword", "Espada Enferrujada", "Espada lendária coberta de herrugem que desperta a Lâmina Suprema de Zacian.", 15000, 74);
-		RegisterSimple(objectData, "RustedSword", "Espada Enferrujada", "Espada lendária coberta de herrugem que desperta a Lâmina Suprema de Zacian.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ScrollOfDarkness", "Pergaminho das Trevas", "Pergaminho marcial secreto que ensina o Golpe Singular Implacável.", 15000, 74);
-		RegisterSimple(objectData, "ScrollOfDarkness", "Pergaminho das Trevas", "Pergaminho marcial secreto que ensina o Golpe Singular Implacável.", 15000, 74);
-		RegisterSimple(objectData, "Poke_SeaCrown", "Coroa do Oceano", "Coroa milenar do Templo do Mar. Fisga o Príncipe dos Mares Manaphy.", 15000, 74);
-		RegisterSimple(objectData, "SeaCrown", "Coroa do Oceano", "Coroa milenar do Templo do Mar. Fisga o Príncipe dos Mares Manaphy.", 15000, 74);
-		RegisterSimple(objectData, "Poke_SeaDriftTear", "Lágrima das Correntes", "Gotícula cristalina carregada pelas correntes marítimas mornas. Fisga Phione.", 15000, 74);
-		RegisterSimple(objectData, "SeaDriftTear", "Lágrima das Correntes", "Gotícula cristalina carregada pelas correntes marítimas mornas. Fisga Phione.", 15000, 74);
-		RegisterSimple(objectData, "Poke_SecretSwordRelic", "Relíquia da Espada Secreta", "Pena aquática do quarto mosqueteiro. Desperta a coragem de Keldeo.", 15000, 74);
-		RegisterSimple(objectData, "SecretSwordRelic", "Relíquia da Espada Secreta", "Pena aquática do quarto mosqueteiro. Desperta a coragem de Keldeo.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ShaderootCarrot", "Cenoura Espectral das Sombras", "Cenoura colhida no cemitério do bosque, iguaria do corcel fantasma Spectrier.", 15000, 74);
-		RegisterSimple(objectData, "ShaderootCarrot", "Cenoura Espectral das Sombras", "Cenoura colhida no cemitério do bosque, iguaria do corcel fantasma Spectrier.", 15000, 74);
-		RegisterSimple(objectData, "Poke_SoulHeartRelic", "Alma Coração Mecânica", "Coração mecatrônico de alquimia contendo a essência viva de Magearna.", 15000, 74);
-		RegisterSimple(objectData, "SoulHeartRelic", "Alma Coração Mecânica", "Coração mecatrônico de alquimia contendo a essência viva de Magearna.", 15000, 74);
-		RegisterSimple(objectData, "Poke_SteamCore", "Núcleo de Caldeira Térmica", "Núcleo pressurizado expelindo jatos colossais de vapor de Volcanion.", 15000, 74);
-		RegisterSimple(objectData, "SteamCore", "Núcleo de Caldeira Térmica", "Núcleo pressurizado expelindo jatos colossais de vapor de Volcanion.", 15000, 74);
-		RegisterSimple(objectData, "Poke_StoneWillRelic", "Relíquia da Lâmina de Rocha", "Selo da espada de rocha maciça da justiça. Convoca Terrakion.", 15000, 74);
-		RegisterSimple(objectData, "StoneWillRelic", "Relíquia da Lâmina de Rocha", "Selo da espada de rocha maciça da justiça. Convoca Terrakion.", 15000, 74);
-		RegisterSimple(objectData, "Poke_SuicuneBell", "Sino das Ondas", "Sino de cristal aquático com pureza dos ventos do norte. Convoca Suicune.", 15000, 74);
-		RegisterSimple(objectData, "SuicuneBell", "Sino das Ondas", "Sino de cristal aquático com pureza dos ventos do norte. Convoca Suicune.", 15000, 74);
-		RegisterSimple(objectData, "Poke_SunFlute", "Flauta do Sol", "Flauta solar que canaliza o rugido incandescente de Solgaleo.", 15000, 74);
-		RegisterSimple(objectData, "SunFlute", "Flauta do Sol", "Flauta solar que canaliza o rugido incandescente de Solgaleo.", 15000, 74);
-		RegisterSimple(objectData, "Poke_SyntheticHelmet", "Máscara de Controle de Fera", "Máscara de contenção biológica criada para conter o monstro sintético Type: Null.", 15000, 74);
-		RegisterSimple(objectData, "SyntheticHelmet", "Máscara de Controle de Fera", "Máscara de contenção biológica criada para conter o monstro sintético Type: Null.", 15000, 74);
-		RegisterSimple(objectData, "Poke_TealMask", "Máscara Turquesa de Hera", "A máscara original de Ogerpon, revelando sua forma alegre e seus golpes de espinhos.", 15000, 74);
-		RegisterSimple(objectData, "TealMask", "Máscara Turquesa de Hera", "A máscara original de Ogerpon, revelando sua forma alegre e seus golpes de espinhos.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ThunderClawRelic", "Garra da Fagulha Plasma", "Garras eletrificadas capazes de criar campos magnéticos supersônicos.", 15000, 74);
-		RegisterSimple(objectData, "ThunderClawRelic", "Garra da Fagulha Plasma", "Garras eletrificadas capazes de criar campos magnéticos supersônicos.", 15000, 74);
-		RegisterSimple(objectData, "Poke_TidalBell", "Sino das Marés", "Sino das profundezas oceânicas. Quando equipado ao pescar nas fossas marítimas, fisga Lugia!", 15000, 74);
-		RegisterSimple(objectData, "TidalBell", "Sino das Marés", "Sino das profundezas oceânicas. Quando equipado ao pescar nas fossas marítimas, fisga Lugia!", 15000, 74);
-		RegisterSimple(objectData, "Poke_ToxicChain_Fez", "Corrente Tóxica da Beleza", "Corrente carmesim venenosa que concede plumagem hipnótica a Fezandipiti.", 15000, 74);
-		RegisterSimple(objectData, "ToxicChain_Fez", "Corrente Tóxica da Beleza", "Corrente carmesim venenosa que concede plumagem hipnótica a Fezandipiti.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ToxicChain_Munk", "Corrente Tóxica da Astúcia", "Corrente carmesim venenosa que concede inteligência psíquica a Munkidori.", 15000, 74);
-		RegisterSimple(objectData, "ToxicChain_Munk", "Corrente Tóxica da Astúcia", "Corrente carmesim venenosa que concede inteligência psíquica a Munkidori.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ToxicChain_Oki", "Corrente Tóxica de Força", "Corrente carmesim venenosa que concede musculatura descomunal a Okidogi.", 15000, 74);
-		RegisterSimple(objectData, "ToxicChain_Oki", "Corrente Tóxica de Força", "Corrente carmesim venenosa que concede musculatura descomunal a Okidogi.", 15000, 74);
-		RegisterSimple(objectData, "Poke_UltranecroziumZ", "Ultralnecrozium Z", "Prisma de refração negra faminto por luz.", 15000, 74);
-		RegisterSimple(objectData, "UltranecroziumZ", "Ultralnecrozium Z", "Prisma de refração negra faminto por luz.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ValorGem", "Gema da Bravura", "Gema radiante esculpida pela pura determinação e força de vontade. Desperta Azelf.", 15000, 74);
-		RegisterSimple(objectData, "ValorGem", "Gema da Bravura", "Gema radiante esculpida pela pura determinação e força de vontade. Desperta Azelf.", 15000, 74);
-		RegisterSimple(objectData, "Poke_WishingStar", "Estrela dos Desejos Corrompida", "Fragmento de meteoro carmesim que irradia a energia Dynamax infinita de Eternatus.", 15000, 74);
-		RegisterSimple(objectData, "WishingStar", "Estrela dos Desejos Corrompida", "Fragmento de meteoro carmesim que irradia a energia Dynamax infinita de Eternatus.", 15000, 74);
-		RegisterSimple(objectData, "Poke_ZygardeCube", "Cubo de Zygarde", "Cubo tecnológico que reúne núcleos celulares ecológicos de Zygarde.", 15000, 74);
-		RegisterSimple(objectData, "ZygardeCube", "Cubo de Zygarde", "Cubo tecnológico que reúne núcleos celulares ecológicos de Zygarde.", 15000, 74);
+		RegisterSimple(objectData, "Poke_AdamantOrb", "Adamant Orb", "Esfera que distorce o espaço-tempo. Coloque no chão no Summit para invocar Dialga.", 15000, 74);
+		RegisterSimple(objectData, "AdamantOrb", "Adamant Orb", "Esfera que distorce o espaço-tempo. Coloque no chão no Summit para invocar Dialga.", 15000, 74);
+		RegisterSimple(objectData, "Poke_AzureFlute", "Flauta Azure", "Flauta de som transcendental que cria uma escadaria de luz. Coloque no chão no Summit para invocar Arceus.", 15000, 74);
+		RegisterSimple(objectData, "AzureFlute", "Flauta Azure", "Flauta de som transcendental que cria uma escadaria de luz. Coloque no chão no Summit para invocar Arceus.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Blacephalon", "Ultra Esfera (Blacephalon)", "Palhaço cósmico explosivo de fogos de artifício. Coloque no chão na Ferrovia para invocar Blacephalon.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Blacephalon", "Ultra Esfera (Blacephalon)", "Palhaço cósmico explosivo de fogos de artifício. Coloque no chão na Ferrovia para invocar Blacephalon.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Buzzwole", "Ultra Esfera (Buzzwole)", "Massa muscular titânica extraterrestre vinda da Ultra Selva. Coloque no chão na Floresta para invocar Buzzwole.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Buzzwole", "Ultra Esfera (Buzzwole)", "Massa muscular titânica extraterrestre vinda da Ultra Selva. Coloque no chão na Floresta para invocar Buzzwole.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Celesteela", "Ultra Esfera (Celesteela)", "Foguete de bambu cósmico queimando gás espacial colossal. Coloque no chão no Summit para invocar Celesteela.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Celesteela", "Ultra Esfera (Celesteela)", "Foguete de bambu cósmico queimando gás espacial colossal. Coloque no chão no Summit para invocar Celesteela.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Guzzlord", "Ultra Esfera (Guzzlord)", "Devorador cósmico insaciável consumindo matéria. Coloque no chão no Esgoto para invocar Guzzlord.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Guzzlord", "Ultra Esfera (Guzzlord)", "Devorador cósmico insaciável consumindo matéria. Coloque no chão no Esgoto para invocar Guzzlord.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Kartana", "Ultra Esfera (Kartana)", "Origami vivo com gumes infinitamente afiados. Coloque no chão no Bosque Secreto para invocar Kartana.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Kartana", "Ultra Esfera (Kartana)", "Origami vivo com gumes infinitamente afiados. Coloque no chão no Bosque Secreto para invocar Kartana.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Nihilego", "Ultra Esfera (Nihilego)", "Parasita cristalino vítreo vindo através da Ultra Fenda. Coloque no chão nas Minas para invocar Nihilego.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Nihilego", "Ultra Esfera (Nihilego)", "Parasita cristalino vítreo vindo através da Ultra Fenda. Coloque no chão nas Minas para invocar Nihilego.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Pheromosa", "Ultra Esfera (Pheromosa)", "Criatura esguia de velocidade hipersônica do Ultra Deserto. Coloque no chão no Deserto para invocar Pheromosa.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Pheromosa", "Ultra Esfera (Pheromosa)", "Criatura esguia de velocidade hipersônica do Ultra Deserto. Coloque no chão no Deserto para invocar Pheromosa.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Poipole", "Ultra Esfera (Poipole)", "Criatura mimética brincalhona que expele veneno adesivo. Coloque no chão em BugLand para invocar Poipole.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Poipole", "Ultra Esfera (Poipole)", "Criatura mimética brincalhona que expele veneno adesivo. Coloque no chão em BugLand para invocar Poipole.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Relic", "Ultra Esfera Transdimensional", "Esfera cristalina para invocar Ultra Beasts em seus portais.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Relic", "Ultra Esfera Transdimensional", "Esfera cristalina para invocar Ultra Beasts em seus portais.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Stakataka", "Ultra Esfera (Stakataka)", "Muralha de pedra viva composta por dezenas de olhos sencientes. Coloque no chão na Montanha para invocar Stakataka.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Stakataka", "Ultra Esfera (Stakataka)", "Muralha de pedra viva composta por dezenas de olhos sencientes. Coloque no chão na Montanha para invocar Stakataka.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BeastBall_Xurkitree", "Ultra Esfera (Xurkitree)", "Árvore elétrica viva sugando energia de alta voltagem. Coloque no chão na Ferrovia para invocar Xurkitree.", 15000, 74);
+		RegisterSimple(objectData, "BeastBall_Xurkitree", "Ultra Esfera (Xurkitree)", "Árvore elétrica viva sugando energia de alta voltagem. Coloque no chão na Ferrovia para invocar Xurkitree.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BerserkGene", "Gene Berserk", "Material genético instável pulsando com imenso poder psíquico. Coloque no chão na Caverna da Caveira para despertar Mewtwo.", 15000, 74);
+		RegisterSimple(objectData, "BerserkGene", "Gene Berserk", "Material genético instável pulsando com imenso poder psíquico. Coloque no chão na Caverna da Caveira para despertar Mewtwo.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BlueOrb", "Esfera Azul Primordial", "Orbe místico das marés primordiais. Mantenha no inventário ao pescar no oceano em tempestade para fisgar Kyogre!", 15000, 74);
+		RegisterSimple(objectData, "BlueOrb", "Esfera Azul Primordial", "Orbe místico das marés primordiais. Mantenha no inventário ao pescar no oceano em tempestade para fisgar Kyogre!", 15000, 74);
+		RegisterSimple(objectData, "Poke_BoltMirror", "Espelho dos Trovões", "Espelho revelador de tempestades elétricas. Coloque no chão na Ferrovia para despertar Thundurus.", 15000, 74);
+		RegisterSimple(objectData, "BoltMirror", "Espelho dos Trovões", "Espelho revelador de tempestades elétricas. Coloque no chão na Ferrovia para despertar Thundurus.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BoosterEnergy_Future", "Cápsula de Energia Futurista", "Condensador tecnológico para despertar Pokémon Paradoxo do Futuro.", 15000, 74);
+		RegisterSimple(objectData, "BoosterEnergy_Future", "Cápsula de Energia Futurista", "Condensador tecnológico para despertar Pokémon Paradoxo do Futuro.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BoosterEnergy_Past", "Cápsula de Energia Ancestral", "Condensador bioenergético para despertar Pokémon Paradoxo do Passado.", 15000, 74);
+		RegisterSimple(objectData, "BoosterEnergy_Past", "Cápsula de Energia Ancestral", "Condensador bioenergético para despertar Pokémon Paradoxo do Passado.", 15000, 74);
+		RegisterSimple(objectData, "Poke_Booster_GougingFire", "Cápsula Ancestral (Gouging Fire)", "Fera vulcânica jurássica blindada com chifres de ceratopsídeo. Coloque no chão na Caldeira para invocar Gouging Fire.", 15000, 74);
+		RegisterSimple(objectData, "Booster_GougingFire", "Cápsula Ancestral (Gouging Fire)", "Fera vulcânica jurássica blindada com chifres de ceratopsídeo. Coloque no chão na Caldeira para invocar Gouging Fire.", 15000, 74);
+		RegisterSimple(objectData, "Poke_Booster_IronBoulder", "Cápsula Futurista (Iron Boulder)", "Besta mecatrônica de pedra com chifres cortantes de laser. Coloque no chão na Montanha para invocar Iron Boulder.", 15000, 74);
+		RegisterSimple(objectData, "Booster_IronBoulder", "Cápsula Futurista (Iron Boulder)", "Besta mecatrônica de pedra com chifres cortantes de laser. Coloque no chão na Montanha para invocar Iron Boulder.", 15000, 74);
+		RegisterSimple(objectData, "Poke_Booster_IronCrown", "Cápsula Futurista (Iron Crown)", "Besta mecatrônica com chifres reluzentes que disparam lâminas de táquions. Coloque no chão nas Minas para invocar Iron Crown.", 15000, 74);
+		RegisterSimple(objectData, "Booster_IronCrown", "Cápsula Futurista (Iron Crown)", "Besta mecatrônica com chifres reluzentes que disparam lâminas de táquions. Coloque no chão nas Minas para invocar Iron Crown.", 15000, 74);
+		RegisterSimple(objectData, "Poke_Booster_IronLeaves", "Cápsula Futurista (Iron Leaves)", "Espadachim cibernético com lâminas de fótons verdes. Coloque no chão no Bosque Secreto para invocar Iron Leaves.", 15000, 74);
+		RegisterSimple(objectData, "Booster_IronLeaves", "Cápsula Futurista (Iron Leaves)", "Espadachim cibernético com lâminas de fótons verdes. Coloque no chão no Bosque Secreto para invocar Iron Leaves.", 15000, 74);
+		RegisterSimple(objectData, "Poke_Booster_IronValiant", "Cápsula Futurista (Iron Valiant)", "Condensador sintético com IA de combate avançada. Coloque no chão nas Minas para invocar Iron Valiant.", 15000, 74);
+		RegisterSimple(objectData, "Booster_IronValiant", "Cápsula Futurista (Iron Valiant)", "Condensador sintético com IA de combate avançada. Coloque no chão nas Minas para invocar Iron Valiant.", 15000, 74);
+		RegisterSimple(objectData, "Poke_Booster_RagingBolt", "Cápsula Ancestral (Raging Bolt)", "Saurópode ancestral gigante envolto em tufões de plasma. Coloque no chão na Montanha para invocar Raging Bolt.", 15000, 74);
+		RegisterSimple(objectData, "Booster_RagingBolt", "Cápsula Ancestral (Raging Bolt)", "Saurópode ancestral gigante envolto em tufões de plasma. Coloque no chão na Montanha para invocar Raging Bolt.", 15000, 74);
+		RegisterSimple(objectData, "Poke_Booster_RoaringMoon", "Cápsula Ancestral (Roaring Moon)", "Condensador bioenergético com ecos jurássicos. Coloque no chão na Caverna da Caveira para invocar Roaring Moon.", 15000, 74);
+		RegisterSimple(objectData, "Booster_RoaringMoon", "Cápsula Ancestral (Roaring Moon)", "Condensador bioenergético com ecos jurássicos. Coloque no chão na Caverna da Caveira para invocar Roaring Moon.", 15000, 74);
+		RegisterSimple(objectData, "Poke_Booster_WalkingWake", "Cápsula Ancestral (Walking Wake)", "Besta jurássica bípede das águas primordiais. Coloque no chão na Praia para invocar Walking Wake.", 15000, 74);
+		RegisterSimple(objectData, "Booster_WalkingWake", "Cápsula Ancestral (Walking Wake)", "Besta jurássica bípede das águas primordiais. Coloque no chão na Praia para invocar Walking Wake.", 15000, 74);
+		RegisterSimple(objectData, "Poke_BuluMask", "Máscara Telúrica de Tapu", "Máscara sagrada de madeira tribal com a força telúrica da vegetação. Coloque no chão na Floresta para invocar Tapu Bulu.", 15000, 74);
+		RegisterSimple(objectData, "BuluMask", "Máscara Telúrica de Tapu", "Máscara sagrada de madeira tribal com a força telúrica da vegetação. Coloque no chão na Floresta para invocar Tapu Bulu.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ColossalKey", "Chave Colossal", "Chave colossal entalhada em três elementos. Coloque no chão nas Minas para despertar Regigigas.", 15000, 74);
+		RegisterSimple(objectData, "ColossalKey", "Chave Colossal", "Chave colossal entalhada em três elementos. Coloque no chão nas Minas para despertar Regigigas.", 15000, 74);
+		RegisterSimple(objectData, "Poke_CometShard", "Fragmento de Cometa", "Fragmento brilhante de cometa milenar. Coloque no chão na Montanha para despertar Jirachi.", 15000, 74);
+		RegisterSimple(objectData, "CometShard", "Fragmento de Cometa", "Fragmento brilhante de cometa milenar. Coloque no chão na Montanha para despertar Jirachi.", 15000, 74);
+		RegisterSimple(objectData, "Poke_CosmicCocoon", "Crisálida das Estrelas", "Carapaça astral de densidade incomensurável. Coloque no chão no Summit para invocar Cosmoem.", 15000, 74);
+		RegisterSimple(objectData, "CosmicCocoon", "Crisálida das Estrelas", "Carapaça astral de densidade incomensurável. Coloque no chão no Summit para invocar Cosmoem.", 15000, 74);
+		RegisterSimple(objectData, "Poke_CycloneMirror", "Espelho dos Ciclones", "Espelho revelador de tempestades de vento. Coloque no chão na Montanha para despertar Tornadus.", 15000, 74);
+		RegisterSimple(objectData, "CycloneMirror", "Espelho dos Ciclones", "Espelho revelador de tempestades de vento. Coloque no chão na Montanha para despertar Tornadus.", 15000, 74);
+		RegisterSimple(objectData, "Poke_DNA_Splicers", "Fundidores de DNA", "Instrumento científico antigo de gelo eterno. Coloque no chão nas Minas congeladas para despertar Kyurem.", 15000, 74);
+		RegisterSimple(objectData, "DNA_Splicers", "Fundidores de DNA", "Instrumento científico antigo de gelo eterno. Coloque no chão nas Minas congeladas para despertar Kyurem.", 15000, 74);
+		RegisterSimple(objectData, "Poke_DarkStone", "Dark Stone", "Pedra negra fosca dos Ideais. Coloque no chão no Deserto à noite para invocar Zekrom.", 15000, 74);
+		RegisterSimple(objectData, "DarkStone", "Dark Stone", "Pedra negra fosca dos Ideais. Coloque no chão no Deserto à noite para invocar Zekrom.", 15000, 74);
+		RegisterSimple(objectData, "Poke_DestructionCocoon", "Fragmento de Casulo Noturno", "Casulo petrificado emanando a foice do esquecimento. Coloque no chão na Caverna da Caveira para despertar Yveltal.", 15000, 74);
+		RegisterSimple(objectData, "DestructionCocoon", "Fragmento de Casulo Noturno", "Casulo petrificado emanando a foice do esquecimento. Coloque no chão na Caverna da Caveira para despertar Yveltal.", 15000, 74);
+		RegisterSimple(objectData, "Poke_DragoPattern", "Mandíbula de Dragão em Braille", "Crânio de dragão ancestral condensado em energia pura. Coloque no chão na Caldeira para invocar Regidrago.", 15000, 74);
+		RegisterSimple(objectData, "DragoPattern", "Mandíbula de Dragão em Braille", "Crânio de dragão ancestral condensado em energia pura. Coloque no chão na Caldeira para invocar Regidrago.", 15000, 74);
+		RegisterSimple(objectData, "Poke_DragonPoisonBarb", "Ferrão Venenoso de Dragão", "Vespa dragão cósmica com ferrão ejetor de toxinas. Coloque no chão em BugLand para invocar Naganadel.", 15000, 74);
+		RegisterSimple(objectData, "DragonPoisonBarb", "Ferrão Venenoso de Dragão", "Vespa dragão cósmica com ferrão ejetor de toxinas. Coloque no chão em BugLand para invocar Naganadel.", 15000, 74);
+		RegisterSimple(objectData, "Poke_DriveBurn", "Burn Drive Tecnológico", "Cartucho de canhão tecnológico da Equipe Plasma. Coloque no chão nas Minas para reativar Genesect.", 15000, 74);
+		RegisterSimple(objectData, "DriveBurn", "Burn Drive Tecnológico", "Cartucho de canhão tecnológico da Equipe Plasma. Coloque no chão nas Minas para reativar Genesect.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ElectricFeather", "Pena Elétrica", "Pena crepitante de eletricidade estática pura. Coloque no chão na Montanha durante tempestade para invocar Zapdos.", 15000, 74);
+		RegisterSimple(objectData, "ElectricFeather", "Pena Elétrica", "Pena crepitante de eletricidade estática pura. Coloque no chão na Montanha durante tempestade para invocar Zapdos.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ElekiPattern", "Padrão de Raios em Braille", "Inscrição de pura energia elétrica contida por aros magnéticos. Coloque no chão na Ferrovia para invocar Regieleki.", 15000, 74);
+		RegisterSimple(objectData, "ElekiPattern", "Padrão de Raios em Braille", "Inscrição de pura energia elétrica contida por aros magnéticos. Coloque no chão na Ferrovia para invocar Regieleki.", 15000, 74);
+		RegisterSimple(objectData, "Poke_EmotionGem", "Gema da Emoção", "Gema cristalina que ressoa com os sentimentos humanos. Coloque no chão no Bosque Secreto para despertar Mesprit.", 15000, 74);
+		RegisterSimple(objectData, "EmotionGem", "Gema da Emoção", "Gema cristalina que ressoa com os sentimentos humanos. Coloque no chão no Bosque Secreto para despertar Mesprit.", 15000, 74);
+		RegisterSimple(objectData, "Poke_EnteiBell", "Sino do Magma", "Sino forjado em cinzas vulcânicas puras. Coloque no chão na Montanha para despertar a fúria ardente de Entei.", 15000, 74);
+		RegisterSimple(objectData, "EnteiBell", "Sino do Magma", "Sino forjado em cinzas vulcânicas puras. Coloque no chão na Montanha para despertar a fúria ardente de Entei.", 15000, 74);
+		RegisterSimple(objectData, "Poke_EonFlute_Latias", "Flauta Eon Escarlate", "Flauta melodiosa de penas escarlates. Coloque no chão na Ilha Oeste para chamar Latias.", 15000, 74);
+		RegisterSimple(objectData, "EonFlute_Latias", "Flauta Eon Escarlate", "Flauta melodiosa de penas escarlates. Coloque no chão na Ilha Oeste para chamar Latias.", 15000, 74);
+		RegisterSimple(objectData, "Poke_EonFlute_Latios", "Flauta Eon Anil", "Flauta melodiosa com aerodinâmica perfeita. Coloque no chão na Praia para chamar Latios.", 15000, 74);
+		RegisterSimple(objectData, "EonFlute_Latios", "Flauta Eon Anil", "Flauta melodiosa com aerodinâmica perfeita. Coloque no chão na Praia para chamar Latios.", 15000, 74);
+		RegisterSimple(objectData, "Poke_FertilityMirror", "Espelho da Fertilidade", "Espelho sagrado da abundância e colheita. Coloque no chão na Floresta para despertar Landorus.", 15000, 74);
+		RegisterSimple(objectData, "FertilityMirror", "Espelho da Fertilidade", "Espelho sagrado da abundância e colheita. Coloque no chão na Floresta para despertar Landorus.", 15000, 74);
+		RegisterSimple(objectData, "Poke_FiniMask", "Máscara das Névoas de Tapu", "Máscara sagrada de madeira tribal que purifica as águas. Coloque no chão na Praia para invocar Tapu Fini.", 15000, 74);
+		RegisterSimple(objectData, "FiniMask", "Máscara das Névoas de Tapu", "Máscara sagrada de madeira tribal que purifica as águas. Coloque no chão na Praia para invocar Tapu Fini.", 15000, 74);
+		RegisterSimple(objectData, "Poke_FlameFeather", "Pena de Chamas", "Pena eternamente em brasas vivas. Coloque no chão na Caldeira do Vulcão para despertar Moltres.", 15000, 74);
+		RegisterSimple(objectData, "FlameFeather", "Pena de Chamas", "Pena eternamente em brasas vivas. Coloque no chão na Caldeira do Vulcão para despertar Moltres.", 15000, 74);
+		RegisterSimple(objectData, "Poke_FreezingFeather", "Pena Glacial", "Pena ancestral emanando frio glacial absoluto. Coloque no chão nas Minas congeladas para invocar Articuno.", 15000, 74);
+		RegisterSimple(objectData, "FreezingFeather", "Pena Glacial", "Pena ancestral emanando frio glacial absoluto. Coloque no chão nas Minas congeladas para invocar Articuno.", 15000, 74);
+		RegisterSimple(objectData, "Poke_GSBall", "GS Ball", "A lendária esfera dourada e prateada de Ilex. Coloque no chão no Bosque Secreto para despertar Celebi.", 15000, 74);
+		RegisterSimple(objectData, "GSBall", "GS Ball", "A lendária esfera dourada e prateada de Ilex. Coloque no chão no Bosque Secreto para despertar Celebi.", 15000, 74);
+		RegisterSimple(objectData, "Poke_GigantamaxNut", "Porca Hexagonal Titânica", "Porca de aço puro gigantesca forjada pelos artesãos mais antigos. Coloque no chão nas Minas para invocar Melmetal.", 15000, 74);
+		RegisterSimple(objectData, "GigantamaxNut", "Porca Hexagonal Titânica", "Porca de aço puro gigantesca forjada pelos artesãos mais antigos. Coloque no chão nas Minas para invocar Melmetal.", 15000, 74);
+		RegisterSimple(objectData, "Poke_GracideaFlower", "Flor Gracídea", "Flor perfumada que desabrocha na primavera. Coloque no chão na Floresta para revelar Shaymin.", 15000, 74);
+		RegisterSimple(objectData, "GracideaFlower", "Flor Gracídea", "Flor perfumada que desabrocha na primavera. Coloque no chão na Floresta para revelar Shaymin.", 15000, 74);
+		RegisterSimple(objectData, "Poke_GrassWillRelic", "Relíquia da Lâmina Esmeralda", "Selo da espada verde da justiça. Coloque no chão no Bosque Secreto para convocar Virizion.", 15000, 74);
+		RegisterSimple(objectData, "GrassWillRelic", "Relíquia da Lâmina Esmeralda", "Selo da espada verde da justiça. Coloque no chão no Bosque Secreto para convocar Virizion.", 15000, 74);
+		RegisterSimple(objectData, "Poke_GriseousCore", "Griseous Core", "Núcleo de antimatéria distorcida do Mundo Reverso. Coloque no chão no Esgoto para invocar Giratina.", 15000, 74);
+		RegisterSimple(objectData, "GriseousCore", "Griseous Core", "Núcleo de antimatéria distorcida do Mundo Reverso. Coloque no chão no Esgoto para invocar Giratina.", 15000, 74);
+		RegisterSimple(objectData, "Poke_IcerootCarrot", "Cenoura Gélida da Tundra", "Cenoura colhida nas neves eternas, alimento do corcel gélido. Coloque no chão no Summit para invocar Glastrier.", 15000, 74);
+		RegisterSimple(objectData, "IcerootCarrot", "Cenoura Gélida da Tundra", "Cenoura colhida nas neves eternas, alimento do corcel gélido. Coloque no chão no Summit para invocar Glastrier.", 15000, 74);
+		RegisterSimple(objectData, "Poke_IndigoDisk", "Disco Índigo Cristalino", "Disco prismático de Teracristalização profunda. Coloque no chão na Caldeira para despertar Terapagos.", 15000, 74);
+		RegisterSimple(objectData, "IndigoDisk", "Disco Índigo Cristalino", "Disco prismático de Teracristalização profunda. Coloque no chão na Caldeira para despertar Terapagos.", 15000, 74);
+		RegisterSimple(objectData, "Poke_IronWillRelic", "Relíquia da Lâmina de Ferro", "Selo da espada de ferro da justiça. Coloque no chão nas Minas para convocar Cobalion.", 15000, 74);
+		RegisterSimple(objectData, "IronWillRelic", "Relíquia da Lâmina de Ferro", "Selo da espada de ferro da justiça. Coloque no chão nas Minas para convocar Cobalion.", 15000, 74);
+		RegisterSimple(objectData, "Poke_JadeOrb", "Esfera de Jade", "Orbe cósmico da camada de ozônio. Coloque no chão no Summit para invocar Rayquaza.", 15000, 74);
+		RegisterSimple(objectData, "JadeOrb", "Esfera de Jade", "Orbe cósmico da camada de ozônio. Coloque no chão no Summit para invocar Rayquaza.", 15000, 74);
+		RegisterSimple(objectData, "Poke_JungleVineRelic", "Cipó da Selva Primordial", "Cipó elástico transbordante de seiva curativa e agressão selvagem. Coloque no chão no Bosque Secreto para invocar Zarude.", 15000, 74);
+		RegisterSimple(objectData, "JungleVineRelic", "Cipó da Selva Primordial", "Cipó elástico transbordante de seiva curativa e agressão selvagem. Coloque no chão no Bosque Secreto para invocar Zarude.", 15000, 74);
+		RegisterSimple(objectData, "Poke_KokoMask", "Máscara Trovejante de Tapu", "Máscara sagrada de madeira tribal com o trovão. Coloque no chão na Montanha para invocar Tapu Koko.", 15000, 74);
+		RegisterSimple(objectData, "KokoMask", "Máscara Trovejante de Tapu", "Máscara sagrada de madeira tribal com o trovão. Coloque no chão na Montanha para invocar Tapu Koko.", 15000, 74);
+		RegisterSimple(objectData, "Poke_KoraidonFeather", "Pena do Passado Selvagem", "Pena primordial escarlate pertencente ao dragão ápice. Coloque no chão na Caldeira para invocar Koraidon.", 15000, 74);
+		RegisterSimple(objectData, "KoraidonFeather", "Pena do Passado Selvagem", "Pena primordial escarlate pertencente ao dragão ápice. Coloque no chão na Caldeira para invocar Koraidon.", 15000, 74);
+		RegisterSimple(objectData, "Poke_LeleMask", "Máscara Floral de Tapu", "Máscara sagrada de madeira tribal com brilho psíquico curativo. Coloque no chão no Bosque Secreto para invocar Tapu Lele.", 15000, 74);
+		RegisterSimple(objectData, "LeleMask", "Máscara Floral de Tapu", "Máscara sagrada de madeira tribal com brilho psíquico curativo. Coloque no chão no Bosque Secreto para invocar Tapu Lele.", 15000, 74);
+		RegisterSimple(objectData, "Poke_LibertyPass", "Passe da Liberdade", "Passe para a Ilha da Liberdade. Coloque no chão em IslandSouthEast para invocar Victini.", 15000, 74);
+		RegisterSimple(objectData, "LibertyPass", "Passe da Liberdade", "Passe para a Ilha da Liberdade. Coloque no chão em IslandSouthEast para invocar Victini.", 15000, 74);
+		RegisterSimple(objectData, "Poke_LifeTreeRoot", "Raiz da Árvore da Vida", "Raiz viva pulsando com energia radiante da imortalidade. Coloque no chão no Bosque Secreto para despertar Xerneas.", 15000, 74);
+		RegisterSimple(objectData, "LifeTreeRoot", "Raiz da Árvore da Vida", "Raiz viva pulsando com energia radiante da imortalidade. Coloque no chão no Bosque Secreto para despertar Xerneas.", 15000, 74);
+		RegisterSimple(objectData, "Poke_LightStone", "Light Stone", "Pedra branca imaculada da Verdade. Coloque no chão na Caldeira para invocar Reshiram.", 15000, 74);
+		RegisterSimple(objectData, "LightStone", "Light Stone", "Pedra branca imaculada da Verdade. Coloque no chão na Caldeira para invocar Reshiram.", 15000, 74);
+		RegisterSimple(objectData, "Poke_LunarWing", "Pena Lunar", "Pena etérea reluzente que dissipa pesadelos. Coloque no chão na Praia à noite para convocar Cresselia.", 15000, 74);
+		RegisterSimple(objectData, "LunarWing", "Pena Lunar", "Pena etérea reluzente que dissipa pesadelos. Coloque no chão na Praia à noite para convocar Cresselia.", 15000, 74);
+		RegisterSimple(objectData, "Poke_LustrousOrb", "Lustrous Orb", "Esfera perolada que dobra as dimensões espaciais. Coloque no chão no Summit para invocar Palkia.", 15000, 74);
+		RegisterSimple(objectData, "LustrousOrb", "Lustrous Orb", "Esfera perolada que dobra as dimensões espaciais. Coloque no chão no Summit para invocar Palkia.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MagmaStone", "Pedra de Magma", "Rocha magmática incandescente. Coloque no chão na Caldeira para despertar Heatran.", 15000, 74);
+		RegisterSimple(objectData, "MagmaStone", "Pedra de Magma", "Rocha magmática incandescente. Coloque no chão na Caldeira para despertar Heatran.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MarshadiumZ", "Marshadium Z", "Espírito das sombras que imita os passos dos grandes lutadores. Coloque no chão em BugLand para invocar Marshadow.", 15000, 74);
+		RegisterSimple(objectData, "MarshadiumZ", "Marshadium Z", "Espírito das sombras que imita os passos dos grandes lutadores. Coloque no chão em BugLand para invocar Marshadow.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MartialScroll", "Pergaminho das Artes Marciais", "Pergaminho de disciplina e foco estrito para jovens discípulos. Coloque no chão no Deserto para invocar Kubfu.", 15000, 74);
+		RegisterSimple(objectData, "MartialScroll", "Pergaminho das Artes Marciais", "Pergaminho de disciplina e foco estrito para jovens discípulos. Coloque no chão no Deserto para invocar Kubfu.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MemberCard", "Cartão de Membro Sombrio", "Cartão misterioso de uma pousada abandonada. Coloque no chão na Ferrovia à noite para despertar Darkrai.", 15000, 74);
+		RegisterSimple(objectData, "MemberCard", "Cartão de Membro Sombrio", "Cartão misterioso de uma pousada abandonada. Coloque no chão na Ferrovia à noite para despertar Darkrai.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MemoryDrive_Normal", "Disco de Memória RKS", "Sistema operacional de combate RKS que remove os grilhões. Coloque no chão nas Minas para invocar Silvally.", 15000, 74);
+		RegisterSimple(objectData, "MemoryDrive_Normal", "Disco de Memória RKS", "Sistema operacional de combate RKS que remove os grilhões. Coloque no chão nas Minas para invocar Silvally.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MeteoritePiece", "Pedaço de Meteorito", "Fragmento de rocha espacial pulsando com DNA mutante extraterrestre. Coloque no chão na Ferrovia para invocar Deoxys.", 15000, 74);
+		RegisterSimple(objectData, "MeteoritePiece", "Pedaço de Meteorito", "Fragmento de rocha espacial pulsando com DNA mutante extraterrestre. Coloque no chão na Ferrovia para invocar Deoxys.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MindGem", "Gema da Sabedoria", "Gema brilhante conectada à mente e sabedoria cósmica. Coloque no chão na Montanha para despertar Uxie.", 15000, 74);
+		RegisterSimple(objectData, "MindGem", "Gema da Sabedoria", "Gema brilhante conectada à mente e sabedoria cósmica. Coloque no chão na Montanha para despertar Uxie.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MiraidonCore", "Núcleo de Propulsão Futura", "Turbina de prótons futurista pertencente à máquina ápice. Coloque no chão na Ferrovia para invocar Miraidon.", 15000, 74);
+		RegisterSimple(objectData, "MiraidonCore", "Núcleo de Propulsão Futura", "Turbina de prótons futurista pertencente à máquina ápice. Coloque no chão na Ferrovia para invocar Miraidon.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MoonFlute", "Flauta da Lua", "Flauta lunar que banha a noite com asas estelares. Coloque no chão na Praia para invocar Lunala.", 15000, 74);
+		RegisterSimple(objectData, "MoonFlute", "Flauta da Lua", "Flauta lunar que banha a noite com asas estelares. Coloque no chão na Praia para invocar Lunala.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MysteryBox_Steel", "Caixa Misteriosa de Aço Líquido", "Caixa ancestral pulsando com gotículas de metal vivo. Coloque no chão nas Minas para invocar Meltan.", 15000, 74);
+		RegisterSimple(objectData, "MysteryBox_Steel", "Caixa Misteriosa de Aço Líquido", "Caixa ancestral pulsando com gotículas de metal vivo. Coloque no chão nas Minas para invocar Meltan.", 15000, 74);
+		RegisterSimple(objectData, "Poke_MythicalPechaMochi", "Mochi Venenoso de Pêssego", "Doce tóxico que controla a mente. Coloque no chão na Vila para despertar o pequeno lorde Pecharunt.", 15000, 74);
+		RegisterSimple(objectData, "MythicalPechaMochi", "Mochi Venenoso de Pêssego", "Doce tóxico que controla a mente. Coloque no chão na Vila para despertar o pequeno lorde Pecharunt.", 15000, 74);
+		RegisterSimple(objectData, "Poke_NebulaCore", "Núcleo de Poeira Estelar", "Gás cósmico condensado que originou a pequena nebulosa. Coloque no chão no Summit para invocar Cosmog.", 15000, 74);
+		RegisterSimple(objectData, "NebulaCore", "Núcleo de Poeira Estelar", "Gás cósmico condensado que originou a pequena nebulosa. Coloque no chão no Summit para invocar Cosmog.", 15000, 74);
+		RegisterSimple(objectData, "Poke_OldSeaMap", "Mapa do Mar Antigo", "Mapa milenar com coordenadas da Ilha da Miragem. Coloque no chão para atrair a presença brincalhona de Mew.", 15000, 74);
+		RegisterSimple(objectData, "OldSeaMap", "Mapa do Mar Antigo", "Mapa milenar com coordenadas da Ilha da Miragem. Coloque no chão para atrair a presença brincalhona de Mew.", 15000, 74);
+		RegisterSimple(objectData, "Poke_PinkDiamondRelic", "Diamante Cor-de-Rosa", "Diamante reluzente mutado de Carbink. Coloque no chão nas Minas para convocar Diancie.", 15000, 74);
+		RegisterSimple(objectData, "PinkDiamondRelic", "Diamante Cor-de-Rosa", "Diamante reluzente mutado de Carbink. Coloque no chão nas Minas para convocar Diancie.", 15000, 74);
+		RegisterSimple(objectData, "Poke_PrisonBottle", "Garrafa da Prisão", "Garrafa selada milenar que aprisiona o poder dimensional. Coloque no chão no Deserto para libertar Hoopa.", 15000, 74);
+		RegisterSimple(objectData, "PrisonBottle", "Garrafa da Prisão", "Garrafa selada milenar que aprisiona o poder dimensional. Coloque no chão no Deserto para libertar Hoopa.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RaikouBell", "Sino do Trovão", "Sino de bronze que tilinta com ressonância de relâmpagos. Coloque no chão no Bosque Secreto para convocar Raikou.", 15000, 74);
+		RegisterSimple(objectData, "RaikouBell", "Sino do Trovão", "Sino de bronze que tilinta com ressonância de relâmpagos. Coloque no chão no Bosque Secreto para convocar Raikou.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RainbowWing", "Asa do Arco-Íris", "Asa prismática cintilando com as sete cores divinas. Coloque no chão no Summit para invocar Ho-Oh.", 15000, 74);
+		RegisterSimple(objectData, "RainbowWing", "Asa do Arco-Íris", "Asa prismática cintilando com as sete cores divinas. Coloque no chão no Summit para invocar Ho-Oh.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RedOrb", "Esfera Vermelha Primordial", "Orbe místico do calor do manto da Terra. Coloque no chão na Caldeira para despertar Groudon.", 15000, 74);
+		RegisterSimple(objectData, "RedOrb", "Esfera Vermelha Primordial", "Orbe místico do calor do manto da Terra. Coloque no chão na Caldeira para despertar Groudon.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ReinsOfUnity", "Rédeas da Unidade Sagrada", "Rédeas sagradas que restauram o vínculo real. Coloque no chão na Floresta para invocar Calyrex.", 15000, 74);
+		RegisterSimple(objectData, "ReinsOfUnity", "Rédeas da Unidade Sagrada", "Rédeas sagradas que restauram o vínculo real. Coloque no chão na Floresta para invocar Calyrex.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RelicIce", "Núcleo de Gelo Eterno", "Gelo milenar da era do gelo que nunca derrete. Coloque no chão nas Minas congeladas para despertar Regice.", 15000, 74);
+		RegisterSimple(objectData, "RelicIce", "Núcleo de Gelo Eterno", "Gelo milenar da era do gelo que nunca derrete. Coloque no chão nas Minas congeladas para despertar Regice.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RelicRock", "Núcleo de Pedra Ancestral", "Placa de rocha sedimentar com inscrições em braille. Coloque no chão nas Minas para despertar Regirock.", 15000, 74);
+		RegisterSimple(objectData, "RelicRock", "Núcleo de Pedra Ancestral", "Placa de rocha sedimentar com inscrições em braille. Coloque no chão nas Minas para despertar Regirock.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RelicSongSheet", "Partitura Ancestral", "Partitura com a canção milenar Relic Song. Coloque no chão na Vila para despertar Meloetta.", 15000, 74);
+		RegisterSimple(objectData, "RelicSongSheet", "Partitura Ancestral", "Partitura com a canção milenar Relic Song. Coloque no chão na Vila para despertar Meloetta.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RelicSteel", "Núcleo de Aço Cósmico", "Metal alienígena forjado sob pressão colossal. Coloque no chão nas Minas para despertar Registeel.", 15000, 74);
+		RegisterSimple(objectData, "RelicSteel", "Núcleo de Aço Cósmico", "Metal alienígena forjado sob pressão colossal. Coloque no chão nas Minas para despertar Registeel.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RevealGlass_Love", "Espelho do Amor da Primavera", "Espelho antigo de Hisui que celebra o despertar da primavera. Coloque no chão no Bosque Secreto para invocar Enamorus.", 15000, 74);
+		RegisterSimple(objectData, "RevealGlass_Love", "Espelho do Amor da Primavera", "Espelho antigo de Hisui que celebra o despertar da primavera. Coloque no chão no Bosque Secreto para invocar Enamorus.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RuinousBeads", "Contas de Fogo da Ruína", "Colar de contas de jade que nada nas chamas. Coloque no chão na Caldeira para invocar Chi-Yu.", 15000, 74);
+		RegisterSimple(objectData, "RuinousBeads", "Contas de Fogo da Ruína", "Colar de contas de jade que nada nas chamas. Coloque no chão na Caldeira para invocar Chi-Yu.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RuinousLeaves", "Tábua de Madeira da Ruína", "Tabuletas de madeira escritas com amargura antiga. Coloque no chão na Floresta para invocar Wo-Chien.", 15000, 74);
+		RegisterSimple(objectData, "RuinousLeaves", "Tábua de Madeira da Ruína", "Tabuletas de madeira escritas com amargura antiga. Coloque no chão na Floresta para invocar Wo-Chien.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RuinousSword", "Espada Fraturada de Gelo", "Lâmina partida que comanda as neves desoladoras. Coloque no chão no Summit para invocar Chien-Pao.", 15000, 74);
+		RegisterSimple(objectData, "RuinousSword", "Espada Fraturada de Gelo", "Lâmina partida que comanda as neves desoladoras. Coloque no chão no Summit para invocar Chien-Pao.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RuinousVessel", "Vaso de Pedra da Ruína", "Vaso ritualístico pesado que afunda a terra. Coloque no chão na Montanha para invocar Ting-Lu.", 15000, 74);
+		RegisterSimple(objectData, "RuinousVessel", "Vaso de Pedra da Ruína", "Vaso ritualístico pesado que afunda a terra. Coloque no chão na Montanha para invocar Ting-Lu.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RustedShield", "Escudo Enferrujado", "Escudo lendário imbuído de lendas heroicas. Coloque no chão na Montanha para invocar Zamazenta.", 15000, 74);
+		RegisterSimple(objectData, "RustedShield", "Escudo Enferrujado", "Escudo lendário imbuído de lendas heroicas. Coloque no chão na Montanha para invocar Zamazenta.", 15000, 74);
+		RegisterSimple(objectData, "Poke_RustedSword", "Espada Enferrujada", "Espada lendária coberta de ferrugem que desperta a Lâmina Suprema. Coloque no chão na Floresta para invocar Zacian.", 15000, 74);
+		RegisterSimple(objectData, "RustedSword", "Espada Enferrujada", "Espada lendária coberta de ferrugem que desperta a Lâmina Suprema. Coloque no chão na Floresta para invocar Zacian.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ScrollOfDarkness", "Pergaminho das Trevas", "Pergaminho marcial secreto que ensina o Golpe Singular Implacável. Coloque no chão na Caldeira para invocar Urshifu.", 15000, 74);
+		RegisterSimple(objectData, "ScrollOfDarkness", "Pergaminho das Trevas", "Pergaminho marcial secreto que ensina o Golpe Singular Implacável. Coloque no chão na Caldeira para invocar Urshifu.", 15000, 74);
+		RegisterSimple(objectData, "Poke_SeaCrown", "Coroa do Oceano", "Coroa milenar do Templo do Mar. Mantenha no inventário ao pescar na Praia para fisgar Manaphy!", 15000, 74);
+		RegisterSimple(objectData, "SeaCrown", "Coroa do Oceano", "Coroa milenar do Templo do Mar. Mantenha no inventário ao pescar na Praia para fisgar Manaphy!", 15000, 74);
+		RegisterSimple(objectData, "Poke_SeaDriftTear", "Lágrima das Correntes", "Gotícula cristalina carregada pelas correntes marítimas. Mantenha no inventário ao pescar na Praia para fisgar Phione!", 15000, 74);
+		RegisterSimple(objectData, "SeaDriftTear", "Lágrima das Correntes", "Gotícula cristalina carregada pelas correntes marítimas. Mantenha no inventário ao pescar na Praia para fisgar Phione!", 15000, 74);
+		RegisterSimple(objectData, "Poke_SecretSwordRelic", "Relíquia da Espada Secreta", "Pena aquática do quarto mosqueteiro. Coloque no chão na Floresta para despertar Keldeo.", 15000, 74);
+		RegisterSimple(objectData, "SecretSwordRelic", "Relíquia da Espada Secreta", "Pena aquática do quarto mosqueteiro. Coloque no chão na Floresta para despertar Keldeo.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ShaderootCarrot", "Cenoura Espectral das Sombras", "Cenoura colhida nas sombras do bosque, iguaria do corcel fantasma. Coloque no chão no Bosque Secreto para invocar Spectrier.", 15000, 74);
+		RegisterSimple(objectData, "ShaderootCarrot", "Cenoura Espectral das Sombras", "Cenoura colhida nas sombras do bosque, iguaria do corcel fantasma. Coloque no chão no Bosque Secreto para invocar Spectrier.", 15000, 74);
+		RegisterSimple(objectData, "Poke_SoulHeartRelic", "Alma Coração Mecânica", "Coração mecatrônico de alquimia contendo a essência viva. Coloque no chão na Vila para invocar Magearna.", 15000, 74);
+		RegisterSimple(objectData, "SoulHeartRelic", "Alma Coração Mecânica", "Coração mecatrônico de alquimia contendo a essência viva. Coloque no chão na Vila para invocar Magearna.", 15000, 74);
+		RegisterSimple(objectData, "Poke_SteamCore", "Núcleo de Caldeira Térmica", "Núcleo pressurizado expelindo jatos colossais de vapor. Coloque no chão na Caldeira para invocar Volcanion.", 15000, 74);
+		RegisterSimple(objectData, "SteamCore", "Núcleo de Caldeira Térmica", "Núcleo pressurizado expelindo jatos colossais de vapor. Coloque no chão na Caldeira para invocar Volcanion.", 15000, 74);
+		RegisterSimple(objectData, "Poke_StoneWillRelic", "Relíquia da Lâmina de Rocha", "Selo da espada de rocha maciça da justiça. Coloque no chão na Montanha para convocar Terrakion.", 15000, 74);
+		RegisterSimple(objectData, "StoneWillRelic", "Relíquia da Lâmina de Rocha", "Selo da espada de rocha maciça da justiça. Coloque no chão na Montanha para convocar Terrakion.", 15000, 74);
+		RegisterSimple(objectData, "Poke_SuicuneBell", "Sino das Ondas", "Sino de cristal aquático com pureza dos ventos do norte. Coloque no chão na Praia para convocar Suicune.", 15000, 74);
+		RegisterSimple(objectData, "SuicuneBell", "Sino das Ondas", "Sino de cristal aquático com pureza dos ventos do norte. Coloque no chão na Praia para convocar Suicune.", 15000, 74);
+		RegisterSimple(objectData, "Poke_SunFlute", "Flauta do Sol", "Flauta solar que canaliza o rugido incandescente. Coloque no chão no Deserto para invocar Solgaleo.", 15000, 74);
+		RegisterSimple(objectData, "SunFlute", "Flauta do Sol", "Flauta solar que canaliza o rugido incandescente. Coloque no chão no Deserto para invocar Solgaleo.", 15000, 74);
+		RegisterSimple(objectData, "Poke_SyntheticHelmet", "Máscara de Controle de Fera", "Máscara de contenção biológica criada para conter o monstro sintético. Coloque no chão nas Minas para invocar Type: Null.", 15000, 74);
+		RegisterSimple(objectData, "SyntheticHelmet", "Máscara de Controle de Fera", "Máscara de contenção biológica criada para conter o monstro sintético. Coloque no chão nas Minas para invocar Type: Null.", 15000, 74);
+		RegisterSimple(objectData, "Poke_TealMask", "Máscara Turquesa de Hera", "A máscara original de Ogerpon, revelando sua forma alegre. Coloque no chão no Bosque Secreto para invocar Ogerpon.", 15000, 74);
+		RegisterSimple(objectData, "TealMask", "Máscara Turquesa de Hera", "A máscara original de Ogerpon, revelando sua forma alegre. Coloque no chão no Bosque Secreto para invocar Ogerpon.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ThunderClawRelic", "Garra da Fagulha Plasma", "Garras eletrificadas capazes de criar campos magnéticos supersônicos. Coloque no chão na Montanha para invocar Zeraora.", 15000, 74);
+		RegisterSimple(objectData, "ThunderClawRelic", "Garra da Fagulha Plasma", "Garras eletrificadas capazes de criar campos magnéticos supersônicos. Coloque no chão na Montanha para invocar Zeraora.", 15000, 74);
+		RegisterSimple(objectData, "Poke_TidalBell", "Sino das Marés", "Sino das profundezas oceânicas. Mantenha no inventário ao pescar nas fossas marítimas à noite para fisgar Lugia!", 15000, 74);
+		RegisterSimple(objectData, "TidalBell", "Sino das Marés", "Sino das profundezas oceânicas. Mantenha no inventário ao pescar nas fossas marítimas à noite para fisgar Lugia!", 15000, 74);
+		RegisterSimple(objectData, "Poke_ToxicChain_Fez", "Corrente Tóxica da Beleza", "Corrente carmesim venenosa que concede plumagem hipnótica. Coloque no chão na Floresta para invocar Fezandipiti.", 15000, 74);
+		RegisterSimple(objectData, "ToxicChain_Fez", "Corrente Tóxica da Beleza", "Corrente carmesim venenosa que concede plumagem hipnótica. Coloque no chão na Floresta para invocar Fezandipiti.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ToxicChain_Munk", "Corrente Tóxica da Astúcia", "Corrente carmesim venenosa que concede inteligência psíquica. Coloque no chão no Bosque Secreto para invocar Munkidori.", 15000, 74);
+		RegisterSimple(objectData, "ToxicChain_Munk", "Corrente Tóxica da Astúcia", "Corrente carmesim venenosa que concede inteligência psíquica. Coloque no chão no Bosque Secreto para invocar Munkidori.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ToxicChain_Oki", "Corrente Tóxica de Força", "Corrente carmesim venenosa que concede musculatura descomunal. Coloque no chão na Montanha para invocar Okidogi.", 15000, 74);
+		RegisterSimple(objectData, "ToxicChain_Oki", "Corrente Tóxica de Força", "Corrente carmesim venenosa que concede musculatura descomunal. Coloque no chão na Montanha para invocar Okidogi.", 15000, 74);
+		RegisterSimple(objectData, "Poke_UltranecroziumZ", "Ultranecrozium Z", "Prisma de refração negra faminto por luz. Coloque no chão na Caverna da Caveira para invocar Necrozma.", 15000, 74);
+		RegisterSimple(objectData, "UltranecroziumZ", "Ultranecrozium Z", "Prisma de refração negra faminto por luz. Coloque no chão na Caverna da Caveira para invocar Necrozma.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ValorGem", "Gema da Bravura", "Gema radiante esculpida pela pura determinação e força de vontade. Coloque no chão na Floresta para despertar Azelf.", 15000, 74);
+		RegisterSimple(objectData, "ValorGem", "Gema da Bravura", "Gema radiante esculpida pela pura determinação e força de vontade. Coloque no chão na Floresta para despertar Azelf.", 15000, 74);
+		RegisterSimple(objectData, "Poke_WishingStar", "Estrela dos Desejos Corrompida", "Fragmento de meteoro carmesim que irradia energia Dynamax infinita. Coloque no chão no Summit para invocar Eternatus.", 15000, 74);
+		RegisterSimple(objectData, "WishingStar", "Estrela dos Desejos Corrompida", "Fragmento de meteoro carmesim que irradia energia Dynamax infinita. Coloque no chão no Summit para invocar Eternatus.", 15000, 74);
+		RegisterSimple(objectData, "Poke_ZygardeCube", "Cubo de Zygarde", "Cubo tecnológico que reúne núcleos celulares ecológicos. Coloque no chão nas Minas para invocar Zygarde.", 15000, 74);
+		RegisterSimple(objectData, "ZygardeCube", "Cubo de Zygarde", "Cubo tecnológico que reúne núcleos celulares ecológicos. Coloque no chão nas Minas para invocar Zygarde.", 15000, 74);
 
 		// Register Berries as Items and Crops
 		// Register Berries as Items and Crops (Valid TileSheets\crops sprite rows and all 4 seasons)
@@ -1332,12 +1368,30 @@ public static class PokemonItemManager
 			// Legendary & Mythical Unique Relics
 			"Poke_AdamantOrb" or "AdamantOrb" => "adamant_orb.png",
 			"Poke_AzureFlute" or "AzureFlute" => "flute.png",
+			"Poke_BeastBall_Blacephalon" or "BeastBall_Blacephalon" => "beast_ball.png",
+			"Poke_BeastBall_Buzzwole" or "BeastBall_Buzzwole" => "beast_ball.png",
+			"Poke_BeastBall_Celesteela" or "BeastBall_Celesteela" => "beast_ball.png",
+			"Poke_BeastBall_Guzzlord" or "BeastBall_Guzzlord" => "beast_ball.png",
+			"Poke_BeastBall_Kartana" or "BeastBall_Kartana" => "beast_ball.png",
+			"Poke_BeastBall_Nihilego" or "BeastBall_Nihilego" => "beast_ball.png",
+			"Poke_BeastBall_Pheromosa" or "BeastBall_Pheromosa" => "beast_ball.png",
+			"Poke_BeastBall_Poipole" or "BeastBall_Poipole" => "beast_ball.png",
 			"Poke_BeastBall_Relic" or "BeastBall_Relic" => "beast_ball.png",
+			"Poke_BeastBall_Stakataka" or "BeastBall_Stakataka" => "beast_ball.png",
+			"Poke_BeastBall_Xurkitree" or "BeastBall_Xurkitree" => "beast_ball.png",
 			"Poke_BerserkGene" or "BerserkGene" => "berserk_gene.png",
 			"Poke_BlueOrb" or "BlueOrb" => "blue_orb.png",
 			"Poke_BoltMirror" or "BoltMirror" => "reveal_glass.png",
 			"Poke_BoosterEnergy_Future" or "BoosterEnergy_Future" => "upgrade.png",
 			"Poke_BoosterEnergy_Past" or "BoosterEnergy_Past" => "magnet.png",
+			"Poke_Booster_GougingFire" or "Booster_GougingFire" => "flame_orb.png",
+			"Poke_Booster_IronBoulder" or "Booster_IronBoulder" => "upgrade.png",
+			"Poke_Booster_IronCrown" or "Booster_IronCrown" => "upgrade.png",
+			"Poke_Booster_IronLeaves" or "Booster_IronLeaves" => "upgrade.png",
+			"Poke_Booster_IronValiant" or "Booster_IronValiant" => "upgrade.png",
+			"Poke_Booster_RagingBolt" or "Booster_RagingBolt" => "magnet.png",
+			"Poke_Booster_RoaringMoon" or "Booster_RoaringMoon" => "dragon_fang.png",
+			"Poke_Booster_WalkingWake" or "Booster_WalkingWake" => "mystic_water.png",
 			"Poke_BuluMask" or "BuluMask" => "cornerstone_mask.png",
 			"Poke_ColossalKey" or "ColossalKey" => "relic_crown.png",
 			"Poke_CometShard" or "CometShard" => "shard.png",
@@ -1378,7 +1432,7 @@ public static class PokemonItemManager
 			"Poke_LunarWing" or "LunarWing" => "pretty_feather.png",
 			"Poke_LustrousOrb" or "LustrousOrb" => "lustrous_orb.png",
 			"Poke_MagmaStone" or "MagmaStone" => "charcoal.png",
-			"Poke_MarshadiumZ" or "MarshadiumZ" => "type_gem.png",
+			"Poke_MarshadiumZ" or "MarshadiumZ" => "marshadium_z.png",
 			"Poke_MartialScroll" or "MartialScroll" => "town_map.png",
 			"Poke_MemberCard" or "MemberCard" => "contest_pass.png",
 			"Poke_MemoryDrive_Normal" or "MemoryDrive_Normal" => "upgrade.png",
@@ -1424,7 +1478,7 @@ public static class PokemonItemManager
 			"Poke_ToxicChain_Fez" or "ToxicChain_Fez" => "poison_barb.png",
 			"Poke_ToxicChain_Munk" or "ToxicChain_Munk" => "poison_barb.png",
 			"Poke_ToxicChain_Oki" or "ToxicChain_Oki" => "poison_barb.png",
-			"Poke_UltranecroziumZ" or "UltranecroziumZ" => "type_gem.png",
+			"Poke_UltranecroziumZ" or "UltranecroziumZ" => "ultranecrozium_z.png",
 			"Poke_ValorGem" or "ValorGem" => "shard.png",
 			"Poke_WishingStar" or "WishingStar" => "shard.png",
 			"Poke_ZygardeCube" or "ZygardeCube" => "zygarde_cube.png",

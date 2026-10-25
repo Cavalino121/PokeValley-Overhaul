@@ -6067,9 +6067,26 @@ public class Object : Item
 
 	public override bool canBePlacedHere(GameLocation l, Vector2 tile, CollisionMask collisionMask = CollisionMask.All, bool showError = false)
 	{
+		if (StardewValley.Pokemon.PokemonEncounterManager.IsSummonRelic(base.ItemId))
+		{
+			return l != null &&
+			       !l.objects.ContainsKey(tile) &&
+			       l.hasTileAt((int)tile.X, (int)tile.Y, "Back") &&
+			       !l.hasTileAt((int)tile.X, (int)tile.Y, "Buildings") &&
+			       !l.isWaterTile((int)tile.X, (int)tile.Y) &&
+			       l.isTilePassable(new xTile.Dimensions.Location((int)tile.X, (int)tile.Y), Game1.viewport) &&
+			       tile != Game1.player.Tile;
+		}
 		if (base.QualifiedItemId == "(O)PokemonSuperRod" ||
 		    StardewValley.Pokemon.PokemonItemUse.IsUsable(base.QualifiedItemId) ||
-		    (base.QualifiedItemId != null && base.QualifiedItemId.Contains("Apricorn")))
+		    (base.QualifiedItemId != null && base.QualifiedItemId.Contains("Apricorn")) ||
+		    (base.ItemId != null && (base.ItemId.StartsWith("Poke_") || base.ItemId.StartsWith("Pokemon")) &&
+		     !bigCraftable.Value &&
+		     base.Category != StardewValley.Object.SeedsCategory &&
+		     base.ItemId != "PokemonHealingMachine" &&
+		     base.ItemId != "PokemonPC" &&
+		     base.ItemId != "PokemonTradeTerminal" &&
+		     base.ItemId != "PokemonIncubator"))
 		{
 			return false;
 		}
@@ -6273,9 +6290,20 @@ public class Object : Item
 
 	public override bool isPlaceable()
 	{
+		if (StardewValley.Pokemon.PokemonEncounterManager.IsSummonRelic(base.ItemId))
+		{
+			return true;
+		}
 		if (base.QualifiedItemId == "(O)PokemonSuperRod" ||
 		    StardewValley.Pokemon.PokemonItemUse.IsUsable(base.QualifiedItemId) ||
-		    (base.QualifiedItemId != null && base.QualifiedItemId.Contains("Apricorn")))
+		    (base.QualifiedItemId != null && base.QualifiedItemId.Contains("Apricorn")) ||
+		    (base.ItemId != null && (base.ItemId.StartsWith("Poke_") || base.ItemId.StartsWith("Pokemon")) &&
+		     !bigCraftable.Value &&
+		     base.Category != StardewValley.Object.SeedsCategory &&
+		     base.ItemId != "PokemonHealingMachine" &&
+		     base.ItemId != "PokemonPC" &&
+		     base.ItemId != "PokemonTradeTerminal" &&
+		     base.ItemId != "PokemonIncubator"))
 		{
 			return false;
 		}
@@ -6537,6 +6565,10 @@ public class Object : Item
 	public virtual bool placementAction(GameLocation location, int x, int y, Farmer who = null)
 	{
 		Vector2 vector = new Vector2(x / 64, y / 64);
+		if (StardewValley.Pokemon.PokemonEncounterManager.IsSummonRelic(base.ItemId))
+		{
+			return StardewValley.Pokemon.PokemonEncounterManager.TryPlaceSummonRelic(this, location, (int)vector.X, (int)vector.Y, who ?? Game1.player);
+		}
 		health = 10;
 		Location = location;
 		TileLocation = vector;

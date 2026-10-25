@@ -5727,11 +5727,12 @@ public class Utility
 
 	public static bool playerCanPlaceItemHere(GameLocation location, Item item, int x, int y, Farmer f, bool show_error = false)
 	{
-		if (isPlacementForbiddenHere(location))
+		bool isSummonRelic = item != null && StardewValley.Pokemon.PokemonEncounterManager.IsSummonRelic(item.ItemId);
+		if (!isSummonRelic && isPlacementForbiddenHere(location))
 		{
 			return false;
 		}
-		if (item == null || item is Tool || Game1.eventUp || f.bathingClothes.Value || f.onBridge.Value)
+		if (item == null || item is Tool || Game1.eventUp || (!isSummonRelic && (f.bathingClothes.Value || f.onBridge.Value)))
 		{
 			return false;
 		}

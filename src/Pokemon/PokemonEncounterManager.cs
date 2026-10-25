@@ -93,13 +93,14 @@ public static class PokemonEncounterManager
 		public string RelicName { get; set; }
 		public bool RequiresStorm { get; set; }
 		public bool RequiresRain { get; set; }
+		public bool RequiresSun { get; set; }
 		public bool RequiresNight { get; set; }
 		public bool RequiresDay { get; set; }
 		public Season? RequiredSeason { get; set; }
+		public bool IsFishing { get; set; }
 	}
 
 	private static readonly Dictionary<string, List<LegendarySummonDef>> LegendarySummonsByRelic = new(StringComparer.OrdinalIgnoreCase);
-	private static int _lastLegendarySummonTick = -1000;
 
 	private static void RegisterSummon(string relicId, string cleanRelicId, LegendarySummonDef def)
 	{
@@ -120,191 +121,349 @@ public static class PokemonEncounterManager
 
 	static PokemonEncounterManager()
 	{
-		RegisterSummon("Poke_FreezingFeather", "FreezingFeather", new LegendarySummonDef { SpeciesName = "Articuno", Location = "Mine", TargetX = 18, TargetY = 10, RelicId = "Poke_FreezingFeather", RelicName = "Pena Glacial", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Winter });
-		RegisterSummon("Poke_ElectricFeather", "ElectricFeather", new LegendarySummonDef { SpeciesName = "Zapdos", Location = "Mountain", TargetX = 32, TargetY = 8, RelicId = "Poke_ElectricFeather", RelicName = "Pena Elétrica", RequiresStorm = true, RequiresRain = true, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_FlameFeather", "FlameFeather", new LegendarySummonDef { SpeciesName = "Moltres", Location = "Caldera", TargetX = 25, TargetY = 31, RelicId = "Poke_FlameFeather", RelicName = "Pena de Chamas", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_BerserkGene", "BerserkGene", new LegendarySummonDef { SpeciesName = "Mewtwo", Location = "SkullCave", TargetX = 3, TargetY = 4, RelicId = "Poke_BerserkGene", RelicName = "Gene Berserk", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_OldSeaMap", "OldSeaMap", new LegendarySummonDef { SpeciesName = "Mew", Location = "Island_SE", TargetX = 22, TargetY = 18, RelicId = "Poke_OldSeaMap", RelicName = "Mapa do Mar Antigo", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_RaikouBell", "RaikouBell", new LegendarySummonDef { SpeciesName = "Raikou", Location = "Woods", TargetX = 28, TargetY = 15, RelicId = "Poke_RaikouBell", RelicName = "Sino do Trovão", RequiresStorm = true, RequiresRain = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_EnteiBell", "EnteiBell", new LegendarySummonDef { SpeciesName = "Entei", Location = "Mountain", TargetX = 48, TargetY = 12, RelicId = "Poke_EnteiBell", RelicName = "Sino do Magma", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_SuicuneBell", "SuicuneBell", new LegendarySummonDef { SpeciesName = "Suicune", Location = "Beach", TargetX = 28, TargetY = 35, RelicId = "Poke_SuicuneBell", RelicName = "Sino das Ondas", RequiresStorm = false, RequiresRain = true, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall });
-		RegisterSummon("Poke_RainbowWing", "RainbowWing", new LegendarySummonDef { SpeciesName = "Ho-Oh", Location = "Summit", TargetX = 11, TargetY = 13, RelicId = "Poke_RainbowWing", RelicName = "Asa do Arco-Íris", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_GSBall", "GSBall", new LegendarySummonDef { SpeciesName = "Celebi", Location = "Woods", TargetX = 15, TargetY = 15, RelicId = "Poke_GSBall", RelicName = "GS Ball", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_RelicRock", "RelicRock", new LegendarySummonDef { SpeciesName = "Regirock", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_RelicRock", RelicName = "Núcleo de Pedra Ancestral", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_RelicIce", "RelicIce", new LegendarySummonDef { SpeciesName = "Regice", Location = "Mine", TargetX = 18, TargetY = 10, RelicId = "Poke_RelicIce", RelicName = "Núcleo de Gelo Eterno", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Winter });
-		RegisterSummon("Poke_RelicSteel", "RelicSteel", new LegendarySummonDef { SpeciesName = "Registeel", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_RelicSteel", RelicName = "Núcleo de Aço Cósmico", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_EonFlute_Latias", "EonFlute_Latias", new LegendarySummonDef { SpeciesName = "Latias", Location = "Island_W", TargetX = 30, TargetY = 40, RelicId = "Poke_EonFlute_Latias", RelicName = "Flauta Eon Escarlate", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_EonFlute_Latios", "EonFlute_Latios", new LegendarySummonDef { SpeciesName = "Latios", Location = "Beach", TargetX = 40, TargetY = 20, RelicId = "Poke_EonFlute_Latios", RelicName = "Flauta Eon Anil", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_RedOrb", "RedOrb", new LegendarySummonDef { SpeciesName = "Groudon", Location = "Caldera", TargetX = 21, TargetY = 38, RelicId = "Poke_RedOrb", RelicName = "Esfera Vermelha Primordial", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_JadeOrb", "JadeOrb", new LegendarySummonDef { SpeciesName = "Rayquaza", Location = "Summit", TargetX = 11, TargetY = 13, RelicId = "Poke_JadeOrb", RelicName = "Esfera de Jade", RequiresStorm = true, RequiresRain = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_CometShard", "CometShard", new LegendarySummonDef { SpeciesName = "Jirachi", Location = "Mountain", TargetX = 48, TargetY = 12, RelicId = "Poke_CometShard", RelicName = "Fragmento de Cometa", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_MeteoritePiece", "MeteoritePiece", new LegendarySummonDef { SpeciesName = "Deoxys", Location = "Railroad", TargetX = 18, TargetY = 42, RelicId = "Poke_MeteoritePiece", RelicName = "Pedaço de Meteorito", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_MindGem", "MindGem", new LegendarySummonDef { SpeciesName = "Uxie", Location = "Mountain", TargetX = 48, TargetY = 12, RelicId = "Poke_MindGem", RelicName = "Gema da Sabedoria", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_EmotionGem", "EmotionGem", new LegendarySummonDef { SpeciesName = "Mesprit", Location = "Woods", TargetX = 15, TargetY = 15, RelicId = "Poke_EmotionGem", RelicName = "Gema da Emoção", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_ValorGem", "ValorGem", new LegendarySummonDef { SpeciesName = "Azelf", Location = "Forest", TargetX = 45, TargetY = 50, RelicId = "Poke_ValorGem", RelicName = "Gema da Bravura", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_AdamantOrb", "AdamantOrb", new LegendarySummonDef { SpeciesName = "Dialga", Location = "Summit", TargetX = 11, TargetY = 13, RelicId = "Poke_AdamantOrb", RelicName = "Adamant Orb", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_LustrousOrb", "LustrousOrb", new LegendarySummonDef { SpeciesName = "Palkia", Location = "Summit", TargetX = 10, TargetY = 15, RelicId = "Poke_LustrousOrb", RelicName = "Lustrous Orb", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_MagmaStone", "MagmaStone", new LegendarySummonDef { SpeciesName = "Heatran", Location = "Caldera", TargetX = 25, TargetY = 31, RelicId = "Poke_MagmaStone", RelicName = "Pedra de Magma", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_ColossalKey", "ColossalKey", new LegendarySummonDef { SpeciesName = "Regigigas", Location = "Mine", TargetX = 18, TargetY = 10, RelicId = "Poke_ColossalKey", RelicName = "Chave Colossal", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_GriseousCore", "GriseousCore", new LegendarySummonDef { SpeciesName = "Giratina", Location = "Sewer", TargetX = 16, TargetY = 12, RelicId = "Poke_GriseousCore", RelicName = "Griseous Core", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_LunarWing", "LunarWing", new LegendarySummonDef { SpeciesName = "Cresselia", Location = "Beach", TargetX = 28, TargetY = 35, RelicId = "Poke_LunarWing", RelicName = "Pena Lunar", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_MemberCard", "MemberCard", new LegendarySummonDef { SpeciesName = "Darkrai", Location = "Railroad", TargetX = 25, TargetY = 45, RelicId = "Poke_MemberCard", RelicName = "Cartão de Membro Sombrio", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall });
-		RegisterSummon("Poke_GracideaFlower", "GracideaFlower", new LegendarySummonDef { SpeciesName = "Shaymin", Location = "Forest", TargetX = 60, TargetY = 40, RelicId = "Poke_GracideaFlower", RelicName = "Flor Gracídea", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_AzureFlute", "AzureFlute", new LegendarySummonDef { SpeciesName = "Arceus", Location = "Summit", TargetX = 11, TargetY = 13, RelicId = "Poke_AzureFlute", RelicName = "Flauta Azure", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_LibertyPass", "LibertyPass", new LegendarySummonDef { SpeciesName = "Victini", Location = "Island_SE", TargetX = 22, TargetY = 18, RelicId = "Poke_LibertyPass", RelicName = "Passe da Liberdade", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_IronWillRelic", "IronWillRelic", new LegendarySummonDef { SpeciesName = "Cobalion", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_IronWillRelic", RelicName = "Relíquia da Lâmina de Ferro", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_StoneWillRelic", "StoneWillRelic", new LegendarySummonDef { SpeciesName = "Terrakion", Location = "Mountain", TargetX = 103, TargetY = 14, RelicId = "Poke_StoneWillRelic", RelicName = "Relíquia da Lâmina de Rocha", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_GrassWillRelic", "GrassWillRelic", new LegendarySummonDef { SpeciesName = "Virizion", Location = "Woods", TargetX = 28, TargetY = 15, RelicId = "Poke_GrassWillRelic", RelicName = "Relíquia da Lâmina Esmeralda", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_CycloneMirror", "CycloneMirror", new LegendarySummonDef { SpeciesName = "Tornadus", Location = "Mountain", TargetX = 32, TargetY = 8, RelicId = "Poke_CycloneMirror", RelicName = "Espelho dos Ciclones", RequiresStorm = true, RequiresRain = true, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Fall });
-		RegisterSummon("Poke_BoltMirror", "BoltMirror", new LegendarySummonDef { SpeciesName = "Thundurus", Location = "Railroad", TargetX = 18, TargetY = 42, RelicId = "Poke_BoltMirror", RelicName = "Espelho dos Trovões", RequiresStorm = true, RequiresRain = true, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_LightStone", "LightStone", new LegendarySummonDef { SpeciesName = "Reshiram", Location = "Caldera", TargetX = 25, TargetY = 31, RelicId = "Poke_LightStone", RelicName = "Light Stone", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_DarkStone", "DarkStone", new LegendarySummonDef { SpeciesName = "Zekrom", Location = "Desert", TargetX = 18, TargetY = 32, RelicId = "Poke_DarkStone", RelicName = "Dark Stone", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_FertilityMirror", "FertilityMirror", new LegendarySummonDef { SpeciesName = "Landorus", Location = "Forest", TargetX = 60, TargetY = 40, RelicId = "Poke_FertilityMirror", RelicName = "Espelho da Fertilidade", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_DNA_Splicers", "DNA_Splicers", new LegendarySummonDef { SpeciesName = "Kyurem", Location = "Mine", TargetX = 18, TargetY = 10, RelicId = "Poke_DNA_Splicers", RelicName = "Fundidores de DNA", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Winter });
-		RegisterSummon("Poke_SecretSwordRelic", "SecretSwordRelic", new LegendarySummonDef { SpeciesName = "Keldeo", Location = "Forest", TargetX = 45, TargetY = 50, RelicId = "Poke_SecretSwordRelic", RelicName = "Relíquia da Espada Secreta", RequiresStorm = false, RequiresRain = true, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_RelicSongSheet", "RelicSongSheet", new LegendarySummonDef { SpeciesName = "Meloetta", Location = "Town", TargetX = 55, TargetY = 16, RelicId = "Poke_RelicSongSheet", RelicName = "Partitura Ancestral", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_DriveBurn", "DriveBurn", new LegendarySummonDef { SpeciesName = "Genesect", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_DriveBurn", RelicName = "Burn Drive Tecnológico", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_LifeTreeRoot", "LifeTreeRoot", new LegendarySummonDef { SpeciesName = "Xerneas", Location = "Woods", TargetX = 28, TargetY = 15, RelicId = "Poke_LifeTreeRoot", RelicName = "Raiz da Árvore da Vida", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_DestructionCocoon", "DestructionCocoon", new LegendarySummonDef { SpeciesName = "Yveltal", Location = "SkullCave", TargetX = 3, TargetY = 4, RelicId = "Poke_DestructionCocoon", RelicName = "Fragmento de Casulo Noturno", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall });
-		RegisterSummon("Poke_ZygardeCube", "ZygardeCube", new LegendarySummonDef { SpeciesName = "Zygarde", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_ZygardeCube", RelicName = "Cubo de Zygarde", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_PinkDiamondRelic", "PinkDiamondRelic", new LegendarySummonDef { SpeciesName = "Diancie", Location = "Mine", TargetX = 18, TargetY = 10, RelicId = "Poke_PinkDiamondRelic", RelicName = "Diamante Cor-de-Rosa", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_PrisonBottle", "PrisonBottle", new LegendarySummonDef { SpeciesName = "Hoopa", Location = "Desert", TargetX = 33, TargetY = 43, RelicId = "Poke_PrisonBottle", RelicName = "Garrafa da Prisão", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_SteamCore", "SteamCore", new LegendarySummonDef { SpeciesName = "Volcanion", Location = "Caldera", TargetX = 21, TargetY = 38, RelicId = "Poke_SteamCore", RelicName = "Núcleo de Caldeira Térmica", RequiresStorm = false, RequiresRain = true, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_SyntheticHelmet", "SyntheticHelmet", new LegendarySummonDef { SpeciesName = "Type: Null", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_SyntheticHelmet", RelicName = "Máscara de Controle de Fera", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_MemoryDrive_Normal", "MemoryDrive_Normal", new LegendarySummonDef { SpeciesName = "Silvally", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_MemoryDrive_Normal", RelicName = "Disco de Memória RKS", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_KokoMask", "KokoMask", new LegendarySummonDef { SpeciesName = "Tapu Koko", Location = "Mountain", TargetX = 32, TargetY = 8, RelicId = "Poke_KokoMask", RelicName = "Máscara Trovejante de Tapu", RequiresStorm = true, RequiresRain = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_LeleMask", "LeleMask", new LegendarySummonDef { SpeciesName = "Tapu Lele", Location = "Woods", TargetX = 28, TargetY = 15, RelicId = "Poke_LeleMask", RelicName = "Máscara Floral de Tapu", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_BuluMask", "BuluMask", new LegendarySummonDef { SpeciesName = "Tapu Bulu", Location = "Forest", TargetX = 60, TargetY = 40, RelicId = "Poke_BuluMask", RelicName = "Máscara Telúrica de Tapu", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Fall });
-		RegisterSummon("Poke_FiniMask", "FiniMask", new LegendarySummonDef { SpeciesName = "Tapu Fini", Location = "Beach", TargetX = 28, TargetY = 35, RelicId = "Poke_FiniMask", RelicName = "Máscara das Névoas de Tapu", RequiresStorm = false, RequiresRain = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_NebulaCore", "NebulaCore", new LegendarySummonDef { SpeciesName = "Cosmog", Location = "Summit", TargetX = 11, TargetY = 13, RelicId = "Poke_NebulaCore", RelicName = "Núcleo de Poeira Estelar", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_CosmicCocoon", "CosmicCocoon", new LegendarySummonDef { SpeciesName = "Cosmoem", Location = "Summit", TargetX = 10, TargetY = 15, RelicId = "Poke_CosmicCocoon", RelicName = "Crisálida das Estrelas", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_SunFlute", "SunFlute", new LegendarySummonDef { SpeciesName = "Solgaleo", Location = "Desert", TargetX = 33, TargetY = 43, RelicId = "Poke_SunFlute", RelicName = "Flauta do Sol", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_MoonFlute", "MoonFlute", new LegendarySummonDef { SpeciesName = "Lunala", Location = "Beach", TargetX = 28, TargetY = 35, RelicId = "Poke_MoonFlute", RelicName = "Flauta da Lua", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Nihilego", Location = "Mine", TargetX = 18, TargetY = 10, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Buzzwole", Location = "Forest", TargetX = 45, TargetY = 50, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Pheromosa", Location = "Desert", TargetX = 18, TargetY = 32, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Xurkitree", Location = "Railroad", TargetX = 18, TargetY = 42, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = true, RequiresRain = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Celesteela", Location = "Summit", TargetX = 11, TargetY = 13, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Kartana", Location = "Woods", TargetX = 28, TargetY = 15, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Fall });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Guzzlord", Location = "Sewer", TargetX = 30, TargetY = 20, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_UltranecroziumZ", "UltranecroziumZ", new LegendarySummonDef { SpeciesName = "Necrozma", Location = "SkullCave", TargetX = 3, TargetY = 4, RelicId = "Poke_UltranecroziumZ", RelicName = "Ultralnecrozium Z", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_SoulHeartRelic", "SoulHeartRelic", new LegendarySummonDef { SpeciesName = "Magearna", Location = "Town", TargetX = 55, TargetY = 16, RelicId = "Poke_SoulHeartRelic", RelicName = "Alma Coração Mecânica", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_MarshadiumZ", "MarshadiumZ", new LegendarySummonDef { SpeciesName = "Marshadow", Location = "BugLand", TargetX = 31, TargetY = 20, RelicId = "Poke_MarshadiumZ", RelicName = "Marshadium Z", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Poipole", Location = "BugLand", TargetX = 31, TargetY = 20, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_DragonPoisonBarb", "DragonPoisonBarb", new LegendarySummonDef { SpeciesName = "Naganadel", Location = "BugLand", TargetX = 31, TargetY = 20, RelicId = "Poke_DragonPoisonBarb", RelicName = "Ferrão Venenoso de Dragão", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Stakataka", Location = "Mountain", TargetX = 103, TargetY = 14, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BeastBall_Relic", "BeastBall_Relic", new LegendarySummonDef { SpeciesName = "Blacephalon", Location = "Railroad", TargetX = 25, TargetY = 45, RelicId = "Poke_BeastBall_Relic", RelicName = "Ultra Esfera Transdimensional", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_ThunderClawRelic", "ThunderClawRelic", new LegendarySummonDef { SpeciesName = "Zeraora", Location = "Mountain", TargetX = 32, TargetY = 8, RelicId = "Poke_ThunderClawRelic", RelicName = "Garra da Fagulha Plasma", RequiresStorm = true, RequiresRain = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_MysteryBox_Steel", "MysteryBox_Steel", new LegendarySummonDef { SpeciesName = "Meltan", Location = "Mine", TargetX = 18, TargetY = 10, RelicId = "Poke_MysteryBox_Steel", RelicName = "Caixa Misteriosa de Aço Líquido", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_GigantamaxNut", "GigantamaxNut", new LegendarySummonDef { SpeciesName = "Melmetal", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_GigantamaxNut", RelicName = "Porca Hexagonal Titânica", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_RustedSword", "RustedSword", new LegendarySummonDef { SpeciesName = "Zacian", Location = "Forest", TargetX = 45, TargetY = 50, RelicId = "Poke_RustedSword", RelicName = "Espada Enferrujada", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_RustedShield", "RustedShield", new LegendarySummonDef { SpeciesName = "Zamazenta", Location = "Mountain", TargetX = 48, TargetY = 12, RelicId = "Poke_RustedShield", RelicName = "Escudo Enferrujado", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_WishingStar", "WishingStar", new LegendarySummonDef { SpeciesName = "Eternatus", Location = "Summit", TargetX = 11, TargetY = 13, RelicId = "Poke_WishingStar", RelicName = "Estrela dos Desejos Corrompida", RequiresStorm = true, RequiresRain = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_MartialScroll", "MartialScroll", new LegendarySummonDef { SpeciesName = "Kubfu", Location = "Desert", TargetX = 18, TargetY = 32, RelicId = "Poke_MartialScroll", RelicName = "Pergaminho das Artes Marciais", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_ScrollOfDarkness", "ScrollOfDarkness", new LegendarySummonDef { SpeciesName = "Urshifu", Location = "Caldera", TargetX = 25, TargetY = 31, RelicId = "Poke_ScrollOfDarkness", RelicName = "Pergaminho das Trevas", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_JungleVineRelic", "JungleVineRelic", new LegendarySummonDef { SpeciesName = "Zarude", Location = "Woods", TargetX = 28, TargetY = 15, RelicId = "Poke_JungleVineRelic", RelicName = "Cipó da Selva Primordial", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_ElekiPattern", "ElekiPattern", new LegendarySummonDef { SpeciesName = "Regieleki", Location = "Railroad", TargetX = 18, TargetY = 42, RelicId = "Poke_ElekiPattern", RelicName = "Padrão de Raios em Braille", RequiresStorm = true, RequiresRain = true, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_DragoPattern", "DragoPattern", new LegendarySummonDef { SpeciesName = "Regidrago", Location = "Caldera", TargetX = 21, TargetY = 38, RelicId = "Poke_DragoPattern", RelicName = "Mandíbula de Dragão em Braille", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_IcerootCarrot", "IcerootCarrot", new LegendarySummonDef { SpeciesName = "Glastrier", Location = "Summit", TargetX = 11, TargetY = 13, RelicId = "Poke_IcerootCarrot", RelicName = "Cenoura Gélida da Tundra", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Winter });
-		RegisterSummon("Poke_ShaderootCarrot", "ShaderootCarrot", new LegendarySummonDef { SpeciesName = "Spectrier", Location = "Woods", TargetX = 15, TargetY = 15, RelicId = "Poke_ShaderootCarrot", RelicName = "Cenoura Espectral das Sombras", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall });
-		RegisterSummon("Poke_ReinsOfUnity", "ReinsOfUnity", new LegendarySummonDef { SpeciesName = "Calyrex", Location = "Forest", TargetX = 60, TargetY = 40, RelicId = "Poke_ReinsOfUnity", RelicName = "Rédeas da Unidade Sagrada", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_RevealGlass_Love", "RevealGlass_Love", new LegendarySummonDef { SpeciesName = "Enamorus", Location = "Woods", TargetX = 28, TargetY = 15, RelicId = "Poke_RevealGlass_Love", RelicName = "Espelho do Amor da Primavera", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_RuinousLeaves", "RuinousLeaves", new LegendarySummonDef { SpeciesName = "Wo-Chien", Location = "Forest", TargetX = 45, TargetY = 50, RelicId = "Poke_RuinousLeaves", RelicName = "Tábua de Madeira da Ruína", RequiresStorm = false, RequiresRain = true, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall });
-		RegisterSummon("Poke_RuinousSword", "RuinousSword", new LegendarySummonDef { SpeciesName = "Chien-Pao", Location = "Summit", TargetX = 11, TargetY = 13, RelicId = "Poke_RuinousSword", RelicName = "Espada Fraturada de Gelo", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Winter });
-		RegisterSummon("Poke_RuinousVessel", "RuinousVessel", new LegendarySummonDef { SpeciesName = "Ting-Lu", Location = "Mountain", TargetX = 103, TargetY = 14, RelicId = "Poke_RuinousVessel", RelicName = "Vaso de Pedra da Ruína", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_RuinousBeads", "RuinousBeads", new LegendarySummonDef { SpeciesName = "Chi-Yu", Location = "Caldera", TargetX = 25, TargetY = 31, RelicId = "Poke_RuinousBeads", RelicName = "Contas de Fogo da Ruína", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_BoosterEnergy_Past", "BoosterEnergy_Past", new LegendarySummonDef { SpeciesName = "Roaring Moon", Location = "SkullCave", TargetX = 3, TargetY = 4, RelicId = "Poke_BoosterEnergy_Past", RelicName = "Cápsula de Energia Ancestral", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BoosterEnergy_Future", "BoosterEnergy_Future", new LegendarySummonDef { SpeciesName = "Iron Valiant", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_BoosterEnergy_Future", RelicName = "Cápsula de Energia Futurista", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_KoraidonFeather", "KoraidonFeather", new LegendarySummonDef { SpeciesName = "Koraidon", Location = "Caldera", TargetX = 25, TargetY = 31, RelicId = "Poke_KoraidonFeather", RelicName = "Pena do Passado Selvagem", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_MiraidonCore", "MiraidonCore", new LegendarySummonDef { SpeciesName = "Miraidon", Location = "Railroad", TargetX = 25, TargetY = 45, RelicId = "Poke_MiraidonCore", RelicName = "Núcleo de Propulsão Futura", RequiresStorm = true, RequiresRain = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BoosterEnergy_Past", "BoosterEnergy_Past", new LegendarySummonDef { SpeciesName = "Walking Wake", Location = "Beach", TargetX = 28, TargetY = 35, RelicId = "Poke_BoosterEnergy_Past", RelicName = "Cápsula de Energia Ancestral", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_BoosterEnergy_Future", "BoosterEnergy_Future", new LegendarySummonDef { SpeciesName = "Iron Leaves", Location = "Woods", TargetX = 28, TargetY = 15, RelicId = "Poke_BoosterEnergy_Future", RelicName = "Cápsula de Energia Futurista", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_ToxicChain_Oki", "ToxicChain_Oki", new LegendarySummonDef { SpeciesName = "Okidogi", Location = "Mountain", TargetX = 48, TargetY = 12, RelicId = "Poke_ToxicChain_Oki", RelicName = "Corrente Tóxica de Força", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_ToxicChain_Munk", "ToxicChain_Munk", new LegendarySummonDef { SpeciesName = "Munkidori", Location = "Woods", TargetX = 15, TargetY = 15, RelicId = "Poke_ToxicChain_Munk", RelicName = "Corrente Tóxica da Astúcia", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_ToxicChain_Fez", "ToxicChain_Fez", new LegendarySummonDef { SpeciesName = "Fezandipiti", Location = "Forest", TargetX = 45, TargetY = 50, RelicId = "Poke_ToxicChain_Fez", RelicName = "Corrente Tóxica da Beleza", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_TealMask", "TealMask", new LegendarySummonDef { SpeciesName = "Ogerpon", Location = "Woods", TargetX = 28, TargetY = 15, RelicId = "Poke_TealMask", RelicName = "Máscara Turquesa de Hera", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring });
-		RegisterSummon("Poke_BoosterEnergy_Past", "BoosterEnergy_Past", new LegendarySummonDef { SpeciesName = "Gouging Fire", Location = "Caldera", TargetX = 21, TargetY = 38, RelicId = "Poke_BoosterEnergy_Past", RelicName = "Cápsula de Energia Ancestral", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer });
-		RegisterSummon("Poke_BoosterEnergy_Past", "BoosterEnergy_Past", new LegendarySummonDef { SpeciesName = "Raging Bolt", Location = "Mountain", TargetX = 32, TargetY = 8, RelicId = "Poke_BoosterEnergy_Past", RelicName = "Cápsula de Energia Ancestral", RequiresStorm = true, RequiresRain = true, RequiresNight = false, RequiresDay = true, RequiredSeason = null });
-		RegisterSummon("Poke_BoosterEnergy_Future", "BoosterEnergy_Future", new LegendarySummonDef { SpeciesName = "Iron Boulder", Location = "Mountain", TargetX = 103, TargetY = 14, RelicId = "Poke_BoosterEnergy_Future", RelicName = "Cápsula de Energia Futurista", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_BoosterEnergy_Future", "BoosterEnergy_Future", new LegendarySummonDef { SpeciesName = "Iron Crown", Location = "Mine", TargetX = 21, TargetY = 12, RelicId = "Poke_BoosterEnergy_Future", RelicName = "Cápsula de Energia Futurista", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_IndigoDisk", "IndigoDisk", new LegendarySummonDef { SpeciesName = "Terapagos", Location = "Caldera", TargetX = 25, TargetY = 31, RelicId = "Poke_IndigoDisk", RelicName = "Disco Índigo Cristalino", RequiresStorm = false, RequiresRain = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null });
-		RegisterSummon("Poke_MythicalPechaMochi", "MythicalPechaMochi", new LegendarySummonDef { SpeciesName = "Pecharunt", Location = "Town", TargetX = 55, TargetY = 16, RelicId = "Poke_MythicalPechaMochi", RelicName = "Mochi Venenoso de Pêssego", RequiresStorm = false, RequiresRain = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall });
+		RegisterSummon("Poke_FreezingFeather", "FreezingFeather", new LegendarySummonDef { SpeciesName = "Articuno", Location = "UndergroundMine60", TargetX = 6, TargetY = 12, RelicId = "Poke_FreezingFeather", RelicName = "Pena Glacial", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Winter, IsFishing = false });
+		RegisterSummon("Poke_ElectricFeather", "ElectricFeather", new LegendarySummonDef { SpeciesName = "Zapdos", Location = "Mountain", TargetX = 26, TargetY = 11, RelicId = "Poke_ElectricFeather", RelicName = "Pena Elétrica", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_FlameFeather", "FlameFeather", new LegendarySummonDef { SpeciesName = "Moltres", Location = "Caldera", TargetX = 24, TargetY = 28, RelicId = "Poke_FlameFeather", RelicName = "Pena de Chamas", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_BerserkGene", "BerserkGene", new LegendarySummonDef { SpeciesName = "Mewtwo", Location = "SkullCave", TargetX = 4, TargetY = 5, RelicId = "Poke_BerserkGene", RelicName = "Gene Berserk", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_OldSeaMap", "OldSeaMap", new LegendarySummonDef { SpeciesName = "Mew", Location = "IslandSouthEast", TargetX = 22, TargetY = 16, RelicId = "Poke_OldSeaMap", RelicName = "Mapa do Mar Antigo", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_RaikouBell", "RaikouBell", new LegendarySummonDef { SpeciesName = "Raikou", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_RaikouBell", RelicName = "Sino do Trovão", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_EnteiBell", "EnteiBell", new LegendarySummonDef { SpeciesName = "Entei", Location = "Mountain", TargetX = 44, TargetY = 30, RelicId = "Poke_EnteiBell", RelicName = "Sino do Magma", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_SuicuneBell", "SuicuneBell", new LegendarySummonDef { SpeciesName = "Suicune", Location = "Beach", TargetX = 25, TargetY = 34, RelicId = "Poke_SuicuneBell", RelicName = "Sino das Ondas", RequiresStorm = false, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall, IsFishing = false });
+		RegisterSummon("Poke_TidalBell", "TidalBell", new LegendarySummonDef { SpeciesName = "Lugia", Location = "Submarine", TargetX = 13, TargetY = 5, RelicId = "Poke_TidalBell", RelicName = "Sino das Marés", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Winter, IsFishing = true });
+		RegisterSummon("Poke_RainbowWing", "RainbowWing", new LegendarySummonDef { SpeciesName = "Ho-Oh", Location = "Summit", TargetX = 10, TargetY = 22, RelicId = "Poke_RainbowWing", RelicName = "Asa do Arco-Íris", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_GSBall", "GSBall", new LegendarySummonDef { SpeciesName = "Celebi", Location = "Woods", TargetX = 12, TargetY = 14, RelicId = "Poke_GSBall", RelicName = "GS Ball", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_RelicRock", "RelicRock", new LegendarySummonDef { SpeciesName = "Regirock", Location = "UndergroundMine20", TargetX = 6, TargetY = 12, RelicId = "Poke_RelicRock", RelicName = "Núcleo de Pedra Ancestral", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_RelicIce", "RelicIce", new LegendarySummonDef { SpeciesName = "Regice", Location = "UndergroundMine60", TargetX = 6, TargetY = 12, RelicId = "Poke_RelicIce", RelicName = "Núcleo de Gelo Eterno", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Winter, IsFishing = false });
+		RegisterSummon("Poke_RelicSteel", "RelicSteel", new LegendarySummonDef { SpeciesName = "Registeel", Location = "UndergroundMine100", TargetX = 6, TargetY = 12, RelicId = "Poke_RelicSteel", RelicName = "Núcleo de Aço Cósmico", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_EonFlute_Latias", "EonFlute_Latias", new LegendarySummonDef { SpeciesName = "Latias", Location = "IslandWest", TargetX = 76, TargetY = 61, RelicId = "Poke_EonFlute_Latias", RelicName = "Flauta Eon Escarlate", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_EonFlute_Latios", "EonFlute_Latios", new LegendarySummonDef { SpeciesName = "Latios", Location = "Beach", TargetX = 38, TargetY = 23, RelicId = "Poke_EonFlute_Latios", RelicName = "Flauta Eon Anil", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_BlueOrb", "BlueOrb", new LegendarySummonDef { SpeciesName = "Kyogre", Location = "Beach", TargetX = 12, TargetY = 38, RelicId = "Poke_BlueOrb", RelicName = "Esfera Azul Primordial", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = true });
+		RegisterSummon("Poke_RedOrb", "RedOrb", new LegendarySummonDef { SpeciesName = "Groudon", Location = "Caldera", TargetX = 23, TargetY = 28, RelicId = "Poke_RedOrb", RelicName = "Esfera Vermelha Primordial", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_JadeOrb", "JadeOrb", new LegendarySummonDef { SpeciesName = "Rayquaza", Location = "Summit", TargetX = 10, TargetY = 22, RelicId = "Poke_JadeOrb", RelicName = "Esfera de Jade", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_CometShard", "CometShard", new LegendarySummonDef { SpeciesName = "Jirachi", Location = "Mountain", TargetX = 44, TargetY = 30, RelicId = "Poke_CometShard", RelicName = "Fragmento de Cometa", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_MeteoritePiece", "MeteoritePiece", new LegendarySummonDef { SpeciesName = "Deoxys", Location = "Railroad", TargetX = 28, TargetY = 43, RelicId = "Poke_MeteoritePiece", RelicName = "Pedaço de Meteorito", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_MindGem", "MindGem", new LegendarySummonDef { SpeciesName = "Uxie", Location = "Mountain", TargetX = 44, TargetY = 30, RelicId = "Poke_MindGem", RelicName = "Gema da Sabedoria", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_EmotionGem", "EmotionGem", new LegendarySummonDef { SpeciesName = "Mesprit", Location = "Woods", TargetX = 12, TargetY = 14, RelicId = "Poke_EmotionGem", RelicName = "Gema da Emoção", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_ValorGem", "ValorGem", new LegendarySummonDef { SpeciesName = "Azelf", Location = "Forest", TargetX = 34, TargetY = 60, RelicId = "Poke_ValorGem", RelicName = "Gema da Bravura", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_AdamantOrb", "AdamantOrb", new LegendarySummonDef { SpeciesName = "Dialga", Location = "Summit", TargetX = 10, TargetY = 22, RelicId = "Poke_AdamantOrb", RelicName = "Adamant Orb", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_LustrousOrb", "LustrousOrb", new LegendarySummonDef { SpeciesName = "Palkia", Location = "Summit", TargetX = 11, TargetY = 24, RelicId = "Poke_LustrousOrb", RelicName = "Lustrous Orb", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_MagmaStone", "MagmaStone", new LegendarySummonDef { SpeciesName = "Heatran", Location = "Caldera", TargetX = 25, TargetY = 28, RelicId = "Poke_MagmaStone", RelicName = "Pedra de Magma", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_ColossalKey", "ColossalKey", new LegendarySummonDef { SpeciesName = "Regigigas", Location = "UndergroundMine20", TargetX = 6, TargetY = 12, RelicId = "Poke_ColossalKey", RelicName = "Chave Colossal", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_GriseousCore", "GriseousCore", new LegendarySummonDef { SpeciesName = "Giratina", Location = "Sewer", TargetX = 16, TargetY = 17, RelicId = "Poke_GriseousCore", RelicName = "Griseous Core", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_LunarWing", "LunarWing", new LegendarySummonDef { SpeciesName = "Cresselia", Location = "Beach", TargetX = 25, TargetY = 34, RelicId = "Poke_LunarWing", RelicName = "Pena Lunar", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_SeaDriftTear", "SeaDriftTear", new LegendarySummonDef { SpeciesName = "Phione", Location = "Beach", TargetX = 12, TargetY = 38, RelicId = "Poke_SeaDriftTear", RelicName = "Lágrima das Correntes", RequiresStorm = false, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = true });
+		RegisterSummon("Poke_SeaCrown", "SeaCrown", new LegendarySummonDef { SpeciesName = "Manaphy", Location = "Beach", TargetX = 13, TargetY = 38, RelicId = "Poke_SeaCrown", RelicName = "Coroa do Oceano", RequiresStorm = false, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = true });
+		RegisterSummon("Poke_MemberCard", "MemberCard", new LegendarySummonDef { SpeciesName = "Darkrai", Location = "Railroad", TargetX = 33, TargetY = 54, RelicId = "Poke_MemberCard", RelicName = "Cartão de Membro Sombrio", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall, IsFishing = false });
+		RegisterSummon("Poke_GracideaFlower", "GracideaFlower", new LegendarySummonDef { SpeciesName = "Shaymin", Location = "Forest", TargetX = 64, TargetY = 40, RelicId = "Poke_GracideaFlower", RelicName = "Flor Gracídea", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_AzureFlute", "AzureFlute", new LegendarySummonDef { SpeciesName = "Arceus", Location = "Summit", TargetX = 10, TargetY = 22, RelicId = "Poke_AzureFlute", RelicName = "Flauta Azure", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_LibertyPass", "LibertyPass", new LegendarySummonDef { SpeciesName = "Victini", Location = "IslandSouthEast", TargetX = 22, TargetY = 16, RelicId = "Poke_LibertyPass", RelicName = "Passe da Liberdade", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_IronWillRelic", "IronWillRelic", new LegendarySummonDef { SpeciesName = "Cobalion", Location = "UndergroundMine100", TargetX = 6, TargetY = 12, RelicId = "Poke_IronWillRelic", RelicName = "Relíquia da Lâmina de Ferro", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_StoneWillRelic", "StoneWillRelic", new LegendarySummonDef { SpeciesName = "Terrakion", Location = "Mountain", TargetX = 44, TargetY = 7, RelicId = "Poke_StoneWillRelic", RelicName = "Relíquia da Lâmina de Rocha", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_GrassWillRelic", "GrassWillRelic", new LegendarySummonDef { SpeciesName = "Virizion", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_GrassWillRelic", RelicName = "Relíquia da Lâmina Esmeralda", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_CycloneMirror", "CycloneMirror", new LegendarySummonDef { SpeciesName = "Tornadus", Location = "Mountain", TargetX = 26, TargetY = 11, RelicId = "Poke_CycloneMirror", RelicName = "Espelho dos Ciclones", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Fall, IsFishing = false });
+		RegisterSummon("Poke_BoltMirror", "BoltMirror", new LegendarySummonDef { SpeciesName = "Thundurus", Location = "Railroad", TargetX = 28, TargetY = 43, RelicId = "Poke_BoltMirror", RelicName = "Espelho dos Trovões", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_LightStone", "LightStone", new LegendarySummonDef { SpeciesName = "Reshiram", Location = "Caldera", TargetX = 24, TargetY = 28, RelicId = "Poke_LightStone", RelicName = "Light Stone", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_DarkStone", "DarkStone", new LegendarySummonDef { SpeciesName = "Zekrom", Location = "Desert", TargetX = 19, TargetY = 12, RelicId = "Poke_DarkStone", RelicName = "Dark Stone", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_FertilityMirror", "FertilityMirror", new LegendarySummonDef { SpeciesName = "Landorus", Location = "Forest", TargetX = 64, TargetY = 40, RelicId = "Poke_FertilityMirror", RelicName = "Espelho da Fertilidade", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_DNA_Splicers", "DNA_Splicers", new LegendarySummonDef { SpeciesName = "Kyurem", Location = "UndergroundMine60", TargetX = 6, TargetY = 12, RelicId = "Poke_DNA_Splicers", RelicName = "Fundidores de DNA", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Winter, IsFishing = false });
+		RegisterSummon("Poke_SecretSwordRelic", "SecretSwordRelic", new LegendarySummonDef { SpeciesName = "Keldeo", Location = "Forest", TargetX = 34, TargetY = 60, RelicId = "Poke_SecretSwordRelic", RelicName = "Relíquia da Espada Secreta", RequiresStorm = false, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_RelicSongSheet", "RelicSongSheet", new LegendarySummonDef { SpeciesName = "Meloetta", Location = "Town", TargetX = 51, TargetY = 59, RelicId = "Poke_RelicSongSheet", RelicName = "Partitura Ancestral", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_DriveBurn", "DriveBurn", new LegendarySummonDef { SpeciesName = "Genesect", Location = "UndergroundMine100", TargetX = 6, TargetY = 12, RelicId = "Poke_DriveBurn", RelicName = "Burn Drive Tecnológico", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_LifeTreeRoot", "LifeTreeRoot", new LegendarySummonDef { SpeciesName = "Xerneas", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_LifeTreeRoot", RelicName = "Raiz da Árvore da Vida", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_DestructionCocoon", "DestructionCocoon", new LegendarySummonDef { SpeciesName = "Yveltal", Location = "SkullCave", TargetX = 7, TargetY = 6, RelicId = "Poke_DestructionCocoon", RelicName = "Fragmento de Casulo Noturno", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall, IsFishing = false });
+		RegisterSummon("Poke_ZygardeCube", "ZygardeCube", new LegendarySummonDef { SpeciesName = "Zygarde", Location = "UndergroundMine20", TargetX = 6, TargetY = 12, RelicId = "Poke_ZygardeCube", RelicName = "Cubo de Zygarde", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_PinkDiamondRelic", "PinkDiamondRelic", new LegendarySummonDef { SpeciesName = "Diancie", Location = "UndergroundMine20", TargetX = 6, TargetY = 12, RelicId = "Poke_PinkDiamondRelic", RelicName = "Diamante Cor-de-Rosa", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_PrisonBottle", "PrisonBottle", new LegendarySummonDef { SpeciesName = "Hoopa", Location = "Desert", TargetX = 34, TargetY = 28, RelicId = "Poke_PrisonBottle", RelicName = "Garrafa da Prisão", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_SteamCore", "SteamCore", new LegendarySummonDef { SpeciesName = "Volcanion", Location = "Caldera", TargetX = 23, TargetY = 28, RelicId = "Poke_SteamCore", RelicName = "Núcleo de Caldeira Térmica", RequiresStorm = false, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_SyntheticHelmet", "SyntheticHelmet", new LegendarySummonDef { SpeciesName = "Type: Null", Location = "Mine", TargetX = 18, TargetY = 8, RelicId = "Poke_SyntheticHelmet", RelicName = "Máscara de Controle de Fera", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_MemoryDrive_Normal", "MemoryDrive_Normal", new LegendarySummonDef { SpeciesName = "Silvally", Location = "Mine", TargetX = 18, TargetY = 8, RelicId = "Poke_MemoryDrive_Normal", RelicName = "Disco de Memória RKS", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_KokoMask", "KokoMask", new LegendarySummonDef { SpeciesName = "Tapu Koko", Location = "Mountain", TargetX = 26, TargetY = 11, RelicId = "Poke_KokoMask", RelicName = "Máscara Trovejante de Tapu", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_LeleMask", "LeleMask", new LegendarySummonDef { SpeciesName = "Tapu Lele", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_LeleMask", RelicName = "Máscara Floral de Tapu", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_BuluMask", "BuluMask", new LegendarySummonDef { SpeciesName = "Tapu Bulu", Location = "Forest", TargetX = 64, TargetY = 40, RelicId = "Poke_BuluMask", RelicName = "Máscara Telúrica de Tapu", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Fall, IsFishing = false });
+		RegisterSummon("Poke_FiniMask", "FiniMask", new LegendarySummonDef { SpeciesName = "Tapu Fini", Location = "Beach", TargetX = 25, TargetY = 34, RelicId = "Poke_FiniMask", RelicName = "Máscara das Névoas de Tapu", RequiresStorm = false, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_NebulaCore", "NebulaCore", new LegendarySummonDef { SpeciesName = "Cosmog", Location = "Summit", TargetX = 10, TargetY = 22, RelicId = "Poke_NebulaCore", RelicName = "Núcleo de Poeira Estelar", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_CosmicCocoon", "CosmicCocoon", new LegendarySummonDef { SpeciesName = "Cosmoem", Location = "Summit", TargetX = 11, TargetY = 24, RelicId = "Poke_CosmicCocoon", RelicName = "Crisálida das Estrelas", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_SunFlute", "SunFlute", new LegendarySummonDef { SpeciesName = "Solgaleo", Location = "Desert", TargetX = 34, TargetY = 28, RelicId = "Poke_SunFlute", RelicName = "Flauta do Sol", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_MoonFlute", "MoonFlute", new LegendarySummonDef { SpeciesName = "Lunala", Location = "Beach", TargetX = 25, TargetY = 34, RelicId = "Poke_MoonFlute", RelicName = "Flauta da Lua", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Nihilego", "BeastBall_Nihilego", new LegendarySummonDef { SpeciesName = "Nihilego", Location = "UndergroundMine60", TargetX = 6, TargetY = 12, RelicId = "Poke_BeastBall_Nihilego", RelicName = "Ultra Esfera (Nihilego)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Buzzwole", "BeastBall_Buzzwole", new LegendarySummonDef { SpeciesName = "Buzzwole", Location = "Forest", TargetX = 34, TargetY = 60, RelicId = "Poke_BeastBall_Buzzwole", RelicName = "Ultra Esfera (Buzzwole)", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Pheromosa", "BeastBall_Pheromosa", new LegendarySummonDef { SpeciesName = "Pheromosa", Location = "Desert", TargetX = 19, TargetY = 12, RelicId = "Poke_BeastBall_Pheromosa", RelicName = "Ultra Esfera (Pheromosa)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Xurkitree", "BeastBall_Xurkitree", new LegendarySummonDef { SpeciesName = "Xurkitree", Location = "Railroad", TargetX = 28, TargetY = 43, RelicId = "Poke_BeastBall_Xurkitree", RelicName = "Ultra Esfera (Xurkitree)", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Celesteela", "BeastBall_Celesteela", new LegendarySummonDef { SpeciesName = "Celesteela", Location = "Summit", TargetX = 10, TargetY = 22, RelicId = "Poke_BeastBall_Celesteela", RelicName = "Ultra Esfera (Celesteela)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Kartana", "BeastBall_Kartana", new LegendarySummonDef { SpeciesName = "Kartana", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_BeastBall_Kartana", RelicName = "Ultra Esfera (Kartana)", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Fall, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Guzzlord", "BeastBall_Guzzlord", new LegendarySummonDef { SpeciesName = "Guzzlord", Location = "Sewer", TargetX = 17, TargetY = 27, RelicId = "Poke_BeastBall_Guzzlord", RelicName = "Ultra Esfera (Guzzlord)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_UltranecroziumZ", "UltranecroziumZ", new LegendarySummonDef { SpeciesName = "Necrozma", Location = "SkullCave", TargetX = 4, TargetY = 5, RelicId = "Poke_UltranecroziumZ", RelicName = "Ultranecrozium Z", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_SoulHeartRelic", "SoulHeartRelic", new LegendarySummonDef { SpeciesName = "Magearna", Location = "Town", TargetX = 51, TargetY = 59, RelicId = "Poke_SoulHeartRelic", RelicName = "Alma Coração Mecânica", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_MarshadiumZ", "MarshadiumZ", new LegendarySummonDef { SpeciesName = "Marshadow", Location = "BugLand", TargetX = 29, TargetY = 46, RelicId = "Poke_MarshadiumZ", RelicName = "Marshadium Z", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Poipole", "BeastBall_Poipole", new LegendarySummonDef { SpeciesName = "Poipole", Location = "BugLand", TargetX = 29, TargetY = 46, RelicId = "Poke_BeastBall_Poipole", RelicName = "Ultra Esfera (Poipole)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_DragonPoisonBarb", "DragonPoisonBarb", new LegendarySummonDef { SpeciesName = "Naganadel", Location = "BugLand", TargetX = 29, TargetY = 46, RelicId = "Poke_DragonPoisonBarb", RelicName = "Ferrão Venenoso de Dragão", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Stakataka", "BeastBall_Stakataka", new LegendarySummonDef { SpeciesName = "Stakataka", Location = "Mountain", TargetX = 44, TargetY = 7, RelicId = "Poke_BeastBall_Stakataka", RelicName = "Ultra Esfera (Stakataka)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_BeastBall_Blacephalon", "BeastBall_Blacephalon", new LegendarySummonDef { SpeciesName = "Blacephalon", Location = "Railroad", TargetX = 33, TargetY = 54, RelicId = "Poke_BeastBall_Blacephalon", RelicName = "Ultra Esfera (Blacephalon)", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_ThunderClawRelic", "ThunderClawRelic", new LegendarySummonDef { SpeciesName = "Zeraora", Location = "Mountain", TargetX = 26, TargetY = 11, RelicId = "Poke_ThunderClawRelic", RelicName = "Garra da Fagulha Plasma", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_MysteryBox_Steel", "MysteryBox_Steel", new LegendarySummonDef { SpeciesName = "Meltan", Location = "Mine", TargetX = 18, TargetY = 8, RelicId = "Poke_MysteryBox_Steel", RelicName = "Caixa Misteriosa de Aço Líquido", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_GigantamaxNut", "GigantamaxNut", new LegendarySummonDef { SpeciesName = "Melmetal", Location = "UndergroundMine100", TargetX = 6, TargetY = 12, RelicId = "Poke_GigantamaxNut", RelicName = "Porca Hexagonal Titânica", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_RustedSword", "RustedSword", new LegendarySummonDef { SpeciesName = "Zacian", Location = "Forest", TargetX = 34, TargetY = 60, RelicId = "Poke_RustedSword", RelicName = "Espada Enferrujada", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_RustedShield", "RustedShield", new LegendarySummonDef { SpeciesName = "Zamazenta", Location = "Mountain", TargetX = 44, TargetY = 30, RelicId = "Poke_RustedShield", RelicName = "Escudo Enferrujado", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_WishingStar", "WishingStar", new LegendarySummonDef { SpeciesName = "Eternatus", Location = "Summit", TargetX = 10, TargetY = 22, RelicId = "Poke_WishingStar", RelicName = "Estrela dos Desejos Corrompida", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_MartialScroll", "MartialScroll", new LegendarySummonDef { SpeciesName = "Kubfu", Location = "Desert", TargetX = 19, TargetY = 12, RelicId = "Poke_MartialScroll", RelicName = "Pergaminho das Artes Marciais", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_ScrollOfDarkness", "ScrollOfDarkness", new LegendarySummonDef { SpeciesName = "Urshifu", Location = "Caldera", TargetX = 25, TargetY = 28, RelicId = "Poke_ScrollOfDarkness", RelicName = "Pergaminho das Trevas", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_JungleVineRelic", "JungleVineRelic", new LegendarySummonDef { SpeciesName = "Zarude", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_JungleVineRelic", RelicName = "Cipó da Selva Primordial", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_ElekiPattern", "ElekiPattern", new LegendarySummonDef { SpeciesName = "Regieleki", Location = "Railroad", TargetX = 28, TargetY = 43, RelicId = "Poke_ElekiPattern", RelicName = "Padrão de Raios em Braille", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_DragoPattern", "DragoPattern", new LegendarySummonDef { SpeciesName = "Regidrago", Location = "Caldera", TargetX = 23, TargetY = 28, RelicId = "Poke_DragoPattern", RelicName = "Mandíbula de Dragão em Braille", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_IcerootCarrot", "IcerootCarrot", new LegendarySummonDef { SpeciesName = "Glastrier", Location = "Summit", TargetX = 11, TargetY = 24, RelicId = "Poke_IcerootCarrot", RelicName = "Cenoura Gélida da Tundra", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Winter, IsFishing = false });
+		RegisterSummon("Poke_ShaderootCarrot", "ShaderootCarrot", new LegendarySummonDef { SpeciesName = "Spectrier", Location = "Woods", TargetX = 12, TargetY = 14, RelicId = "Poke_ShaderootCarrot", RelicName = "Cenoura Espectral das Sombras", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall, IsFishing = false });
+		RegisterSummon("Poke_ReinsOfUnity", "ReinsOfUnity", new LegendarySummonDef { SpeciesName = "Calyrex", Location = "Forest", TargetX = 64, TargetY = 40, RelicId = "Poke_ReinsOfUnity", RelicName = "Rédeas da Unidade Sagrada", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_RevealGlass_Love", "RevealGlass_Love", new LegendarySummonDef { SpeciesName = "Enamorus", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_RevealGlass_Love", RelicName = "Espelho do Amor da Primavera", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_RuinousLeaves", "RuinousLeaves", new LegendarySummonDef { SpeciesName = "Wo-Chien", Location = "Forest", TargetX = 34, TargetY = 60, RelicId = "Poke_RuinousLeaves", RelicName = "Tábua de Madeira da Ruína", RequiresStorm = false, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall, IsFishing = false });
+		RegisterSummon("Poke_RuinousSword", "RuinousSword", new LegendarySummonDef { SpeciesName = "Chien-Pao", Location = "Summit", TargetX = 10, TargetY = 22, RelicId = "Poke_RuinousSword", RelicName = "Espada Fraturada de Gelo", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Winter, IsFishing = false });
+		RegisterSummon("Poke_RuinousVessel", "RuinousVessel", new LegendarySummonDef { SpeciesName = "Ting-Lu", Location = "Mountain", TargetX = 44, TargetY = 7, RelicId = "Poke_RuinousVessel", RelicName = "Vaso de Pedra da Ruína", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_RuinousBeads", "RuinousBeads", new LegendarySummonDef { SpeciesName = "Chi-Yu", Location = "Caldera", TargetX = 24, TargetY = 28, RelicId = "Poke_RuinousBeads", RelicName = "Contas de Fogo da Ruína", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_Booster_RoaringMoon", "Booster_RoaringMoon", new LegendarySummonDef { SpeciesName = "Roaring Moon", Location = "SkullCave", TargetX = 7, TargetY = 6, RelicId = "Poke_Booster_RoaringMoon", RelicName = "Cápsula Ancestral (Roaring Moon)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_Booster_IronValiant", "Booster_IronValiant", new LegendarySummonDef { SpeciesName = "Iron Valiant", Location = "UndergroundMine100", TargetX = 6, TargetY = 12, RelicId = "Poke_Booster_IronValiant", RelicName = "Cápsula Futurista (Iron Valiant)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_KoraidonFeather", "KoraidonFeather", new LegendarySummonDef { SpeciesName = "Koraidon", Location = "Caldera", TargetX = 23, TargetY = 28, RelicId = "Poke_KoraidonFeather", RelicName = "Pena do Passado Selvagem", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_MiraidonCore", "MiraidonCore", new LegendarySummonDef { SpeciesName = "Miraidon", Location = "Railroad", TargetX = 33, TargetY = 54, RelicId = "Poke_MiraidonCore", RelicName = "Núcleo de Propulsão Futura", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_Booster_WalkingWake", "Booster_WalkingWake", new LegendarySummonDef { SpeciesName = "Walking Wake", Location = "Beach", TargetX = 28, TargetY = 14, RelicId = "Poke_Booster_WalkingWake", RelicName = "Cápsula Ancestral (Walking Wake)", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_Booster_IronLeaves", "Booster_IronLeaves", new LegendarySummonDef { SpeciesName = "Iron Leaves", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_Booster_IronLeaves", RelicName = "Cápsula Futurista (Iron Leaves)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_ToxicChain_Oki", "ToxicChain_Oki", new LegendarySummonDef { SpeciesName = "Okidogi", Location = "Mountain", TargetX = 16, TargetY = 9, RelicId = "Poke_ToxicChain_Oki", RelicName = "Corrente Tóxica de Força", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_ToxicChain_Munk", "ToxicChain_Munk", new LegendarySummonDef { SpeciesName = "Munkidori", Location = "Woods", TargetX = 12, TargetY = 14, RelicId = "Poke_ToxicChain_Munk", RelicName = "Corrente Tóxica da Astúcia", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_ToxicChain_Fez", "ToxicChain_Fez", new LegendarySummonDef { SpeciesName = "Fezandipiti", Location = "Forest", TargetX = 34, TargetY = 60, RelicId = "Poke_ToxicChain_Fez", RelicName = "Corrente Tóxica da Beleza", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_TealMask", "TealMask", new LegendarySummonDef { SpeciesName = "Ogerpon", Location = "Woods", TargetX = 25, TargetY = 15, RelicId = "Poke_TealMask", RelicName = "Máscara Turquesa de Hera", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Spring, IsFishing = false });
+		RegisterSummon("Poke_Booster_GougingFire", "Booster_GougingFire", new LegendarySummonDef { SpeciesName = "Gouging Fire", Location = "Caldera", TargetX = 25, TargetY = 28, RelicId = "Poke_Booster_GougingFire", RelicName = "Cápsula Ancestral (Gouging Fire)", RequiresStorm = false, RequiresRain = false, RequiresSun = true, RequiresNight = false, RequiresDay = true, RequiredSeason = Season.Summer, IsFishing = false });
+		RegisterSummon("Poke_Booster_RagingBolt", "Booster_RagingBolt", new LegendarySummonDef { SpeciesName = "Raging Bolt", Location = "Mountain", TargetX = 26, TargetY = 11, RelicId = "Poke_Booster_RagingBolt", RelicName = "Cápsula Ancestral (Raging Bolt)", RequiresStorm = true, RequiresRain = true, RequiresSun = false, RequiresNight = false, RequiresDay = true, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_Booster_IronBoulder", "Booster_IronBoulder", new LegendarySummonDef { SpeciesName = "Iron Boulder", Location = "Mountain", TargetX = 44, TargetY = 7, RelicId = "Poke_Booster_IronBoulder", RelicName = "Cápsula Futurista (Iron Boulder)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_Booster_IronCrown", "Booster_IronCrown", new LegendarySummonDef { SpeciesName = "Iron Crown", Location = "UndergroundMine100", TargetX = 6, TargetY = 12, RelicId = "Poke_Booster_IronCrown", RelicName = "Cápsula Futurista (Iron Crown)", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_IndigoDisk", "IndigoDisk", new LegendarySummonDef { SpeciesName = "Terapagos", Location = "Caldera", TargetX = 24, TargetY = 28, RelicId = "Poke_IndigoDisk", RelicName = "Disco Índigo Cristalino", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = false, RequiresDay = false, RequiredSeason = null, IsFishing = false });
+		RegisterSummon("Poke_MythicalPechaMochi", "MythicalPechaMochi", new LegendarySummonDef { SpeciesName = "Pecharunt", Location = "Town", TargetX = 51, TargetY = 59, RelicId = "Poke_MythicalPechaMochi", RelicName = "Mochi Venenoso de Pêssego", RequiresStorm = false, RequiresRain = false, RequiresSun = false, RequiresNight = true, RequiresDay = false, RequiredSeason = Season.Fall, IsFishing = false });
 	}
 
-	private static void CheckActiveItemLegendarySummon(GameLocation loc, Farmer player, LocationSpawnState state)
+	public static bool IsSummonRelic(string itemId)
 	{
-		if (player == null || loc == null || state == null) return;
-		Item held = player.ActiveObject ?? player.CurrentItem;
-		if (held == null) return;
+		if (string.IsNullOrWhiteSpace(itemId)) return false;
+		if (itemId.StartsWith("(O)")) itemId = itemId.Substring(3);
+		return LegendarySummonsByRelic.ContainsKey(itemId);
+	}
 
-		string heldId = held.ItemId;
-		if (!LegendarySummonsByRelic.TryGetValue(heldId, out var summons))
-			return;
+	public static bool IsFishingSummonRelic(string itemId)
+	{
+		if (string.IsNullOrWhiteSpace(itemId)) return false;
+		if (itemId.StartsWith("(O)")) itemId = itemId.Substring(3);
+		if (!LegendarySummonsByRelic.TryGetValue(itemId, out var list)) return false;
+		return list.Any(d => d.IsFishing);
+	}
 
+	public static bool MatchesHabitatLocation(GameLocation loc, string targetLoc)
+	{
+		if (loc == null || string.IsNullOrEmpty(targetLoc)) return false;
 		string locName = loc.NameOrUniqueName ?? "";
+		string baseName = loc.Name ?? "";
+
+		if (locName.Equals(targetLoc, StringComparison.OrdinalIgnoreCase) ||
+		    baseName.Equals(targetLoc, StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		if (targetLoc.Equals("Mine", StringComparison.OrdinalIgnoreCase) ||
+		    targetLoc.StartsWith("UndergroundMine", StringComparison.OrdinalIgnoreCase))
+		{
+			if (baseName.Equals("Mine", StringComparison.OrdinalIgnoreCase)) return true;
+			if (loc is MineShaft ms && ms.mineLevel < 121) return true;
+		}
+
+		if (targetLoc.Equals("SkullCave", StringComparison.OrdinalIgnoreCase))
+		{
+			if (baseName.Equals("SkullCave", StringComparison.OrdinalIgnoreCase)) return true;
+			if (loc is MineShaft ms && ms.mineLevel >= 121) return true;
+		}
+
+		if (targetLoc.Equals("Caldera", StringComparison.OrdinalIgnoreCase))
+		{
+			if (baseName.Equals("Caldera", StringComparison.OrdinalIgnoreCase) || loc is VolcanoDungeon) return true;
+		}
+
+		if (targetLoc.Equals("IslandSouthEast", StringComparison.OrdinalIgnoreCase) || targetLoc.Equals("Island_SE", StringComparison.OrdinalIgnoreCase))
+		{
+			if (baseName.Equals("IslandSouthEast", StringComparison.OrdinalIgnoreCase) || baseName.Equals("Island_SE", StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+
+		if (targetLoc.Equals("IslandWest", StringComparison.OrdinalIgnoreCase) || targetLoc.Equals("Island_W", StringComparison.OrdinalIgnoreCase))
+		{
+			if (baseName.Equals("IslandWest", StringComparison.OrdinalIgnoreCase) || baseName.Equals("Island_W", StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+
+		return false;
+	}
+
+	private static string GetSeasonPtName(Season s) => s switch
+	{
+		Season.Spring => "Primavera",
+		Season.Summer => "Verão",
+		Season.Fall => "Outono",
+		Season.Winter => "Inverno",
+		_ => s.ToString()
+	};
+
+	/// <summary>
+	/// Called from Object.placementAction when the player places a Legendary Summon Relic on the ground.
+	/// Returns true if the Legendary was summoned (which consumes 1 stack of the item without placing the object on the map),
+	/// or false if environmental conditions were not met (preserving the item in the player's hand).
+	/// </summary>
+	public static bool TryPlaceSummonRelic(StardewValley.Object relicObj, GameLocation loc, int tileX, int tileY, Farmer who)
+	{
+		if (relicObj == null || loc == null) return false;
+		string itemId = relicObj.ItemId ?? "";
+		if (itemId.StartsWith("(O)")) itemId = itemId.Substring(3);
+
+		if (!LegendarySummonsByRelic.TryGetValue(itemId, out var summons) || summons.Count == 0)
+			return false;
+
+		var firstDef = summons[0];
+		if (firstDef.IsFishing)
+		{
+			Game1.playSound("cancel");
+			Game1.addHUDMessage(new HUDMessage($"🎣 {firstDef.RelicName} deve ser usado PESCANDO na água em {firstDef.Location} com o item na mochila!", 3));
+			return false;
+		}
+
+		List<string> missingReasons = new();
+		LegendarySummonDef matchedDef = null;
+
+		bool isRaining = Game1.isRaining || loc.IsRainingHere();
+		bool isStorm = Game1.isLightning || loc.IsLightningHere();
+		bool isNight = Game1.timeOfDay >= 1800;
+		bool isDay = Game1.timeOfDay >= 600 && Game1.timeOfDay < 1800;
+		Season curSeason = Game1.season;
 
 		foreach (var def in summons)
 		{
-			if (!locName.Equals(def.Location, StringComparison.OrdinalIgnoreCase))
-				continue;
+			missingReasons.Clear();
 
-			// Check distance to the sacred habitat altar / coordinates (within 6 tiles)
-			float dist = Vector2.Distance(player.Tile, new Vector2(def.TargetX, def.TargetY));
-			if (dist > 6.0f)
-				continue;
+			if (!MatchesHabitatLocation(loc, def.Location))
+				missingReasons.Add($"Local: {def.Location}");
 
-			// Environmental conditions check
-			if (def.RequiresStorm && !Game1.isLightning) continue;
-			if (def.RequiresRain && !Game1.isRaining) continue;
-			if (def.RequiresNight && Game1.timeOfDay < 1800) continue;
-			if (def.RequiresDay && (Game1.timeOfDay >= 1800 || Game1.timeOfDay < 600)) continue;
-			if (def.RequiredSeason.HasValue && Game1.season != def.RequiredSeason.Value) continue;
+			if (def.RequiresStorm && !isStorm)
+				missingReasons.Add("Clima: Tempestade");
+			else if (def.RequiresRain && !isRaining && !isStorm)
+				missingReasons.Add("Clima: Chuva");
+			else if (def.RequiresSun && (isRaining || isStorm))
+				missingReasons.Add("Clima: Ensolarado");
 
-			// Prevent duplicate spawn on map
-			if (state.Spawns.Any(s => s.Instance?.Species?.Name.Equals(def.SpeciesName, StringComparison.OrdinalIgnoreCase) == true))
-				continue;
+			if (def.RequiresNight && !isNight)
+				missingReasons.Add("Horário: Noite (18:00+)");
+			else if (def.RequiresDay && !isDay)
+				missingReasons.Add("Horário: Dia (06:00-18:00)");
 
-			// Debounce cooldown (at least 5 seconds between summons)
-			if (Game1.ticks - _lastLegendarySummonTick < 300)
-				continue;
+			if (def.RequiredSeason.HasValue && curSeason != def.RequiredSeason.Value)
+				missingReasons.Add($"Estação: {GetSeasonPtName(def.RequiredSeason.Value)}");
 
-			_lastLegendarySummonTick = Game1.ticks;
-
-			// Consume 1 relic item from player's hand/inventory
-			if (player.ActiveObject != null)
+			if (missingReasons.Count == 0)
 			{
-				player.ActiveObject.ConsumeStack(1);
-				if (player.ActiveObject.Stack <= 0) player.ActiveObject = null;
+				matchedDef = def;
+				break;
 			}
-			else
-			{
-				player.removeFirstOfThisItemFromInventory(heldId);
-				player.removeFirstOfThisItemFromInventory("(O)" + heldId);
-			}
-
-			// Dramatic summon effects
-			Game1.playSound("thunder");
-			Game1.playSound("roar");
-			Rumble.rumble(0.9f, 600f);
-			Game1.screenGlowOnce(Color.Gold, hold: false);
-
-			// Spawn right in front of the player
-			var spec = PokemonSpecies.Get(def.SpeciesName);
-			if (spec != null)
-			{
-				Point spawnTile = new Point((int)player.Tile.X, (int)player.Tile.Y);
-				switch (player.FacingDirection)
-				{
-					case 0: spawnTile.Y -= 2; break;
-					case 1: spawnTile.X += 2; break;
-					case 2: spawnTile.Y += 2; break;
-					case 3: spawnTile.X -= 2; break;
-				}
-				SpawnWildAt(loc, spawnTile, spec.InternalName, level: 70, isShiny: RollWildShiny());
-				Game1.addHUDMessage(new HUDMessage($"✨ A relíquia ressoou com o habitat! O lendário {spec.Name} emergiu!", 2));
-			}
-			break;
 		}
+
+		if (matchedDef == null)
+		{
+			Game1.playSound("cancel");
+			Game1.addHUDMessage(new HUDMessage($"⚠️ {firstDef.RelicName} não reagiu! Para invocar {firstDef.SpeciesName}, falta: {string.Join(", ", missingReasons)}.", 3));
+			return false;
+		}
+
+		// Ensure no object remains on the placement tile
+		loc.objects.Remove(new Vector2(tileX, tileY));
+
+		// Dramatic summon audiovisuals
+		Game1.playSound("thunder");
+		Game1.playSound("roar");
+		Rumble.rumble(0.9f, 600f);
+		Game1.screenGlowOnce(Color.Gold, hold: false);
+
+		var spec = PokemonSpecies.Get(matchedDef.SpeciesName);
+		if (spec != null)
+		{
+			var spawn = SpawnWildAt(loc, new Point(tileX, tileY), spec.InternalName, level: 70, isShiny: RollWildShiny());
+			if (spawn != null)
+			{
+				spawn.ContactCooldown = 1.0f;
+			}
+			Game1.addHUDMessage(new HUDMessage($"✨ {matchedDef.RelicName} desapareceu em luz! O lendário {spec.Name} emergiu!", 2));
+		}
+
+		return true;
+	}
+
+	public static bool IsValidWalkableSpawnTile(GameLocation loc, int tx, int ty, Point? reachableFrom = null)
+	{
+		if (loc == null) return false;
+		Vector2 tileVec = new Vector2(tx, ty);
+		if (!loc.isTileOnMap(tileVec)) return false;
+		if (!loc.hasTileAt(tx, ty, "Back")) return false;
+		if (loc.hasTileAt(tx, ty, "Buildings")) return false;
+		if (loc.isWaterTile(tx, ty) || loc.isOpenWater(tx, ty)) return false;
+		if (loc.doesTileHaveProperty(tx, ty, "Water", "Back") != null || loc.doesTileHaveProperty(tx, ty, "WaterSource", "Back") != null) return false;
+		if (!loc.isTilePassable(new xTile.Dimensions.Location(tx, ty), Game1.viewport)) return false;
+		if (loc.Objects.ContainsKey(tileVec)) return false;
+
+		if (loc is MineShaft ms)
+		{
+			if (!ms.isTileOnClearAndSolidGround(tx, ty)) return false;
+			if (ms.getTileIndexAt(tx, ty, "Back") == 77) return false;
+		}
+
+		string locName = loc.NameOrUniqueName ?? "";
+		bool isCaveOrIndoor = !loc.IsOutdoors || loc is MineShaft || loc is VolcanoDungeon || loc is Sewer ||
+		                      locName.Contains("Cave", StringComparison.OrdinalIgnoreCase) ||
+		                      locName.Contains("Mine", StringComparison.OrdinalIgnoreCase) ||
+		                      locName.Contains("Caldera", StringComparison.OrdinalIgnoreCase) ||
+		                      locName.Contains("Submarine", StringComparison.OrdinalIgnoreCase);
+
+		if (isCaveOrIndoor && loc.hasTileAt(tx, ty, "Front"))
+			return false;
+
+		Vector2 worldPos = new Vector2(tx * 64f + 32f, ty * 64f + 32f);
+		Rectangle box = new Rectangle((int)worldPos.X - 14, (int)worldPos.Y - 14, 28, 28);
+		if (loc.isCollidingPosition(box, Game1.viewport, isFarmer: false, damagesFarmer: 0, glider: false, character: null, pathfinding: false, projectile: false, ignoreCharacterRequirement: true, skipCollisionEffects: true))
+			return false;
+
+		if (reachableFrom.HasValue)
+		{
+			Point start = reachableFrom.Value;
+			if (start.X == tx && start.Y == ty) return true;
+			Queue<Point> q = new Queue<Point>();
+			HashSet<Point> visited = new HashSet<Point>();
+			q.Enqueue(start);
+			visited.Add(start);
+			int steps = 0;
+			bool found = false;
+			int[] dxs = { 1, -1, 0, 0 };
+			int[] dys = { 0, 0, 1, -1 };
+
+			while (q.Count > 0 && steps < 350)
+			{
+				Point cur = q.Dequeue();
+				steps++;
+				if (cur.X == tx && cur.Y == ty)
+				{
+					found = true;
+					break;
+				}
+				for (int d = 0; d < 4; d++)
+				{
+					Point nxt = new Point(cur.X + dxs[d], cur.Y + dys[d]);
+					if (visited.Contains(nxt)) continue;
+					if (!loc.isTileOnMap(new Vector2(nxt.X, nxt.Y))) continue;
+					if (!loc.hasTileAt(nxt.X, nxt.Y, "Back") || loc.hasTileAt(nxt.X, nxt.Y, "Buildings")) continue;
+					if (loc.isWaterTile(nxt.X, nxt.Y) || !loc.isTilePassable(new xTile.Dimensions.Location(nxt.X, nxt.Y), Game1.viewport)) continue;
+					if (loc is MineShaft ms2 && (!ms2.isTileOnClearAndSolidGround(nxt.X, nxt.Y) || ms2.getTileIndexAt(nxt.X, nxt.Y, "Back") == 77)) continue;
+					visited.Add(nxt);
+					q.Enqueue(nxt);
+				}
+			}
+			if (!found) return false;
+		}
+
+		return true;
 	}
 
 	public static void UpdateOverworldSpawns(GameTime gameTime)
@@ -387,12 +546,8 @@ public static class PokemonEncounterManager
 				if (s.IsMoving)
 				{
 					Vector2 nextPos = s.Position + s.Velocity * dt;
-					Rectangle box = new Rectangle((int)nextPos.X - 14, (int)nextPos.Y - 14, 28, 28);
 					Point tilePt = new Point((int)(nextPos.X / 64f), (int)(nextPos.Y / 64f));
-					if (loc.isTileOnMap(new Vector2(tilePt.X, tilePt.Y)) &&
-					    loc.isTilePassable(new xTile.Dimensions.Location(tilePt.X, tilePt.Y), Game1.viewport) &&
-					    !loc.Objects.ContainsKey(new Vector2(tilePt.X, tilePt.Y)) &&
-					    !loc.isCollidingPosition(box, Game1.viewport, isFarmer: false, damagesFarmer: 0, glider: false, character: null, pathfinding: false, projectile: false, ignoreCharacterRequirement: true, skipCollisionEffects: true))
+					if (IsValidWalkableSpawnTile(loc, tilePt.X, tilePt.Y))
 					{
 						s.Position = nextPos;
 					}
@@ -479,24 +634,24 @@ public static class PokemonEncounterManager
 	private static void TrySpawnOverworldPokemon(GameLocation loc, Farmer player, List<OverworldWildSpawn> targetList)
 	{
 		Point pTile = player.TilePoint;
-		for (int attempt = 0; attempt < 15; attempt++)
+		bool isCompactMap = !loc.IsOutdoors || loc is MineShaft || loc is VolcanoDungeon || loc is Sewer ||
+		                    (loc.NameOrUniqueName != null && (loc.NameOrUniqueName.Contains("Cave") || loc.NameOrUniqueName.Contains("Mine") || loc.NameOrUniqueName.Contains("Caldera")));
+		int maxRangeX = isCompactMap ? 6 : 10;
+		int maxRangeY = isCompactMap ? 5 : 8;
+		int minDist = isCompactMap ? 2 : 4;
+
+		for (int attempt = 0; attempt < 24; attempt++)
 		{
-			int dx = Game1.random.Next(-10, 11);
-			int dy = Game1.random.Next(-8, 9);
-			if (Math.Abs(dx) < 4 && Math.Abs(dy) < 4) continue;
+			int dx = Game1.random.Next(-maxRangeX, maxRangeX + 1);
+			int dy = Game1.random.Next(-maxRangeY, maxRangeY + 1);
+			if (Math.Abs(dx) < minDist && Math.Abs(dy) < minDist) continue;
 
 			int tx = pTile.X + dx;
 			int ty = pTile.Y + dy;
-			Vector2 tileVec = new Vector2(tx, ty);
-			if (!loc.isTileOnMap(tileVec)) continue;
-			if (!loc.isTilePassable(new xTile.Dimensions.Location(tx, ty), Game1.viewport)) continue;
-			if (loc.Objects.ContainsKey(tileVec)) continue;
-			if (loc.isWaterTile(tx, ty)) continue;
+			if (!IsValidWalkableSpawnTile(loc, tx, ty, reachableFrom: pTile))
+				continue;
 
 			Vector2 worldPos = new Vector2(tx * 64f + 32f, ty * 64f + 32f);
-			Rectangle box = new Rectangle((int)worldPos.X - 16, (int)worldPos.Y - 16, 32, 32);
-			if (loc.isCollidingPosition(box, Game1.viewport, isFarmer: false, damagesFarmer: 0, glider: false, character: null, pathfinding: false, projectile: false, ignoreCharacterRequirement: true, skipCollisionEffects: true))
-				continue;
 
 			bool isNight = Game1.timeOfDay >= 1800;
 			bool isRain = Game1.isRaining;

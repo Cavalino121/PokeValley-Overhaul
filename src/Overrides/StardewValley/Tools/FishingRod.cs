@@ -912,6 +912,7 @@ public class FishingRod : Tool
 		{
 			GameLocation loc = farmerUser.currentLocation;
 			string locName = loc?.NameOrUniqueName ?? "";
+			bool isRainingHere = Game1.isRaining || (loc != null && loc.IsRainingHere());
 
 			// 1. Lugia: Submarine or Beach at night with Tidal Bell / Silver Wing
 			bool isLugiaSpot = (loc is Submarine || locName.Contains("Submarine") || (loc is Beach && Game1.timeOfDay >= 1800));
@@ -920,15 +921,10 @@ public class FishingRod : Tool
 			                    (farmerUser.ActiveObject != null && (farmerUser.ActiveObject.ItemId == "Poke_TidalBell" || farmerUser.ActiveObject.ItemId == "Poke_SilverWing"));
 			if (isLugiaSpot && hasTidalBell)
 			{
-				farmerUser.removeFirstOfThisItemFromInventory("Poke_TidalBell");
-				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_TidalBell");
-				farmerUser.removeFirstOfThisItemFromInventory("Poke_SilverWing");
-				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_SilverWing");
-				if (farmerUser.ActiveObject != null && (farmerUser.ActiveObject.ItemId == "Poke_TidalBell" || farmerUser.ActiveObject.ItemId == "Poke_SilverWing"))
-				{
-					farmerUser.ActiveObject.ConsumeStack(1);
-					if (farmerUser.ActiveObject.Stack <= 0) farmerUser.ActiveObject = null;
-				}
+				if (farmerUser.Items.ContainsId("Poke_TidalBell") || farmerUser.Items.ContainsId("(O)Poke_TidalBell"))
+					farmerUser.removeFirstOfThisItemFromInventory("Poke_TidalBell");
+				else
+					farmerUser.removeFirstOfThisItemFromInventory("Poke_SilverWing");
 
 				Game1.playSound("thunder");
 				Rumble.rumble(0.9f, 600f);
@@ -945,18 +941,12 @@ public class FishingRod : Tool
 			}
 
 			// 2. Kyogre: Beach/Ocean during Rain/Storm with Blue Orb
-			bool isKyogreSpot = (loc is Beach || locName.Contains("Beach") || locName.Contains("Island")) && Game1.isRaining;
+			bool isKyogreSpot = (loc is Beach || locName.Contains("Beach") || locName.Contains("Island")) && isRainingHere;
 			bool hasBlueOrb = farmerUser.Items.ContainsId("Poke_BlueOrb") || farmerUser.Items.ContainsId("(O)Poke_BlueOrb") ||
 			                  (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_BlueOrb");
 			if (isKyogreSpot && hasBlueOrb)
 			{
 				farmerUser.removeFirstOfThisItemFromInventory("Poke_BlueOrb");
-				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_BlueOrb");
-				if (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_BlueOrb")
-				{
-					farmerUser.ActiveObject.ConsumeStack(1);
-					if (farmerUser.ActiveObject.Stack <= 0) farmerUser.ActiveObject = null;
-				}
 
 				Game1.playSound("thunder");
 				Rumble.rumble(0.95f, 700f);
@@ -975,15 +965,9 @@ public class FishingRod : Tool
 			// 3. Manaphy: Beach during Rain with Sea Crown
 			bool hasSeaCrown = farmerUser.Items.ContainsId("Poke_SeaCrown") || farmerUser.Items.ContainsId("(O)Poke_SeaCrown") ||
 			                   (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_SeaCrown");
-			if ((loc is Beach || locName.Contains("Beach")) && Game1.isRaining && hasSeaCrown)
+			if ((loc is Beach || locName.Contains("Beach")) && isRainingHere && hasSeaCrown)
 			{
 				farmerUser.removeFirstOfThisItemFromInventory("Poke_SeaCrown");
-				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_SeaCrown");
-				if (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_SeaCrown")
-				{
-					farmerUser.ActiveObject.ConsumeStack(1);
-					if (farmerUser.ActiveObject.Stack <= 0) farmerUser.ActiveObject = null;
-				}
 
 				var spec = PokemonSpecies.Get("Manaphy");
 				if (spec != null)
@@ -1002,12 +986,6 @@ public class FishingRod : Tool
 			if ((loc is Beach || locName.Contains("Beach")) && hasSeaTear)
 			{
 				farmerUser.removeFirstOfThisItemFromInventory("Poke_SeaDriftTear");
-				farmerUser.removeFirstOfThisItemFromInventory("(O)Poke_SeaDriftTear");
-				if (farmerUser.ActiveObject != null && farmerUser.ActiveObject.ItemId == "Poke_SeaDriftTear")
-				{
-					farmerUser.ActiveObject.ConsumeStack(1);
-					if (farmerUser.ActiveObject.Stack <= 0) farmerUser.ActiveObject = null;
-				}
 
 				var spec = PokemonSpecies.Get("Phione");
 				if (spec != null)
