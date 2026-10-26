@@ -23,7 +23,8 @@ public class PokemonDebugMenu : IClickableMenu
 		UpdatesV2,
 		Legendaries,
 		FormsAndEvos,
-		AudioAndVfx
+		AudioAndVfx,
+		Milestones
 	}
 
 	private enum StyleFilter
@@ -93,6 +94,8 @@ public class PokemonDebugMenu : IClickableMenu
 	private ClickableComponent _feNextPageButton;
 	private ClickableComponent _clearSpawnsBottomButton;
 	private ClickableComponent _clearInventoryBottomButton;
+	private ClickableComponent _resetMilestonesBottomButton;
+	private readonly List<ClickableComponent> _milestonesButtons = new();
 	private ClickableTextureComponent _closeButton;
 
 	private static int _cutsceneSpeciesIdx = 0;
@@ -182,7 +185,7 @@ public class PokemonDebugMenu : IClickableMenu
 	};
 
 	public PokemonDebugMenu()
-		: base(0, 0, 900, 648)
+		: base(0, 0, 900, 684)
 	{
 		xPositionOnScreen = (Game1.uiViewport.Width - width) / 2;
 		yPositionOnScreen = (Game1.uiViewport.Height - height) / 2;
@@ -199,7 +202,7 @@ public class PokemonDebugMenu : IClickableMenu
 
 	public void SetDebugState(int tabIndex, int page = 0, bool fieldMovesOnly = false)
 	{
-		_currentTab = (Tab)Math.Clamp(tabIndex, 0, 8);
+		_currentTab = (Tab)Math.Clamp(tabIndex, 0, 10);
 		_speciesPage = page;
 		_tmPage = page;
 		_filterFieldMovesOnly = fieldMovesOnly;
@@ -246,6 +249,7 @@ public class PokemonDebugMenu : IClickableMenu
 		_legendaryButtons.Clear();
 		_formsEvosButtons.Clear();
 		_audioVfxButtons.Clear();
+		_milestonesButtons.Clear();
 
 		int startX = xPositionOnScreen + 30;
 		int startY = yPositionOnScreen + 44;
@@ -262,14 +266,21 @@ public class PokemonDebugMenu : IClickableMenu
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 6, startY, tabW, 40), "UpdatesV2", "7. v2.0 Novos"));
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 7, startY, tabW, 40), "Legendaries", "8. Lendários"));
 
-		// Lower Tab Bar (Abas Inferiores): Tab 9 (Formas & Evos Lendárias) + Reset Active Spawns Button
-		int bottomTabY = yPositionOnScreen + height - 46;
+		// Lower Tab Bar (Abas Inferiores): Two clean rows across 840px (3 buttons each, w=272, gap=12)
+		int bottomRow1Y = yPositionOnScreen + height - 76;
+		int bottomRow2Y = yPositionOnScreen + height - 40;
 		int bottomW = 272;
 		int bottomGap = 12;
-		_tabButtons.Add(new ClickableComponent(new Rectangle(startX, bottomTabY, bottomW, 34), "FormsAndEvos", "9. 🧬 Formas & Fusões"));
-		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + bottomW + bottomGap, bottomTabY, bottomW, 34), "AudioAndVfx", "10. 🎬 Sons, Cries & FX"));
-		_clearSpawnsBottomButton = new ClickableComponent(new Rectangle(startX + (bottomW + bottomGap) * 2, bottomTabY, bottomW, 34), "clear_active_spawns", "🧹 Resetar Spawns");
-		_clearInventoryBottomButton = new ClickableComponent(new Rectangle(startX + (bottomW + bottomGap) * 3, bottomTabY, bottomW, 34), "clear_inventory", "🗑️ Limpar Mochila");
+
+		// Row 1: Sub-Tabs 9, 10, 11
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX, bottomRow1Y, bottomW, 32), "FormsAndEvos", "9. 🧬 Formas & Fusões"));
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + bottomW + bottomGap, bottomRow1Y, bottomW, 32), "AudioAndVfx", "10. 🎬 Sons, Cries & FX"));
+		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (bottomW + bottomGap) * 2, bottomRow1Y, bottomW, 32), "Milestones", "11. 🏆 Marcos & Dex"));
+
+		// Row 2: Action Buttons
+		_clearSpawnsBottomButton = new ClickableComponent(new Rectangle(startX, bottomRow2Y, bottomW, 32), "clear_active_spawns", "🧹 Resetar Spawns");
+		_clearInventoryBottomButton = new ClickableComponent(new Rectangle(startX + bottomW + bottomGap, bottomRow2Y, bottomW, 32), "clear_inventory", "🗑️ Limpar Mochila");
+		_resetMilestonesBottomButton = new ClickableComponent(new Rectangle(startX + (bottomW + bottomGap) * 2, bottomRow2Y, bottomW, 32), "reset_milestones", "🔄 Zerar Marcos Dex");
 
 		int contentY = startY + 50;
 
@@ -559,6 +570,10 @@ public class PokemonDebugMenu : IClickableMenu
 		{
 			SetupAudioVfxButtons(startX, contentY);
 		}
+		if (_currentTab == Tab.Milestones)
+		{
+			SetupMilestonesButtons(startX, contentY);
+		}
 	}
 
 	public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -588,6 +603,15 @@ public class PokemonDebugMenu : IClickableMenu
 			}
 			Game1.playSound("trashcan");
 			Game1.addHUDMessage(new HUDMessage("🗑️ Todo o inventário da mochila foi esvaziado!", 2));
+			return;
+		}
+
+		if (_resetMilestonesBottomButton != null && _resetMilestonesBottomButton.containsPoint(x, y))
+		{
+			PokemonPokedex.Instance.ResetClaimedMilestones();
+			Game1.playSound("trashcan");
+			Game1.addHUDMessage(new HUDMessage("🔄 Marcos da Pokédex foram zerados para teste!", 2));
+			if (_currentTab == Tab.Milestones) SetupButtons();
 			return;
 		}
 
@@ -1155,6 +1179,11 @@ public class PokemonDebugMenu : IClickableMenu
 		else if (_currentTab == Tab.AudioAndVfx)
 		{
 			HandleAudioVfxClick(x, y);
+			return;
+		}
+		else if (_currentTab == Tab.Milestones)
+		{
+			HandleMilestonesClick(x, y);
 			return;
 		}
 	}
@@ -2342,14 +2371,14 @@ public class PokemonDebugMenu : IClickableMenu
 
 		if (button == Buttons.LeftShoulder || button == Buttons.LeftTrigger)
 		{
-			_currentTab = (Tab)(((int)_currentTab + 6) % 7);
+			_currentTab = (Tab)(((int)_currentTab + 10) % 11);
 			SetupButtons();
 			Game1.playSound("shwip");
 			return;
 		}
 		if (button == Buttons.RightShoulder || button == Buttons.RightTrigger)
 		{
-			_currentTab = (Tab)(((int)_currentTab + 1) % 7);
+			_currentTab = (Tab)(((int)_currentTab + 1) % 11);
 			SetupButtons();
 			Game1.playSound("shwip");
 			return;
@@ -2423,6 +2452,14 @@ public class PokemonDebugMenu : IClickableMenu
 			Color col = hovered ? new Color(255, 215, 200) : new Color(255, 242, 235);
 			IClickableMenu.drawTextureBox(b, _clearInventoryBottomButton.bounds.X, _clearInventoryBottomButton.bounds.Y, _clearInventoryBottomButton.bounds.Width, _clearInventoryBottomButton.bounds.Height, col);
 			PokemonUI.Text(b, Game1.smallFont, _clearInventoryBottomButton.label, _clearInventoryBottomButton.bounds, hovered ? Color.DarkRed : new Color(150, 45, 20), center: true, maxScale: 0.74f, shadow: false);
+		}
+
+		if (_resetMilestonesBottomButton != null)
+		{
+			bool hovered = _resetMilestonesBottomButton.containsPoint(mouseX, mouseY);
+			Color col = hovered ? new Color(255, 235, 180) : new Color(255, 248, 225);
+			IClickableMenu.drawTextureBox(b, _resetMilestonesBottomButton.bounds.X, _resetMilestonesBottomButton.bounds.Y, _resetMilestonesBottomButton.bounds.Width, _resetMilestonesBottomButton.bounds.Height, col);
+			PokemonUI.Text(b, Game1.smallFont, _resetMilestonesBottomButton.label, _resetMilestonesBottomButton.bounds, hovered ? Color.DarkGoldenrod : new Color(160, 110, 20), center: true, maxScale: 0.74f, shadow: false);
 		}
 
 		int startX = xPositionOnScreen + 30;
@@ -2850,6 +2887,10 @@ public class PokemonDebugMenu : IClickableMenu
 		else if (_currentTab == Tab.AudioAndVfx)
 		{
 			DrawAudioAndVfxTab(b, startX, contentY, mouseX, mouseY);
+		}
+		else if (_currentTab == Tab.Milestones)
+		{
+			DrawMilestonesTab(b, startX, contentY, mouseX, mouseY);
 		}
 
 		if (_activeCutscene != null)
@@ -3566,6 +3607,200 @@ public class PokemonDebugMenu : IClickableMenu
 			PokemonUI.DrawCardBorder(b, banner, Color.MediumPurple, 3);
 			PokemonUI.Text(b, Game1.dialogueFont, "AFLICAO DE STATUS DE COMBATE", new Rectangle(banner.X, banner.Y + 14, banner.Width, 32), Color.Thistle, center: true, maxScale: 0.85f);
 			PokemonUI.Text(b, Game1.smallFont, "Particulas de Sono, Paralisia, Veneno e Queimadura ativas!", new Rectangle(banner.X, banner.Y + 52, banner.Width, 24), Color.White, center: true, maxScale: 0.78f, shadow: false);
+		}
+	}
+
+
+	private void SetupMilestonesButtons(int startX, int contentY)
+	{
+		_milestonesButtons.Clear();
+
+		// Top Actions Bar (contentY = y + 94)
+		int btnY = contentY + 18;
+		_milestonesButtons.Add(new ClickableComponent(new Rectangle(startX + 340, btnY, 115, 28), "ms_fill_dex", "✨ Encher 100%"));
+		_milestonesButtons.Add(new ClickableComponent(new Rectangle(startX + 462, btnY, 105, 28), "ms_clear_dex", "🧹 Zerar Dex"));
+		_milestonesButtons.Add(new ClickableComponent(new Rectangle(startX + 574, btnY, 125, 28), "ms_reset_milestones", "🔄 Zerar Marcos"));
+		_milestonesButtons.Add(new ClickableComponent(new Rectangle(startX + 706, btnY, 122, 28), "ms_claim_all", "🎁 Pegar Todos"));
+
+		// 6 Milestones: 2 columns of 3 rows
+		int colW = 412;
+		int cardH = 112;
+		int rowGap = 10;
+		int gridStartY = contentY + 68;
+
+		int[] milestones = new[] { 10, 25, 50, 75, 90, 100 };
+		for (int i = 0; i < milestones.Length; i++)
+		{
+			int m = milestones[i];
+			int col = i / 3;
+			int row = i % 3;
+			int cX = startX + col * 428;
+			int cY = gridStartY + row * (cardH + rowGap);
+
+			int btnW = 145;
+			int btnH = 28;
+			int bX = cX + colW - btnW - 12;
+			int bY = cY + cardH - btnH - 10;
+			_milestonesButtons.Add(new ClickableComponent(new Rectangle(bX, bY, btnW, btnH), $"claim_milestone_{m}", $"🎁 Reivindicar {m}%"));
+		}
+	}
+
+	private void HandleMilestonesClick(int x, int y)
+	{
+		foreach (var btn in _milestonesButtons)
+		{
+			if (btn.containsPoint(x, y))
+			{
+				if (btn.name == "ms_fill_dex")
+				{
+					PokemonPokedex.Instance.FillAllForDebug();
+					Game1.playSound("reward");
+					Game1.addHUDMessage(new HUDMessage("✨ Pokédex 100% preenchida com sucesso para testes!", 2));
+					SetupButtons();
+					return;
+				}
+				if (btn.name == "ms_clear_dex")
+				{
+					PokemonPokedex.Instance.ResetPokedex();
+					Game1.playSound("trashcan");
+					Game1.addHUDMessage(new HUDMessage("🧹 Pokédex resetada para 0 registros!", 2));
+					SetupButtons();
+					return;
+				}
+				if (btn.name == "ms_reset_milestones")
+				{
+					PokemonPokedex.Instance.ResetClaimedMilestones();
+					Game1.playSound("trashcan");
+					Game1.addHUDMessage(new HUDMessage("🔄 Todos os marcos de recompensa foram zerados!", 2));
+					SetupButtons();
+					return;
+				}
+				if (btn.name == "ms_claim_all")
+				{
+					int claimed = 0;
+					int[] mArr = new[] { 10, 25, 50, 75, 90, 100 };
+					foreach (int m in mArr)
+					{
+						if (PokemonPokedex.Instance.CanClaimMilestone(m))
+						{
+							if (PokemonPokedex.Instance.ClaimMilestone(m, forceDebug: false))
+								claimed++;
+						}
+					}
+					if (claimed > 0)
+					{
+						Game1.playSound("reward");
+						Game1.addHUDMessage(new HUDMessage($"🎁 {claimed} marcos elegíveis foram entregues com sucesso!", 2));
+					}
+					else
+					{
+						Game1.playSound("cancel");
+						Game1.showRedMessage("Nenhum novo marco atingido no momento!");
+					}
+					SetupButtons();
+					return;
+				}
+				if (btn.name.StartsWith("claim_milestone_"))
+				{
+					if (int.TryParse(btn.name.Substring("claim_milestone_".Length), out int pct))
+					{
+						PokemonPokedex.Instance.ClaimMilestone(pct, forceDebug: true);
+						SetupButtons();
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	private void DrawMilestonesTab(SpriteBatch b, int startX, int contentY, int mouseX, int mouseY)
+	{
+		int totalSpecies = PokemonSpecies.AllSpecies()?.Count(s => !s.IsMega) ?? 1025;
+		int caughtCount = PokemonPokedex.Instance.CaughtCount;
+		float currentPct = PokemonPokedex.Instance.GetCompletionPercentage();
+
+		// Top Status Box (W = 840, H = 58)
+		Rectangle topBox = new Rectangle(startX, contentY, 840, 58);
+		IClickableMenu.drawTextureBox(b, topBox.X, topBox.Y, topBox.Width, topBox.Height, new Color(240, 245, 255));
+
+		string dexTitle = $"📖 PROGRESSO DA POKÉDEX: {caughtCount} / {totalSpecies} ({currentPct:F1}%)";
+		PokemonUI.Text(b, Game1.dialogueFont, dexTitle, new Rectangle(startX + 14, contentY + 10, 310, 24), new Color(25, 45, 85), center: false, maxScale: 0.52f, shadow: false);
+
+		// Progress Bar inside topBox
+		int barX = startX + 14;
+		int barY = contentY + 36;
+		int barW = 310;
+		int barH = 12;
+		b.Draw(Game1.staminaRect, new Rectangle(barX, barY, barW, barH), new Color(180, 190, 205));
+		int fillW = (int)Math.Clamp((currentPct / 100f) * barW, 0, barW);
+		if (fillW > 0)
+		{
+			b.Draw(Game1.staminaRect, new Rectangle(barX, barY, fillW, barH), new Color(40, 160, 75));
+		}
+
+		// Milestone Info Definitions
+		var milestoneDetails = new (int Percent, string Title, string Items, string Lore)[]
+		{
+			(10, "10% - Mochileiro Inicial", "👟 Tênis de Corrida (+1 Vel perm.)\n• 10x Ultra Ball\n• 5x Rare Candy", "Aumenta permanentemente a velocidade de corrida no vale."),
+			(25, "25% - Treinador Competitivo", "💼 Estojo Competitivo (7 itens meta)\n• Anel Exp. Share (equipe toda)\n• Leftovers + Life Orb", "Kit completo para batalhas competitivas e treinamento."),
+			(50, "50% - Especialista de Campo", "🏥 Centro Pokémon Portátil (cura geral)\n• 2x Ability Patch (Habilidade Oculta)\n• 5x Friendship Candy", "Cura e restaura toda a equipe instantaneamente em qualquer lugar."),
+			(75, "75% - Mestre da Rede Pokémon", "💻 Box Link Portátil (acesso ao PC)\n• 1x Master Ball\n• 15x Rare Candy", "Acessa e gerencia todas as suas caixas de Pokémon do PC em campo."),
+			(90, "90% - Guardião das Mega Formas", "💎 Cofre de Mega Pedras (8 relíquias)\n• Bracelete Mega (anel de Key Stone)\n• Amuleto Brilhante (3x Shiny)", "Desperta o poder ancestral e triplica encontros brilhantes!"),
+			(100, "100% - Lenda do Vale (Mestre)", "👑 Remessa Silph Co (5x Master Ball)\n• 50x Rare Candy\n• 10x Ability Patch", "Recompensa suprema de campeão por completar a Pokédex.")
+		};
+
+		int colW = 412;
+		int cardH = 112;
+		int rowGap = 10;
+		int gridStartY = contentY + 68;
+
+		for (int i = 0; i < milestoneDetails.Length; i++)
+		{
+			var (pct, title, items, lore) = milestoneDetails[i];
+			int col = i / 3;
+			int row = i % 3;
+			int cX = startX + col * 428;
+			int cY = gridStartY + row * (cardH + rowGap);
+
+			bool claimed = PokemonPokedex.Instance.HasClaimedMilestone(pct);
+			bool eligible = currentPct >= pct;
+
+			Color cardBg = claimed ? new Color(230, 248, 235) : (eligible ? new Color(255, 252, 220) : new Color(248, 248, 250));
+			IClickableMenu.drawTextureBox(b, cX, cY, colW, cardH, cardBg);
+
+			Color titleCol = claimed ? new Color(20, 110, 40) : (eligible ? new Color(150, 100, 10) : new Color(60, 70, 85));
+			PokemonUI.Text(b, Game1.dialogueFont, title, new Rectangle(cX + 12, cY + 8, 260, 20), titleCol, center: false, maxScale: 0.50f, shadow: false);
+
+			string badgeText = claimed ? "✓ CONCLUÍDO" : (eligible ? "★ DISPONÍVEL" : $"BLOQUEADO ({currentPct:F0}%/{pct}%)");
+			Color badgeCol = claimed ? new Color(30, 140, 50) : (eligible ? new Color(200, 120, 0) : new Color(130, 140, 150));
+			PokemonUI.Text(b, Game1.smallFont, badgeText, new Rectangle(cX + colW - 140, cY + 8, 128, 18), badgeCol, center: true, maxScale: 0.65f, shadow: false);
+
+			PokemonUI.Text(b, Game1.smallFont, items, new Rectangle(cX + 12, cY + 30, colW - 170, 74), new Color(40, 45, 55), center: false, maxScale: 0.62f, shadow: false);
+		}
+
+		// Draw All Milestone Buttons
+		foreach (var btn in _milestonesButtons)
+		{
+			bool hovered = btn.containsPoint(mouseX, mouseY);
+			Color btnBg = btn.name switch
+			{
+				"ms_fill_dex" => hovered ? new Color(210, 250, 220) : new Color(235, 255, 240),
+				"ms_clear_dex" => hovered ? new Color(255, 220, 220) : new Color(255, 240, 240),
+				"ms_reset_milestones" => hovered ? new Color(255, 235, 200) : new Color(255, 245, 225),
+				"ms_claim_all" => hovered ? new Color(210, 235, 255) : new Color(235, 245, 255),
+				_ => hovered ? new Color(255, 245, 200) : new Color(255, 255, 240)
+			};
+			Color textCol = btn.name switch
+			{
+				"ms_fill_dex" => hovered ? Color.DarkGreen : new Color(20, 120, 40),
+				"ms_clear_dex" => hovered ? Color.DarkRed : new Color(150, 30, 30),
+				"ms_reset_milestones" => hovered ? Color.DarkGoldenrod : new Color(160, 110, 20),
+				"ms_claim_all" => hovered ? Color.DarkBlue : new Color(25, 80, 160),
+				_ => hovered ? Color.DarkRed : new Color(130, 60, 10)
+			};
+
+			IClickableMenu.drawTextureBox(b, btn.bounds.X, btn.bounds.Y, btn.bounds.Width, btn.bounds.Height, btnBg);
+			PokemonUI.Text(b, Game1.smallFont, btn.label, btn.bounds, textCol, center: true, maxScale: 0.68f, shadow: false);
 		}
 	}
 

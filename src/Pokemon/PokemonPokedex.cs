@@ -29,6 +29,7 @@ public class PokedexSaveData
 	public Dictionary<string, int> HintLevels { get; set; } = new();
 	public string LastPurchaseDayKey { get; set; } = "";
 	public List<string> DailyPurchasedKeys { get; set; } = new();
+	public List<int> ClaimedMilestones { get; set; } = new();
 }
 
 public class PokemonPokedex
@@ -86,10 +87,13 @@ public class PokemonPokedex
 	private readonly HashSet<string> _caught = new(StringComparer.OrdinalIgnoreCase);
 	private readonly Dictionary<string, int> _hintLevels = new(StringComparer.OrdinalIgnoreCase);
 	private readonly HashSet<string> _dailyPurchasedKeys = new(StringComparer.OrdinalIgnoreCase);
+	private readonly HashSet<int> _claimedMilestones = new();
+	public IReadOnlyCollection<int> ClaimedMilestones => _claimedMilestones;
 	private string _lastPurchaseDayKey = "";
 
 	public IReadOnlyCollection<string> SeenSpecies => _seen;
 	public IReadOnlyCollection<string> CaughtSpecies => _caught;
+	public int CaughtCount => _caught.Count;
 
 	private PokemonPokedex(long farmerId)
 	{
@@ -128,12 +132,115 @@ public class PokemonPokedex
 		if (changed) Save();
 	}
 
+	public float GetCompletionPercentage()
+	{
+		const int totalNational = 1025;
+		return Math.Clamp((float)_caught.Count / totalNational * 100f, 0f, 100f);
+	}
+
+	public bool HasClaimedMilestone(int percent) => _claimedMilestones.Contains(percent);
+
+	public bool CanClaimMilestone(int percent)
+	{
+		return GetCompletionPercentage() >= (float)percent && !HasClaimedMilestone(percent);
+	}
+
+	public bool ClaimMilestone(int percent, bool forceDebug = false)
+	{
+		if (!forceDebug && !CanClaimMilestone(percent)) return false;
+		if (_claimedMilestones.Contains(percent) && !forceDebug) return false;
+
+		_claimedMilestones.Add(percent);
+		Save();
+
+		var farmer = Game1.getFarmer(FarmerId) ?? Game1.player;
+		DeliverMilestoneRewards(farmer, percent);
+		return true;
+	}
+
+	public void ResetClaimedMilestones()
+	{
+		_claimedMilestones.Clear();
+		Save();
+	}
+
+	public void FillAllForDebug()
+	{
+		var all = PokemonSpecies.AllSpecies();
+		if (all != null)
+		{
+			foreach (var sp in all)
+			{
+				if (sp != null && !sp.IsMega)
+				{
+					RecordCaught(sp.Name);
+				}
+			}
+		}
+		Save();
+	}
+
+	private void DeliverMilestoneRewards(Farmer farmer, int percent)
+	{
+		if (farmer == null) farmer = Game1.player;
+
+		void GiveItem(string id, int qty)
+		{
+			Item it = ItemRegistry.Create("(O)" + id, qty, 0, allowNull: true) ?? new StardewValley.Object(id, qty);
+			if (it != null) farmer.addItemByMenuIfNecessary(it);
+		}
+
+		switch (percent)
+		{
+			case 10:
+				GiveItem("Poke_RunningShoes", 1);
+				GiveItem("UltraBall", 10);
+				GiveItem("PokemonRareCandy", 5);
+				Game1.addHUDMessage(new HUDMessage("🏆 Marco 10% da Pokédex: Tênis de Corrida (+1 Vel) e suprimentos recebidos!", 2));
+				break;
+			case 25:
+				GiveItem("Poke_CompetitiveCase", 1);
+				GiveItem("PokemonExpShare", 1);
+				GiveItem("Leftovers", 1);
+				GiveItem("LifeOrb", 1);
+				Game1.addHUDMessage(new HUDMessage("🏆 Marco 25% da Pokédex: Estojo de Itens de Combate e Exp. Share recebidos!", 2));
+				break;
+			case 50:
+				GiveItem("Poke_PortableHealMachine", 1);
+				GiveItem("Poke_AbilityPatch", 2);
+				GiveItem("PokemonFriendshipCandy", 5);
+				Game1.addHUDMessage(new HUDMessage("🏆 Marco 50% da Pokédex: Centro Pokémon Portátil e Ability Patches recebidos!", 2));
+				break;
+			case 75:
+				GiveItem("Poke_BoxLink", 1);
+				GiveItem("MasterBall", 1);
+				GiveItem("PokemonRareCandy", 15);
+				Game1.addHUDMessage(new HUDMessage("🏆 Marco 75% da Pokédex: Box Link Portátil (PC) e 1x Master Ball recebidos!", 2));
+				break;
+			case 90:
+				GiveItem("Poke_MegaStoneSelector", 1);
+				GiveItem("Poke_MegaBracelet", 1);
+				GiveItem("Poke_ShinyCharm", 1);
+				Game1.addHUDMessage(new HUDMessage("🏆 Marco 90% da Pokédex: Estojo de Mega Pedras e Mega Bracelete recebidos!", 2));
+				break;
+			case 100:
+				GiveItem("Poke_MasterBallBundle", 1);
+				GiveItem("PokemonRareCandy", 50);
+				GiveItem("Poke_AbilityPatch", 10);
+				Game1.addHUDMessage(new HUDMessage("👑 Marco 100% da Pokédex: Maleta Silph Co. (5x Master Ball) e 50x Rare Candy!", 2));
+				break;
+		}
+
+		Game1.playSound("reward");
+	}
+
 	public void ResetPokedex()
 	{
 		_seen.Clear();
 		_caught.Clear();
 		_hintLevels.Clear();
 		_dailyPurchasedKeys.Clear();
+		_claimedMilestones.Clear();
 		Save();
 	}
 
@@ -254,7 +361,8 @@ public class PokemonPokedex
 				Caught = new List<string>(_caught),
 				HintLevels = new Dictionary<string, int>(_hintLevels),
 				LastPurchaseDayKey = _lastPurchaseDayKey,
-				DailyPurchasedKeys = new List<string>(_dailyPurchasedKeys)
+				DailyPurchasedKeys = new List<string>(_dailyPurchasedKeys),
+				ClaimedMilestones = new List<int>(_claimedMilestones)
 			};
 			PokemonSaveStore.SaveForFarmer(FarmerId, PokemonSaveSection.Pokedex);
 		}
@@ -282,6 +390,8 @@ public class PokemonPokedex
 			_lastPurchaseDayKey = data.LastPurchaseDayKey ?? "";
 			if (data.DailyPurchasedKeys != null)
 				foreach (var k in data.DailyPurchasedKeys) _dailyPurchasedKeys.Add(k);
+			if (data.ClaimedMilestones != null)
+				foreach (var m in data.ClaimedMilestones) _claimedMilestones.Add(m);
 		}
 		catch (Exception ex)
 		{

@@ -8074,11 +8074,12 @@ public class Farmer : Character, IComparable
 		{
 			return 2f;
 		}
+		float shoeSpeed = (Items != null && (Items.ContainsId("(O)Poke_RunningShoes") || Items.ContainsId("Poke_RunningShoes") || Items.ContainsId("(O)RunningShoes") || Items.ContainsId("RunningShoes"))) ? 1f : 0f;
 		if (Game1.CurrentEvent == null || Game1.CurrentEvent.playerControlSequence)
 		{
 			movementMultiplier = 0.066f;
 			float num = 1f;
-			num = ((!isRidingHorse()) ? Math.Max(1f, ((float)base.speed + (Game1.eventUp ? 0f : (addedSpeed + temporarySpeedBuff))) * movementMultiplier * (float)Game1.currentGameTime.ElapsedGameTime.Milliseconds) : Math.Max(1f, ((float)base.speed + (Game1.eventUp ? 0f : (addedSpeed + 4.6f + (mount.ateCarrotToday ? 0.4f : 0f) + ((stats.Get("Book_Horse") != 0) ? 0.5f : 0f)))) * movementMultiplier * (float)Game1.currentGameTime.ElapsedGameTime.Milliseconds));
+			num = ((!isRidingHorse()) ? Math.Max(1f, ((float)base.speed + (Game1.eventUp ? 0f : (addedSpeed + temporarySpeedBuff + shoeSpeed))) * movementMultiplier * (float)Game1.currentGameTime.ElapsedGameTime.Milliseconds) : Math.Max(1f, ((float)base.speed + (Game1.eventUp ? 0f : (addedSpeed + 4.6f + (mount.ateCarrotToday ? 0.4f : 0f) + ((stats.Get("Book_Horse") != 0) ? 0.5f : 0f) + shoeSpeed))) * movementMultiplier * (float)Game1.currentGameTime.ElapsedGameTime.Milliseconds));
 			if (movementDirections.Count > 1)
 			{
 				num *= 0.707f;
@@ -8089,7 +8090,7 @@ public class Farmer : Character, IComparable
 			}
 			return num;
 		}
-		float num2 = Math.Max(1f, (float)base.speed + (Game1.eventUp ? ((float)Math.Max(0, Game1.CurrentEvent.farmerAddedSpeed - 2)) : (addedSpeed + (isRidingHorse() ? 5f : temporarySpeedBuff))));
+		float num2 = Math.Max(1f, (float)base.speed + (Game1.eventUp ? ((float)Math.Max(0, Game1.CurrentEvent.farmerAddedSpeed - 2)) : (addedSpeed + shoeSpeed + (isRidingHorse() ? 5f : temporarySpeedBuff))));
 		if (movementDirections.Count > 1)
 		{
 			num2 = Math.Max(1, (int)Math.Sqrt(2f * (num2 * num2)) / 2);

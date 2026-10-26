@@ -314,7 +314,32 @@ public static class PokemonItemManager
 		RegisterRing(objectData, "Poke_ZPowerRing", "Super Anel Z (Z-Power Ring)", "Versão suprema do Anel Z de Alola. Equipado no slot de Anel junto a um Cristal Z compatível no inventário, libera Z-Moves em batalha.", 12000, 524);
 		RegisterRing(objectData, "Poke_DynamaxBand", "Bracelete Dynamax", "Bracelete energético de Galar forjado com Estrela Desejante. Equipado no slot de Anel, permite Dynamax e Gigantamax em batalha.", 12000, 534);
 
-		RegisterRing(objectData, "Poke_TeraOrb", "Orbe Tera (Tera Orb)", "Esfera cristalina lendária de Paldea. Equipada no slot de Anel, permite a Terastallization em batalha, alterando o tipo defensivo do Pokémon e concedendo STAB aprimorado.", 15000, 524);
+				// Register Pokedex Milestone Rewards & Key Utility Items
+		RegisterSimple(objectData, "Poke_RunningShoes", "Tênis de Corrida", "Calçados esportivos lendários da Silph Co. Enquanto carregados no inventário, aumentam permanentemente a velocidade de locomoção no vale em +1.", 10000, 514);
+		RegisterSimple(objectData, "RunningShoes", "Tênis de Corrida", "Calçados esportivos lendários da Silph Co. Enquanto carregados no inventário, aumentam permanentemente a velocidade de locomoção no vale em +1.", 10000, 514);
+
+		RegisterSimple(objectData, "Poke_CompetitiveCase", "Estojo de Itens Competitivos", "Um kit profissional da Silph Co contendo itens essenciais de combate competitivo (Life Orb, Choice Scarf, Choice Band, Focus Sash, Leftovers, etc.). Use para abrir.", 25000, 166);
+		RegisterSimple(objectData, "CompetitiveCase", "Estojo de Itens Competitivos", "Um kit profissional da Silph Co contendo itens essenciais de combate competitivo (Life Orb, Choice Scarf, Choice Band, Focus Sash, Leftovers, etc.). Use para abrir.", 25000, 166);
+
+		RegisterSimple(objectData, "Poke_PortableHealMachine", "Centro Pokémon Portátil", "Dispositivo médico compacto de campo. Restaura instantaneamente o HP, PP e status de toda a sua equipe sem precisar retornar ao Centro Pokémon.", 30000, 21);
+		RegisterSimple(objectData, "PortableHealMachine", "Centro Pokémon Portátil", "Dispositivo médico compacto de campo. Restaura instantaneamente o HP, PP e status de toda a sua equipe sem precisar retornar ao Centro Pokémon.", 30000, 21);
+
+		RegisterSimple(objectData, "Poke_BoxLink", "Box Link Portátil", "Terminal holográfico conectado à rede de PCs de Bill. Permite acessar, guardar e organizar suas caixas de Pokémon de qualquer lugar do vale.", 40000, 21);
+		RegisterSimple(objectData, "BoxLink", "Box Link Portátil", "Terminal holográfico conectado à rede de PCs de Bill. Permite acessar, guardar e organizar suas caixas de Pokémon de qualquer lugar do vale.", 40000, 21);
+
+		RegisterSimple(objectData, "Poke_MegaStoneSelector", "Cofre de Mega Pedras", "Uma maleta ancestral contendo um conjunto de raras Mega Pedras de batalha (Charizardite X/Y, Mewtwonite X/Y, Gengarite, Lucarionite, etc.). Use para abrir.", 50000, 166);
+		RegisterSimple(objectData, "MegaStoneSelector", "Cofre de Mega Pedras", "Uma maleta ancestral contendo um conjunto de raras Mega Pedras de batalha (Charizardite X/Y, Mewtwonite X/Y, Gengarite, Lucarionite, etc.). Use para abrir.", 50000, 166);
+
+		RegisterSimple(objectData, "Poke_AbilityPatch", "Ability Patch", "Dispositivo nanotecnológico avançado que desperta e desbloqueia a Habilidade Oculta (Hidden Ability) de um Pokémon da equipe.", 15000, 72);
+		RegisterSimple(objectData, "AbilityPatch", "Ability Patch", "Dispositivo nanotecnológico avançado que desperta e desbloqueia a Habilidade Oculta (Hidden Ability) de um Pokémon da equipe.", 15000, 72);
+
+		RegisterSimple(objectData, "Poke_ShinyCharm", "Amuleto Brilhante (Shiny Charm)", "Um talismã brilhante misterioso que triplica a chance de encontrar Pokémon brilhantes (Shiny) no vale.", 50000, 74);
+		RegisterSimple(objectData, "ShinyCharm", "Amuleto Brilhante (Shiny Charm)", "Um talismã brilhante misterioso que triplica a chance de encontrar Pokémon brilhantes (Shiny) no vale.", 50000, 74);
+
+		RegisterSimple(objectData, "Poke_MasterBallBundle", "Maleta de Master Balls", "Uma remessa ultra secreta da Silph Co contendo 5x Master Balls com taxa de captura infalível de 100%. Use para abrir.", 100000, 166);
+		RegisterSimple(objectData, "MasterBallBundle", "Maleta de Master Balls", "Uma remessa ultra secreta da Silph Co contendo 5x Master Balls com taxa de captura infalível de 100%. Use para abrir.", 100000, 166);
+
+RegisterRing(objectData, "Poke_TeraOrb", "Orbe Tera (Tera Orb)", "Esfera cristalina lendária de Paldea. Equipada no slot de Anel, permite a Terastallization em batalha, alterando o tipo defensivo do Pokémon e concedendo STAB aprimorado.", 15000, 524);
 
 		// Register 18 Type Z-Crystals
 		foreach (var kv in ZCrystalDefinitions)
@@ -960,9 +985,11 @@ public static class PokemonItemManager
 			string stoneId = GetMegaStoneIdForMegaForm(mf.InternalName);
 			if (!string.IsNullOrEmpty(stoneId))
 			{
+				string normHeld = PokemonHeldItemManager.NormalizeId(mon.HeldItem);
+				string normStone = PokemonHeldItemManager.NormalizeId(stoneId);
 				// Check if equipped as Held Item on the Pokémon itself, or carried in player inventory
-				bool monHoldingStone = string.Equals(mon.HeldItem, stoneId, StringComparison.OrdinalIgnoreCase);
-				bool playerHasStone = player.Items != null && player.Items.ContainsId("(O)" + stoneId);
+				bool monHoldingStone = !string.IsNullOrEmpty(normHeld) && string.Equals(normHeld, normStone, StringComparison.OrdinalIgnoreCase);
+				bool playerHasStone = player.Items != null && (player.Items.ContainsId("(O)" + stoneId) || player.Items.ContainsId("(O)" + normStone));
 				if (monHoldingStone || playerHasStone)
 				{
 					targetMega = mf;

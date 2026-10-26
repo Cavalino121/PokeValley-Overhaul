@@ -194,13 +194,22 @@ public static class PokemonItemUse
 		return Use(qualifiedId);
 	}
 
+	public static bool IsMilestoneRewardItem(string localId)
+	{
+		string clean = LocalId(localId);
+		if (clean.StartsWith("Poke_", StringComparison.OrdinalIgnoreCase)) clean = clean.Substring(5);
+		return clean is "RunningShoes" or "CompetitiveCase" or "PortableHealMachine" or
+			"BoxLink" or "PortablePC" or "PokemonPortablePC" or
+			"MegaStoneSelector" or "AbilityPatch" or "MasterBallBundle";
+	}
+
 	/// <summary>True for items whose use is handled by this class (and which must never be placed / eaten).</summary>
 	public static bool IsUsable(string qualifiedId)
 	{
 		string id = LocalId(qualifiedId);
 		if (PokemonEncounterManager.IsSummonRelic(id) && !CanUseFormOrEvoItemOnParty(id))
 			return false;
-		return IsMedicine(id) || IsRepel(id) || IsTm(id) || IsEvolutionItem(id) || IsFormChangeItem(id) || IsVitamin(id);
+		return IsMedicine(id) || IsRepel(id) || IsTm(id) || IsEvolutionItem(id) || IsFormChangeItem(id) || IsVitamin(id) || IsMilestoneRewardItem(id);
 	}
 
 	public static string DisplayName(string localId)
@@ -209,6 +218,14 @@ public static class PokemonItemUse
 		if (clean.StartsWith("Pokemon")) clean = clean.Substring(7);
 		if (clean.StartsWith("Poke_")) clean = clean.Substring(5);
 
+		if (clean is "RunningShoes") return "Tênis de Corrida";
+		if (clean is "CompetitiveCase") return "Estojo Competitivo";
+		if (clean is "PortableHealMachine") return "Centro Pokémon Portátil";
+		if (clean is "BoxLink" or "PortablePC") return "Box Link Portátil";
+		if (clean is "MegaStoneSelector") return "Cofre de Mega Pedras";
+		if (clean is "AbilityPatch") return "Ability Patch";
+		if (clean is "MasterBallBundle") return "Maleta de Master Balls";
+		if (clean is "ShinyCharm") return "Amuleto Brilhante";
 		if (clean is "HPUp") return "HP Up";
 		if (clean is "Protein") return "Protein";
 		if (clean is "Iron") return "Iron";
@@ -591,6 +608,99 @@ public static class PokemonItemUse
 			Game1.playSound("powerup");
 			Game1.addHUDMessage(new HUDMessage($"{DisplayName(id)} ativado! Pokémon selvagens ficam longe por {steps} passos.", 2));
 			return true;
+		}
+
+		string cleanMilestoneId = id;
+		if (cleanMilestoneId.StartsWith("Poke_", StringComparison.OrdinalIgnoreCase)) cleanMilestoneId = cleanMilestoneId.Substring(5);
+
+		if (cleanMilestoneId is "RunningShoes")
+		{
+			Game1.playSound("powerup");
+			Game1.addHUDMessage(new HUDMessage("👟 Tênis de Corrida ativos! O bônus de velocidade (+1) já está ativo em sua mochila.", 2));
+			return false;
+		}
+
+		if (cleanMilestoneId is "PortableHealMachine")
+		{
+			PlayerParty.Instance.HealAll();
+			Game1.playSound("heal");
+			Game1.addHUDMessage(new HUDMessage("✨ Toda a sua equipe Pokémon foi completamente curada e restaurada!", 2));
+			return false;
+		}
+
+		if (cleanMilestoneId is "BoxLink" or "PortablePC")
+		{
+			Game1.activeClickableMenu = new PokemonStorageMenu(Game1.player);
+			return false;
+		}
+
+		if (cleanMilestoneId is "CompetitiveCase")
+		{
+			Game1.player.Items.ReduceId("(O)" + id, 1);
+			string[] compItems = new[] { "Poke_LifeOrb", "Poke_ChoiceBand", "Poke_ChoiceSpecs", "Poke_ChoiceScarf", "Poke_FocusSash", "Poke_Leftovers", "Poke_AssaultVest" };
+			foreach (var itId in compItems)
+			{
+				var item = ItemRegistry.Create("(O)" + itId, 1, 0, allowNull: true) ?? new StardewValley.Object(itId, 1);
+				if (item != null) Game1.player.addItemByMenuIfNecessary(item);
+			}
+			Game1.playSound("coin");
+			Game1.addHUDMessage(new HUDMessage("🎁 Estojo aberto! Você recebeu Life Orb, Choice Scarf/Band/Specs, Focus Sash, Leftovers e Assault Vest!", 2));
+			return false;
+		}
+
+		if (cleanMilestoneId is "MasterBallBundle")
+		{
+			Game1.player.Items.ReduceId("(O)" + id, 1);
+			var mb = ItemRegistry.Create("(O)MasterBall", 5, 0, allowNull: true) ?? new StardewValley.Object("MasterBall", 5);
+			if (mb != null) Game1.player.addItemByMenuIfNecessary(mb);
+			Game1.playSound("reward");
+			Game1.addHUDMessage(new HUDMessage("👑 Remessa da Silph Co aberta! Você recebeu 5x Master Ball!", 2));
+			return false;
+		}
+
+		if (cleanMilestoneId is "MegaStoneSelector")
+		{
+			Game1.player.Items.ReduceId("(O)" + id, 1);
+			string[] stones = new[] { "CharizarditeX", "CharizarditeY", "MewtwoniteX", "MewtwoniteY", "Gengarite", "Lucarionite", "Salamencite", "Garchompite" };
+			foreach (var ms in stones)
+			{
+				var item = ItemRegistry.Create("(O)" + ms, 1, 0, allowNull: true) ?? new StardewValley.Object(ms, 1);
+				if (item != null) Game1.player.addItemByMenuIfNecessary(item);
+			}
+			Game1.playSound("reward");
+			Game1.addHUDMessage(new HUDMessage("💎 Cofre aberto! Mega Pedras ancestrais (Charizardite, Mewtwonite, Gengarite, Lucarionite, etc.) recebidas!", 2));
+			return false;
+		}
+
+		if (cleanMilestoneId is "AbilityPatch")
+		{
+			var pTeam = PlayerParty.Instance.Team;
+			if (pTeam.Count == 0)
+			{
+				Game1.showRedMessage("Você não possui Pokémon na equipe!");
+				return false;
+			}
+
+			Game1.activeClickableMenu = new PokemonTargetMenu(
+				"Ability Patch",
+				p => p != null && !string.IsNullOrEmpty(PokemonAbility.GetHiddenAbility(p.Species)),
+				idx =>
+				{
+					var p = pTeam[idx];
+					string ha = PokemonAbility.GetHiddenAbility(p.Species);
+					if (string.IsNullOrEmpty(ha) || p.Ability == ha)
+					{
+						Game1.playSound("cancel");
+						Game1.showRedMessage($"{p.Nickname} já possui sua Habilidade Oculta!");
+						return;
+					}
+					p.Ability = ha;
+					Game1.player.Items.ReduceId("(O)" + id, 1);
+					Game1.playSound("powerup");
+					Game1.addHUDMessage(new HUDMessage($"✨ {p.Nickname} despertou sua Habilidade Oculta: {PokemonAbility.GetDisplayName(ha)}!", 2));
+					PlayerParty.Instance.SaveParty();
+				});
+			return false;
 		}
 
 		var team = PlayerParty.Instance.Team;

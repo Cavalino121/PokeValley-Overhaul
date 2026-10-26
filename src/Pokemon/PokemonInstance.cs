@@ -70,6 +70,57 @@ public class PokemonInstance
 		ConfusionTurns = 0;
 	}
 
+	public PokemonInstance Clone()
+	{
+		var copy = new PokemonInstance(Species, Level)
+		{
+			Nickname = Nickname,
+			CurrentExp = CurrentExp,
+			MaxHP = MaxHP,
+			CurrentHP = CurrentHP,
+			Attack = Attack,
+			Defense = Defense,
+			SpAttack = SpAttack,
+			SpDefense = SpDefense,
+			Speed = Speed,
+			Nature = Nature,
+			IV_HP = IV_HP,
+			IV_Attack = IV_Attack,
+			IV_Defense = IV_Defense,
+			IV_SpAttack = IV_SpAttack,
+			IV_SpDefense = IV_SpDefense,
+			IV_Speed = IV_Speed,
+			EV_HP = EV_HP,
+			EV_Attack = EV_Attack,
+			EV_Defense = EV_Defense,
+			EV_SpAttack = EV_SpAttack,
+			EV_SpDefense = EV_SpDefense,
+			EV_Speed = EV_Speed,
+			IsEgg = IsEgg,
+			EggSteps = EggSteps,
+			IsShiny = IsShiny,
+			Gender = Gender,
+			Status = Status,
+			StatusTurns = StatusTurns,
+			ConfusionTurns = ConfusionTurns,
+			HeldItem = HeldItem,
+			Ability = Ability,
+			OriginalTrainer = OriginalTrainer,
+			TrainerID = TrainerID,
+			IsMegaEvolved = IsMegaEvolved,
+			IsBattleOnlyMega = IsBattleOnlyMega,
+			PreMegaSpecies = PreMegaSpecies,
+			UsedMegaStoneId = UsedMegaStoneId,
+			DynamaxTurns = DynamaxTurns,
+			IsUsingGigantamax = IsUsingGigantamax,
+			Friendship = Friendship,
+			TeraType = TeraType,
+			IsTerastallized = IsTerastallized,
+			Moves = Moves != null ? Moves.ConvertAll(m => m?.Clone()) : new List<PokemonMove>()
+		};
+		return copy;
+	}
+
 	// Held Item & Passive Ability (attached directly to this Pokémon)
 	public string HeldItem { get; set; } = null;
 	public string Ability { get; set; } = null;

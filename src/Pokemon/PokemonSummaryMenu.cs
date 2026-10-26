@@ -97,13 +97,18 @@ public class PokemonSummaryMenu : IClickableMenu
 
 			if (hasMatchingStone || isUltraNecrozma || isRayquazaDragonAscent)
 			{
-				bool isPrimalOrUltraOrRay = baseKey.Equals("kyogre", StringComparison.OrdinalIgnoreCase) ||
-				                            baseKey.Equals("groudon", StringComparison.OrdinalIgnoreCase) ||
-				                            baseKey.Equals("rayquaza", StringComparison.OrdinalIgnoreCase) ||
-				                            baseKey.Equals("necrozma", StringComparison.OrdinalIgnoreCase);
-				if (!isPrimalOrUltraOrRay && !PokemonItemManager.IsWearingMegaBracelet(Game1.player))
+				Farmer owner = _farmer ?? Game1.player;
+				bool isPrimal = baseKey.Equals("kyogre", StringComparison.OrdinalIgnoreCase) ||
+				                baseKey.Equals("groudon", StringComparison.OrdinalIgnoreCase);
+				if (isUltraNecrozma)
 				{
-					// Still allow if holding the exact Mega Stone so the player can test/transform cleanly
+					if (!PokemonItemManager.IsWearingZPowerRing(owner))
+						return false;
+				}
+				else if (!isPrimal)
+				{
+					if (!PokemonItemManager.IsWearingMegaBracelet(owner))
+						return false;
 				}
 				targetMega = mf;
 				stoneId = !string.IsNullOrEmpty(_mon.HeldItem) ? _mon.HeldItem : reqStone;

@@ -165,6 +165,7 @@ public static class PokemonPvPManager
 				{
 					if (PokemonBattleMenu.ActiveBattles.TryGetValue(Game1.player.UniqueMultiplayerID, out var battle) && battle != null && battle.IsPvP)
 					{
+						int actionSeed = (parts.Length >= 12 && int.TryParse(parts[11], out int parsedSeed)) ? parsedSeed : 1337;
 						var act = new PokemonBattleMenu.PvPAction
 						{
 							ActionType = Enum.Parse<PokemonBattleMenu.PvPActionType>(parts[2]),
@@ -175,7 +176,8 @@ public static class PokemonPvPManager
 							UseZMove = bool.Parse(parts[7]),
 							UseDynamax = bool.Parse(parts[8]),
 							UseGMax = bool.Parse(parts[9]),
-							UseTera = bool.Parse(parts[10])
+							UseTera = bool.Parse(parts[10]),
+							ActionSeed = actionSeed
 						};
 						battle.ReceiveOpponentAction(act);
 					}
@@ -204,7 +206,7 @@ public static class PokemonPvPManager
 
 	public static void SendPvPAction(long recipient, PokemonBattleMenu.PvPAction act)
 	{
-		string payload = $"ACTION|{Game1.player?.UniqueMultiplayerID ?? 0L}|{act.ActionType}|{act.MoveIndex}|{act.MoveName}|{act.SwitchSlot}|{act.UseMega}|{act.UseZMove}|{act.UseDynamax}|{act.UseGMax}|{act.UseTera}";
+		string payload = $"ACTION|{Game1.player?.UniqueMultiplayerID ?? 0L}|{act.ActionType}|{act.MoveIndex}|{act.MoveName}|{act.SwitchSlot}|{act.UseMega}|{act.UseZMove}|{act.UseDynamax}|{act.UseGMax}|{act.UseTera}|{act.ActionSeed}";
 		SendBattlePacket(payload, recipient);
 
 		// Local split screen direct memory dispatch:

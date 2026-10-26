@@ -46,13 +46,24 @@ public static class PokemonMusicManager
 	{
 		try
 		{
-			float volMult = (_currentTrack == PokemonMusicTrack.RouteOverworld) ? 0.35f : 0.65f;
+			float volMult = (_currentTrack == PokemonMusicTrack.VictoryFanfare) ? 0.40f
+				: ((_currentTrack == PokemonMusicTrack.RouteOverworld) ? 0.35f : 0.60f);
 			float targetVol = Math.Clamp(Game1.options?.musicVolumeLevel ?? 0.7f, 0f, 1f) * volMult;
 
 			if (_midiPlaying)
 			{
 				int vol1000 = (int)Math.Clamp(targetVol * 1000f, 0f, 1000f);
 				mciSendString($"setaudio {MidiAlias} volume to {vol1000}", null, 0, IntPtr.Zero);
+
+				if (_currentTrackLooped)
+				{
+					StringBuilder sb = new StringBuilder(64);
+					int stRes = mciSendString($"status {MidiAlias} mode", sb, 64, IntPtr.Zero);
+					if (stRes == 0 && string.Equals(sb.ToString().Trim(), "stopped", StringComparison.OrdinalIgnoreCase))
+					{
+						mciSendString($"play {MidiAlias} from 0", null, 0, IntPtr.Zero);
+					}
+				}
 			}
 
 			if (_activeInstance != null && !_activeInstance.IsDisposed && _currentTrack != PokemonMusicTrack.None)
@@ -180,7 +191,7 @@ public static class PokemonMusicManager
 		{
 			PauseStardewMusic();
 			StopActivePokemonTrackOnly();
-			PlayTrack(PokemonMusicTrack.VictoryFanfare, loop: false, pauseStardew: true);
+			PlayTrack(PokemonMusicTrack.VictoryFanfare, loop: false, pauseStardew: true, specificFile: "victory_fanfare");
 		}
 		catch { }
 	}
@@ -228,7 +239,7 @@ public static class PokemonMusicManager
 			int vol1000 = (int)Math.Clamp(volume * 1000f, 0f, 1000f);
 			mciSendString($"setaudio {MidiAlias} volume to {vol1000}", null, 0, IntPtr.Zero);
 
-			string playCmd = loop ? $"play {MidiAlias} repeat" : $"play {MidiAlias}";
+			string playCmd = $"play {MidiAlias} from 0";
 			int playRes = mciSendString(playCmd, null, 0, IntPtr.Zero);
 			_midiPlaying = (playRes == 0);
 			return _midiPlaying;
@@ -249,7 +260,8 @@ public static class PokemonMusicManager
 			}
 			StopActivePokemonTrackOnly();
 
-			float volMult = (track == PokemonMusicTrack.RouteOverworld) ? 0.35f : 0.65f;
+			float volMult = (track == PokemonMusicTrack.VictoryFanfare) ? 0.40f
+				: ((track == PokemonMusicTrack.RouteOverworld) ? 0.35f : 0.60f);
 			float vol = Math.Clamp(Game1.options?.musicVolumeLevel ?? 0.7f, 0f, 1f) * volMult;
 			if (vol <= 0.005f)
 			{
@@ -265,11 +277,37 @@ public static class PokemonMusicManager
 				PokemonMusicTrack.MegaBossBattle => "gym_leader",
 				PokemonMusicTrack.LegendaryBattle => "champion",
 				PokemonMusicTrack.RouteOverworld => "mus_cycling",
-				PokemonMusicTrack.VictoryFanfare => "mus_caught",
+				PokemonMusicTrack.VictoryFanfare => "victory_fanfare",
 				_ => "emerald_wild"
 			};
 
-			// 1. Tenta carregar e tocar MIDI original via MCI nativo
+			// 1. Tenta carregar stream de arquivo OGG ou WAV oficial via MonoGame com suporte a Vorbis nativo
+			string oggPath = ResolveMusicFilePath(trackName, ".ogg") ?? ResolveMusicFilePath(trackName, ".wav");
+			if (!string.IsNullOrEmpty(oggPath) && File.Exists(oggPath))
+			{
+				try
+				{
+					bool isOgg = oggPath.EndsWith(".ogg", StringComparison.OrdinalIgnoreCase);
+					using var stream = File.OpenRead(oggPath);
+					var sfx = SoundEffect.FromStream(stream, isOgg);
+					if (sfx != null)
+					{
+						_activeInstance = sfx.CreateInstance();
+						_activeInstance.Volume = vol;
+						_activeInstance.LoopCount = loop ? 255u : 0u;
+						_activeInstance.Play();
+						_currentTrack = track;
+						_currentTrackLooped = loop;
+						return;
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"[PokemonMusicManager] Falha ao carregar áudio '{oggPath}': {ex.Message}");
+				}
+			}
+
+			// 2. Tenta carregar e tocar MIDI original via MCI nativo
 			string midPath = ResolveMusicFilePath(trackName, ".mid");
 			if (!string.IsNullOrEmpty(midPath) && File.Exists(midPath))
 			{
@@ -279,27 +317,6 @@ public static class PokemonMusicManager
 					_currentTrackLooped = loop;
 					return;
 				}
-			}
-
-			// 2. Tenta carregar stream de arquivo OGG ou WAV
-			string oggPath = ResolveMusicFilePath(trackName, ".ogg") ?? ResolveMusicFilePath(trackName, ".wav");
-			if (!string.IsNullOrEmpty(oggPath) && File.Exists(oggPath))
-			{
-				try
-				{
-					using var stream = File.OpenRead(oggPath);
-					var sfx = SoundEffect.FromStream(stream);
-					if (sfx != null)
-					{
-						_activeInstance = sfx.CreateInstance();
-						_activeInstance.Volume = vol;
-						_activeInstance.Play();
-						_currentTrack = track;
-						_currentTrackLooped = loop;
-						return;
-					}
-				}
-				catch { }
 			}
 
 			// 3. Fallback: síntese procedural nostálgica
