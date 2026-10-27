@@ -38,6 +38,9 @@ public static class PokemonMusicManager
 	private static bool _currentTrackLooped = false;
 	private static bool _pausedStardewSong = false;
 	private static float _overworldSilenceTimer = 0f;
+	private static string _currentOverworldTrackName = null;
+	private static float _mciPollTimer = 0f;
+	private static int _lastSentVol = -1;
 	public static bool EnableOverworldPokemonMusic { get; set; } = true;
 
 	public static PokemonMusicTrack CurrentTrack => _currentTrack;
@@ -46,14 +49,22 @@ public static class PokemonMusicManager
 	{
 		try
 		{
-			float volMult = (_currentTrack == PokemonMusicTrack.VictoryFanfare) ? 0.40f
-				: ((_currentTrack == PokemonMusicTrack.RouteOverworld) ? 0.35f : 0.60f);
+			_mciPollTimer += 0.0166f;
+			if (_mciPollTimer < 0.25f) return;
+			_mciPollTimer = 0f;
+
+			float volMult = (_currentTrack == PokemonMusicTrack.VictoryFanfare) ? 0.35f
+				: ((_currentTrack == PokemonMusicTrack.RouteOverworld) ? 0.30f : 0.55f);
 			float targetVol = Math.Clamp(Game1.options?.musicVolumeLevel ?? 0.7f, 0f, 1f) * volMult;
 
 			if (_midiPlaying)
 			{
 				int vol1000 = (int)Math.Clamp(targetVol * 1000f, 0f, 1000f);
-				mciSendString($"setaudio {MidiAlias} volume to {vol1000}", null, 0, IntPtr.Zero);
+				if (vol1000 != _lastSentVol)
+				{
+					_lastSentVol = vol1000;
+					mciSendString($"setaudio {MidiAlias} volume to {vol1000}", null, 0, IntPtr.Zero);
+				}
 
 				if (_currentTrackLooped)
 				{
@@ -79,6 +90,76 @@ public static class PokemonMusicManager
 		catch { }
 	}
 
+	public static string GetTrackForLocation(GameLocation loc)
+	{
+		if (loc == null) return "route101";
+		string name = loc.NameOrUniqueName ?? "";
+
+		// Sewer, MutatedBugLair, WitchSwamp => Lavender Town
+		if (name.Contains("Sewer", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("BugLand", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("WitchSwamp", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("Witch", StringComparison.OrdinalIgnoreCase))
+		{
+			return "lavender_town";
+		}
+
+		// Volcano Caldera / Volcano => Mt. Chimney
+		if (name.Contains("Volcano", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("Caldera", StringComparison.OrdinalIgnoreCase))
+		{
+			return "mt_chimney";
+		}
+
+		// Desert / Skull Cave => Route 111 (Desert)
+		if (name.Contains("Desert", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("SkullCave", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("Skull", StringComparison.OrdinalIgnoreCase))
+		{
+			return "route111";
+		}
+
+		// Beach / Ocean => Dewford Town
+		if (name.Contains("Beach", StringComparison.OrdinalIgnoreCase))
+		{
+			return "dewford";
+		}
+
+		// Ginger Island / Island => Pacifidlog Town
+		if (name.Contains("Island", StringComparison.OrdinalIgnoreCase))
+		{
+			return "pacifidlog";
+		}
+
+		// Cindersap Forest / Woods => Route 119
+		if (name.Contains("Forest", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("Woods", StringComparison.OrdinalIgnoreCase))
+		{
+			return "route119";
+		}
+
+		// Mountain / Backwoods / Railroad / Summit => Route 110
+		if (name.Contains("Mountain", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("Backwoods", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("Railroad", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("Summit", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("Mine", StringComparison.OrdinalIgnoreCase))
+		{
+			return "route110";
+		}
+
+		// Town / Pelican Town => Petalburg City
+		if (name.Contains("Town", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("Saloon", StringComparison.OrdinalIgnoreCase) ||
+		    name.Contains("CommunityCenter", StringComparison.OrdinalIgnoreCase))
+		{
+			return "petalburg";
+		}
+
+		// Farm / Default => Route 101
+		return "route101";
+	}
+
 	public static void UpdateOverworldMusic(float dt)
 	{
 		try
@@ -96,7 +177,19 @@ public static class PokemonMusicManager
 				if (_currentTrack == PokemonMusicTrack.RouteOverworld)
 				{
 					StopActivePokemonTrackOnly();
+					_currentOverworldTrackName = null;
 				}
+				return;
+			}
+
+			string desiredTrack = GetTrackForLocation(Game1.currentLocation);
+
+			// Se mudou de local enquanto toca música de rota, atualiza para o novo tema
+			if (_currentTrack == PokemonMusicTrack.RouteOverworld && desiredTrack != _currentOverworldTrackName)
+			{
+				StopActivePokemonTrackOnly();
+				_currentOverworldTrackName = desiredTrack;
+				PlayTrack(PokemonMusicTrack.RouteOverworld, loop: true, pauseStardew: false, specificFile: desiredTrack);
 				return;
 			}
 
@@ -107,10 +200,11 @@ public static class PokemonMusicManager
 			}
 
 			_overworldSilenceTimer += dt;
-			if (_overworldSilenceTimer >= 4.0f)
+			if (_overworldSilenceTimer >= 3.0f)
 			{
 				_overworldSilenceTimer = 0f;
-				PlayTrack(PokemonMusicTrack.RouteOverworld, loop: true, pauseStardew: false);
+				_currentOverworldTrackName = desiredTrack;
+				PlayTrack(PokemonMusicTrack.RouteOverworld, loop: true, pauseStardew: false, specificFile: desiredTrack);
 			}
 		}
 		catch { }
@@ -286,7 +380,7 @@ public static class PokemonMusicManager
 				PokemonMusicTrack.TrainerBattle => (Game1.random.Next(2) == 0 ? "emerald_trainer" : "rb_trainer"),
 				PokemonMusicTrack.MegaBossBattle => "gym_leader",
 				PokemonMusicTrack.LegendaryBattle => "champion",
-				PokemonMusicTrack.RouteOverworld => "mus_cycling",
+				PokemonMusicTrack.RouteOverworld => GetTrackForLocation(Game1.currentLocation),
 				PokemonMusicTrack.VictoryFanfare => "victory_fanfare",
 				_ => "emerald_wild"
 			};

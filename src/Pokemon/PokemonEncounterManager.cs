@@ -740,8 +740,10 @@ public static class PokemonEncounterManager
 	{
 		if (Game1.random == null) return false;
 		double luckMult = GetLuckMultiplier();
-		bool hasShinyCharm = Game1.player?.Items != null &&
-			(Game1.player.Items.ContainsId("(O)Poke_ShinyCharm") || Game1.player.Items.ContainsId("Poke_ShinyCharm") || Game1.player.Items.ContainsId("(O)ShinyCharm") || Game1.player.Items.ContainsId("ShinyCharm"));
+		bool hasShinyCharm = (Game1.player?.Items != null &&
+			(Game1.player.Items.ContainsId("(O)Poke_ShinyCharm") || Game1.player.Items.ContainsId("Poke_ShinyCharm") || Game1.player.Items.ContainsId("(O)ShinyCharm") || Game1.player.Items.ContainsId("ShinyCharm")))
+			|| (Game1.player?.leftRing.Value != null && (Game1.player.leftRing.Value.ItemId is "Poke_ShinyCharm" or "ShinyCharm"))
+			|| (Game1.player?.rightRing.Value != null && (Game1.player.rightRing.Value.ItemId is "Poke_ShinyCharm" or "ShinyCharm"));
 		if (hasShinyCharm) luckMult *= 3.0;
 		double effectivePercent = WildShinyChancePercent * luckMult;
 		if (effectivePercent <= 0) return Game1.random.Next(hasShinyCharm ? 170 : 512) == 0;

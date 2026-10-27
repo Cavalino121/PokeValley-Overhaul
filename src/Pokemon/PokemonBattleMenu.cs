@@ -86,6 +86,8 @@ public class PokemonBattleMenu : IClickableMenu
 	private bool _wasCaptured = false;
 	private bool _isCleanedUp = false;
 	private bool _opponentForfeited = false;
+	private bool _isExecutingTurn = false;
+	private NPC _battlingNpc = null;
 	private bool _megaTriggeredThisTurn = false;
 	private Random _deterministicRng = null;
 	private Random BattleRng => _deterministicRng ?? Game1.random;
@@ -828,6 +830,12 @@ private PokemonMove SelectEnemyMove()
 			ActiveBattles.Remove(Game1.player.UniqueMultiplayerID);
 		}
 
+		if (_battlingNpc != null)
+		{
+			try { _battlingNpc.movementPause = 0; } catch { }
+			_battlingNpc = null;
+		}
+
 		if (IsPvP && OpponentFarmerId != 0L && Phase != BattlePhase.Victory && Phase != BattlePhase.Defeat && !_opponentForfeited)
 		{
 			PokemonPvPManager.SendPvPBattleEnd(OpponentFarmerId);
@@ -1160,17 +1168,19 @@ private PokemonMove SelectEnemyMove()
 	{
 		try
 		{
-			_playerTrainerTex = PokemonUI.GetTrainerBackTexture(PokemonUI.TrainerSkin);
+			Farmer myFarmer = Game1.getFarmerMaybeOffline(BattlerFarmerId) ?? Game1.player;
+			string mySkin = PokemonUI.GetTrainerSkin(myFarmer);
+			_playerTrainerTex = PokemonUI.GetTrainerBackTexture(mySkin);
 
 			if (!IsWild)
 			{
-				if (IsPvP && !string.IsNullOrEmpty(EnemyTrainerSkin))
+				if (IsPvP)
 				{
-					_enemyTrainerTex = PokemonUI.GetTrainerFrontTexture(EnemyTrainerSkin);
+					string enemySkin = !string.IsNullOrEmpty(EnemyTrainerSkin) ? EnemyTrainerSkin : "Brendan";
+					_enemyTrainerTex = PokemonUI.GetTrainerFrontTexture(enemySkin);
 				}
-
 				// 1. Check if TrainerName corresponds to a Valley NPC Portrait (Abigail, Pierre, Shane, Harvey, Morris, etc.)
-				if (!string.IsNullOrEmpty(TrainerName))
+				else if (!string.IsNullOrEmpty(TrainerName))
 				{
 					string cleanName = TrainerName.Split('(')[0].Trim();
 
@@ -6238,6 +6248,7 @@ private PokemonMove SelectEnemyMove()
 
 	private void CheckAndExecutePvPTurn()
 	{
+		if (_isExecutingTurn) return;
 		if (_myPendingAction == null || _opponentPendingAction == null) return;
 
 		var myAct = _myPendingAction;
@@ -6245,6 +6256,7 @@ private PokemonMove SelectEnemyMove()
 		_myPendingAction = null;
 		_opponentPendingAction = null;
 
+		_isExecutingTurn = true;
 		ExecutePvPTurn(myAct, oppAct);
 	}
 
@@ -6282,7 +6294,9 @@ private PokemonMove SelectEnemyMove()
 			RunEndOfTurnEffects(() =>
 			{
 				_deterministicRng = null;
+				_isExecutingTurn = false;
 				Phase = BattlePhase.ActionSelect;
+				CheckAndExecutePvPTurn();
 			});
 		};
 
@@ -6502,6 +6516,9 @@ private PokemonMove SelectEnemyMove()
 	public void ReceiveOpponentForfeit()
 	{
 		_opponentForfeited = true;
+		Game1.playSound("cancel");
+		Game1.addHUDMessage(new HUDMessage($"⚔️ A batalha PvP foi encerrada: {TrainerName} saiu do combate.", 2));
+		exitThisMenuNoSound();
 	}
 
 	private void PerformPlayerSwitch(int targetIndex, Action onDone)

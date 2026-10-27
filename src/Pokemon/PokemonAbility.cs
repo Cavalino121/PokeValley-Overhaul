@@ -1393,12 +1393,14 @@ public static class PokemonAbility
 	public static string NormalizeKey(string key)
 	{
 		if (string.IsNullOrEmpty(key)) return "";
-		return key.Replace("/", "").Replace("-", "").Replace("_", "").Trim().ToLowerInvariant();
+		return key.Replace("/", "").Replace("-", "").Replace("_", "").Replace(" ", "").Replace("'", "").Trim().ToLowerInvariant();
 	}
 
 	private static void RegisterAbility(string name, string display, string desc)
 	{
-		_abilityData[name] = new AbilityInfo { Name = name, DisplayName = display, Description = desc };
+		var info = new AbilityInfo { Name = name, DisplayName = display, Description = desc };
+		_abilityData[name] = info;
+		_abilityData[NormalizeKey(name)] = info;
 	}
 
 	private static void MapBase(string species, string ability)
@@ -1490,78 +1492,78 @@ public static class PokemonAbility
 		["Venusaur"] = "Chlorophyll",
 		["Ivysaur"] = "Chlorophyll",
 		["Bulbasaur"] = "Chlorophyll",
-		["Charizard"] = "Solar Power",
-		["Charmeleon"] = "Solar Power",
-		["Charmander"] = "Solar Power",
-		["Blastoise"] = "Rain Dish",
-		["Wartortle"] = "Rain Dish",
-		["Squirtle"] = "Rain Dish",
+		["Charizard"] = "SolarPower",
+		["Charmeleon"] = "SolarPower",
+		["Charmander"] = "SolarPower",
+		["Blastoise"] = "RainDish",
+		["Wartortle"] = "RainDish",
+		["Squirtle"] = "RainDish",
 		["Dragonite"] = "Multiscale",
-		["Dragonair"] = "Marvel Scale",
-		["Dratini"] = "Marvel Scale",
-		["Alakazam"] = "Magic Guard",
-		["Kadabra"] = "Magic Guard",
-		["Abra"] = "Magic Guard",
-		["Gengar"] = "Cursed Body",
+		["Dragonair"] = "MarvelScale",
+		["Dratini"] = "MarvelScale",
+		["Alakazam"] = "MagicGuard",
+		["Kadabra"] = "MagicGuard",
+		["Abra"] = "MagicGuard",
+		["Gengar"] = "CursedBody",
 		["Gyarados"] = "Moxie",
 		["Magikarp"] = "Rattled",
-		["Nidoking"] = "Sheer Force",
-		["Nidoqueen"] = "Sheer Force",
+		["Nidoking"] = "SheerForce",
+		["Nidoqueen"] = "SheerForce",
 		["Ninetales"] = "Drought",
 		["Vulpix"] = "Drought",
 		["Politoed"] = "Drizzle",
-		["Poliwrath"] = "Swift Swim",
-		["Espeon"] = "Magic Bounce",
-		["Umbreon"] = "Inner Focus",
+		["Poliwrath"] = "SwiftSwim",
+		["Espeon"] = "MagicBounce",
+		["Umbreon"] = "InnerFocus",
 		["Sylveon"] = "Pixilate",
 		["Eevee"] = "Anticipation",
 		["Vaporeon"] = "Hydration",
-		["Jolteon"] = "Quick Feet",
+		["Jolteon"] = "QuickFeet",
 		["Flareon"] = "Guts",
 		["Leafeon"] = "Chlorophyll",
-		["Glaceon"] = "Ice Body",
+		["Glaceon"] = "IceBody",
 		["Snorlax"] = "Gluttony",
 		["Tyranitar"] = "Unnerve",
-		["Blaziken"] = "Speed Boost",
-		["Combusken"] = "Speed Boost",
-		["Torchic"] = "Speed Boost",
+		["Blaziken"] = "SpeedBoost",
+		["Combusken"] = "SpeedBoost",
+		["Torchic"] = "SpeedBoost",
 		["Swampert"] = "Damp",
 		["Sceptile"] = "Unburden",
 		["Breloom"] = "Technician",
-		["Shroomish"] = "Quick Feet",
+		["Shroomish"] = "QuickFeet",
 		["Salamence"] = "Moxie",
-		["Bagon"] = "Sheer Force",
+		["Bagon"] = "SheerForce",
 		["Shelgon"] = "Overcoat",
-		["Metagross"] = "Light Metal",
-		["Garchomp"] = "Rough Skin",
-		["Gabite"] = "Rough Skin",
-		["Gible"] = "Rough Skin",
+		["Metagross"] = "LightMetal",
+		["Garchomp"] = "RoughSkin",
+		["Gabite"] = "RoughSkin",
+		["Gible"] = "RoughSkin",
 		["Lucario"] = "Justified",
 		["Riolu"] = "Prankster",
-		["Togekiss"] = "Super Luck",
+		["Togekiss"] = "SuperLuck",
 		["Weavile"] = "Pickpocket",
-		["Gliscor"] = "Poison Heal",
-		["Mamoswine"] = "Thick Fat",
+		["Gliscor"] = "PoisonHeal",
+		["Mamoswine"] = "ThickFat",
 		["Serperior"] = "Contrary",
 		["Servine"] = "Contrary",
 		["Snivy"] = "Contrary",
 		["Greninja"] = "Protean",
 		["Frogadier"] = "Protean",
 		["Froakie"] = "Protean",
-		["Talonflame"] = "Gale Wings",
+		["Talonflame"] = "GaleWings",
 		["Incineroar"] = "Intimidate",
 		["Torracat"] = "Intimidate",
 		["Litten"] = "Intimidate",
 		["Toxapex"] = "Regenerator",
 		["Mareanie"] = "Regenerator",
-		["Corviknight"] = "Mirror Armor",
+		["Corviknight"] = "MirrorArmor",
 		["Cinderace"] = "Libero",
-		["Rillaboom"] = "Grassy Surge",
+		["Rillaboom"] = "GrassySurge",
 		["Inteleon"] = "Sniper",
 		["Skeledirge"] = "Unaware",
 		["Meowscarada"] = "Protean",
 		["Quaquaval"] = "Moxie",
-		["Espathra"] = "Speed Boost"
+		["Espathra"] = "SpeedBoost"
 	};
 
 	public static string GetHiddenAbility(PokemonSpecies species)
@@ -1573,19 +1575,19 @@ public static class PokemonAbility
 
 		return species.PrimaryType switch
 		{
-			PokemonType.Fire => "Flash Fire",
-			PokemonType.Water => "Swift Swim",
+			PokemonType.Fire => "FlashFire",
+			PokemonType.Water => "SwiftSwim",
 			PokemonType.Grass => "Chlorophyll",
-			PokemonType.Electric => "Motor Drive",
-			PokemonType.Fighting => "Iron Fist",
+			PokemonType.Electric => "MotorDrive",
+			PokemonType.Fighting => "IronFist",
 			PokemonType.Dragon => "Multiscale",
 			PokemonType.Dark => "Prankster",
-			PokemonType.Ghost => "Cursed Body",
-			PokemonType.Steel => "Heavy Metal",
+			PokemonType.Ghost => "CursedBody",
+			PokemonType.Steel => "HeavyMetal",
 			PokemonType.Fairy => "Pixilate",
-			PokemonType.Psychic => "Magic Bounce",
+			PokemonType.Psychic => "MagicBounce",
 			PokemonType.Normal => "Scrappy",
-			_ => "Inner Focus"
+			_ => "InnerFocus"
 		};
 	}
 
@@ -1593,6 +1595,8 @@ public static class PokemonAbility
 	{
 		if (string.IsNullOrEmpty(abilityName)) return null;
 		if (_abilityData.TryGetValue(abilityName, out var info)) return info;
+		string norm = NormalizeKey(abilityName);
+		if (_abilityData.TryGetValue(norm, out var normInfo)) return normInfo;
 		return new AbilityInfo { Name = abilityName, DisplayName = abilityName, Description = "Habilidade passiva de Pokémon." };
 	}
 

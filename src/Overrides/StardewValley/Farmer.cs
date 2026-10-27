@@ -8074,7 +8074,11 @@ public class Farmer : Character, IComparable
 		{
 			return 2f;
 		}
-		float shoeSpeed = (Items != null && (Items.ContainsId("(O)Poke_RunningShoes") || Items.ContainsId("Poke_RunningShoes") || Items.ContainsId("(O)RunningShoes") || Items.ContainsId("RunningShoes"))) ? 1f : 0f;
+		bool hasShoesEquipped = (leftRing.Value != null && (leftRing.Value.ItemId == "Poke_RunningShoes" || leftRing.Value.ItemId == "RunningShoes"))
+			|| (rightRing.Value != null && (rightRing.Value.ItemId == "Poke_RunningShoes" || rightRing.Value.ItemId == "RunningShoes"))
+			|| (boots.Value != null && (boots.Value.ItemId == "Poke_RunningShoes" || boots.Value.ItemId == "RunningShoes"));
+		bool hasShoesInBag = Items != null && (Items.ContainsId("(O)Poke_RunningShoes") || Items.ContainsId("Poke_RunningShoes") || Items.ContainsId("(O)RunningShoes") || Items.ContainsId("RunningShoes"));
+		float shoeSpeed = (hasShoesEquipped || hasShoesInBag) ? 1.5f : 0f;
 		if (Game1.CurrentEvent == null || Game1.CurrentEvent.playerControlSequence)
 		{
 			movementMultiplier = 0.066f;

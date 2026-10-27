@@ -98,6 +98,18 @@ public class PokemonDebugMenu : IClickableMenu
 	private readonly List<ClickableComponent> _milestonesButtons = new();
 	private ClickableTextureComponent _closeButton;
 
+	private bool _itemCatalogMode = false;
+	private int _itemCatalogPage = 0;
+	private string _itemCatalogCategory = "Todos";
+	private ClickableComponent _itemCatalogToggleBtn;
+	private ClickableComponent _itemCatPrevBtn;
+	private ClickableComponent _itemCatNextBtn;
+	private readonly List<ClickableComponent> _itemCategoryFilterButtons = new();
+	private readonly List<ClickableComponent> _itemCatalogCards = new();
+
+	public record ModItemCatalogEntry(string ItemId, string FullId, string DisplayName, string Category);
+	private static List<ModItemCatalogEntry> _allCatalogItems = null;
+
 	private static int _cutsceneSpeciesIdx = 0;
 	private static readonly string[] _cutsceneLegendaryList = new[]
 	{
@@ -185,7 +197,7 @@ public class PokemonDebugMenu : IClickableMenu
 	};
 
 	public PokemonDebugMenu()
-		: base(0, 0, 900, 684)
+		: base(0, 0, 900, 712)
 	{
 		xPositionOnScreen = (Game1.uiViewport.Width - width) / 2;
 		yPositionOnScreen = (Game1.uiViewport.Height - height) / 2;
@@ -267,9 +279,9 @@ public class PokemonDebugMenu : IClickableMenu
 		_tabButtons.Add(new ClickableComponent(new Rectangle(startX + (tabW + tabGap) * 7, startY, tabW, 40), "Legendaries", "8. Lendários"));
 
 		// Lower Tab Bar (Abas Inferiores): Two clean rows across 840px (3 buttons each, w=272, gap=12)
-		int bottomRow1Y = yPositionOnScreen + height - 76;
-		int bottomRow2Y = yPositionOnScreen + height - 40;
-		int bottomW = 272;
+		int bottomRow1Y = yPositionOnScreen + height - 84;
+		int bottomRow2Y = yPositionOnScreen + height - 46;
+		int bottomW = 264;
 		int bottomGap = 12;
 
 		// Row 1: Sub-Tabs 9, 10, 11
@@ -283,6 +295,8 @@ public class PokemonDebugMenu : IClickableMenu
 		_resetMilestonesBottomButton = new ClickableComponent(new Rectangle(startX + (bottomW + bottomGap) * 2, bottomRow2Y, bottomW, 32), "reset_milestones", "🔄 Zerar Marcos Dex");
 
 		int contentY = startY + 50;
+		int btnW = 408;
+		int col2X = startX + 424;
 
 		// 1. Level selector buttons (for Pokemon Tab)
 		for (int l = 0; l < DebugLevels.Length; l++)
@@ -323,30 +337,82 @@ public class PokemonDebugMenu : IClickableMenu
 			_pokemonButtons.Add(new ClickableComponent(new Rectangle(bx, by, 272, 58), sp.Name));
 		}
 
-		// 3. Item Buttons (compact 40px height rows to fit all new Gimmick Rings, Mega Stones & Z-Crystals)
-		int itemStartY = contentY + 6;
-		int btnW = 408;
-		int col2X = startX + 424;
-		int rowStep = 44;
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY, btnW, 40), "pack_balls", "+20 De Todas Poké Bolas (21 Tipos)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY, btnW, 40), "pack_potions", "+10 Potion, Super Potion & Revive"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep, btnW, 40), "pack_seeds", "+20 De Todas Sementes de Apricorn"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep, btnW, 40), "pack_apricorns", "+20 De Todos Apricorns Colhidos"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 2, btnW, 40), "pack_candy_repel", "+10 Rare/Friend Candy & Repels"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 2, btnW, 40), "pack_field_tms", "+1 Apenas TMs de Campo (HMs)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 3, btnW, 40), "pack_tms", "+1 De Todos os TMs (Gen 1 a Gen 9)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 3, btnW, 40), "super_rod", "+1 Vara Super Rod (Pescar Pokémon)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 4, btnW, 40), "healing_machine", "+1 Mesa de Recuperação Pokémon"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 4, btnW, 40), "pack_stones", "+5 De Todas Pedras de Evolução"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 5, btnW, 40), "pokemon_pc", "💻 +1 PC de Pokémon (Ou Abrir PC)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 5, btnW, 40), "trade_terminal", "🔄 +1 Terminal de Troca (Ou Abrir)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 6, btnW, 40), "exp_share_ring", "💍 +1 Anel Exp. Share (Equipável - Gen 6)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 6, btnW, 40), "gimmick_rings", "💍 +1 Anéis: Mega Bracelete, Z-Ring & Dynamax"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 7, btnW, 40), "choose_mega_stone", "🧬 Escolher Mega Pedra Individual (Seletor)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 7, btnW, 40), "choose_z_crystal", "💎 Escolher Cristal Z Individual (Seletor)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 8, btnW, 40), "choose_held_item", "🎒 Escolher Held Item Individual (Seletor)"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 8, btnW, 40), "pack_held_items", "📦 +1 De Todos os Held Items Competitivos"));
-		_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 9, btnW * 2 + 16, 42), "all_items", "★ Gerar TODOS os Itens, Anéis, Mega Pedras e Cristais Z de uma vez"));
+		// 3. Item Buttons & Catalog Mode
+		_itemButtons.Clear();
+		_itemCategoryFilterButtons.Clear();
+		_itemCatalogCards.Clear();
+
+		int itemStartY = contentY + 8;
+		_itemCatalogToggleBtn = new ClickableComponent(
+			new Rectangle(startX, itemStartY, 840, 32),
+			"toggle_catalog_mode",
+			_itemCatalogMode ? "◀ Voltar aos Pacotes Rápidos de Itens" : "📂 Abrir Catálogo Completo: Pegar Itens Individuais (Sem Fechar Menu)"
+		);
+
+		if (!_itemCatalogMode)
+		{
+			itemStartY += 38;
+			int rowStep = 40;
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY, btnW, 36), "pack_balls", "+20 De Todas Poké Bolas (27 Tipos)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY, btnW, 36), "pack_potions", "+10 Potion, Super Potion & Revive"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep, btnW, 36), "pack_seeds", "+20 De Todas Sementes de Apricorn"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep, btnW, 36), "pack_apricorns", "+20 De Todos Apricorns Colhidos"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 2, btnW, 36), "pack_candy_repel", "+10 Rare/Friend Candy & Repels"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 2, btnW, 36), "pack_field_tms", "+1 Apenas TMs de Campo (HMs)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 3, btnW, 36), "pack_tms", "+1 De Todos os TMs (Gen 1 a Gen 9)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 3, btnW, 36), "super_rod", "+1 Vara Super Rod (Pescar Pokémon)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 4, btnW, 36), "healing_machine", "+1 Mesa de Recuperação Pokémon"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 4, btnW, 36), "pack_stones", "+5 De Todas Pedras de Evolução"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 5, btnW, 36), "pokemon_pc", "💻 +1 PC de Pokémon (Ou Abrir PC)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 5, btnW, 36), "trade_terminal", "🔄 +1 Terminal de Troca (Ou Abrir)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 6, btnW, 36), "exp_share_ring", "💍 +1 Anel Exp. Share (Equipável - Gen 6)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 6, btnW, 36), "gimmick_rings", "💍 +1 Anéis: Mega Bracelete, Z-Ring & Dynamax"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 7, btnW, 36), "choose_mega_stone", "🧬 Escolher Mega Pedra Individual (Seletor)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 7, btnW, 36), "choose_z_crystal", "💎 Escolher Cristal Z Individual (Seletor)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 8, btnW, 36), "choose_held_item", "🎒 Escolher Held Item Individual (Seletor)"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(col2X, itemStartY + rowStep * 8, btnW, 36), "pack_held_items", "📦 +1 De Todos os Held Items Competitivos"));
+			_itemButtons.Add(new ClickableComponent(new Rectangle(startX, itemStartY + rowStep * 9, btnW * 2 + 16, 38), "all_items", "★ Gerar TODOS os Itens, Anéis, Mega Pedras e Cristais Z de uma vez"));
+		}
+		else
+		{
+			// Category filter pills
+			string[] categories = { "Todos", "Bolas", "Cura", "Evolução", "Held", "Megas", "Z-Crystals", "Utils", "Plantio" };
+			int catW = 88;
+			int catGap = 5;
+			int filterY = itemStartY + 38;
+			for (int c = 0; c < categories.Length; c++)
+			{
+				string catName = categories[c];
+				_itemCategoryFilterButtons.Add(new ClickableComponent(new Rectangle(startX + c * (catW + catGap), filterY, catW, 26), "cat_" + catName, catName));
+			}
+
+			// Pagination
+			_itemCatPrevBtn = new ClickableComponent(new Rectangle(startX + 692, filterY + 30, 68, 26), "cat_prev", "◄ Ant");
+			_itemCatNextBtn = new ClickableComponent(new Rectangle(startX + 766, filterY + 30, 68, 26), "cat_next", "Prox ►");
+
+			// Filtered items
+			var catalog = GetFilteredItemCatalog();
+			int itemsPerPage = 18;
+			int itemMaxPage = Math.Max(0, (catalog.Count - 1) / itemsPerPage);
+			if (_itemCatalogPage > itemMaxPage) _itemCatalogPage = itemMaxPage;
+			if (_itemCatalogPage < 0) _itemCatalogPage = 0;
+
+			int startIdx = _itemCatalogPage * itemsPerPage;
+			int count = Math.Min(itemsPerPage, catalog.Count - startIdx);
+			int gridY = filterY + 60;
+			int cardW = 272;
+			int cardH = 58;
+
+			for (int i = 0; i < count; i++)
+			{
+				var entry = catalog[startIdx + i];
+				int col = i % 3;
+				int row = i / 3;
+				int bx = startX + col * 280;
+				int by = gridY + row * 62;
+				_itemCatalogCards.Add(new ClickableComponent(new Rectangle(bx, by, cardW, cardH), entry.ItemId, entry.DisplayName));
+			}
+		}
 
 		// 4. TMs & HMs Controls and Grid
 		string filterLabel = _filterFieldMovesOnly ? "★ TMs Campo (HMs)" : "Todos os TMs";
@@ -767,12 +833,73 @@ public class PokemonDebugMenu : IClickableMenu
 		// Tab 2: Items
 		else if (_currentTab == Tab.Items)
 		{
-			foreach (var ib in _itemButtons)
+			if (_itemCatalogToggleBtn != null && _itemCatalogToggleBtn.containsPoint(x, y))
 			{
-				if (ib.containsPoint(x, y))
+				_itemCatalogMode = !_itemCatalogMode;
+				_itemCatalogPage = 0;
+				Game1.playSound("shwip");
+				SetupButtons();
+				return;
+			}
+
+			if (_itemCatalogMode)
+			{
+				foreach (var catBtn in _itemCategoryFilterButtons)
 				{
-					HandleItemSpawn(ib.name);
+					if (catBtn.containsPoint(x, y))
+					{
+						_itemCatalogCategory = catBtn.name.Substring("cat_".Length);
+						_itemCatalogPage = 0;
+						Game1.playSound("smallSelect");
+						SetupButtons();
+						return;
+					}
+				}
+
+				if (_itemCatPrevBtn != null && _itemCatPrevBtn.containsPoint(x, y))
+				{
+					var catalog = GetFilteredItemCatalog();
+					int maxP = Math.Max(0, (catalog.Count - 1) / 18);
+					_itemCatalogPage = (_itemCatalogPage - 1 + (maxP + 1)) % (maxP + 1);
+					Game1.playSound("shwip");
+					SetupButtons();
 					return;
+				}
+
+				if (_itemCatNextBtn != null && _itemCatNextBtn.containsPoint(x, y))
+				{
+					var catalog = GetFilteredItemCatalog();
+					int maxP = Math.Max(0, (catalog.Count - 1) / 18);
+					_itemCatalogPage = (_itemCatalogPage + 1) % (maxP + 1);
+					Game1.playSound("shwip");
+					SetupButtons();
+					return;
+				}
+
+				for (int i = 0; i < _itemCatalogCards.Count; i++)
+				{
+					var card = _itemCatalogCards[i];
+					if (card.containsPoint(x, y))
+					{
+						var catalog = GetFilteredItemCatalog();
+						int idx = _itemCatalogPage * 18 + i;
+						if (idx >= 0 && idx < catalog.Count)
+						{
+							GiveCatalogItem(catalog[idx], 1);
+						}
+						return;
+					}
+				}
+			}
+			else
+			{
+				foreach (var ib in _itemButtons)
+				{
+					if (ib.containsPoint(x, y))
+					{
+						HandleItemSpawn(ib.name);
+						return;
+					}
 				}
 			}
 		}
@@ -2411,6 +2538,219 @@ public class PokemonDebugMenu : IClickableMenu
 		PokemonUI.Text(b, Game1.smallFont, label, new Rectangle(bounds.X + 4, bounds.Y + 2, bounds.Width - 8, bounds.Height - 4), isActive ? Color.DarkRed : new Color(45, 45, 55), center: true, maxScale: 0.60f, shadow: false);
 	}
 
+	public override void receiveRightClick(int x, int y, bool playSound = true)
+	{
+		base.receiveRightClick(x, y, playSound);
+
+		if (_currentTab == Tab.Items && _itemCatalogMode)
+		{
+			for (int i = 0; i < _itemCatalogCards.Count; i++)
+			{
+				var card = _itemCatalogCards[i];
+				if (card.containsPoint(x, y))
+				{
+					var catalog = GetFilteredItemCatalog();
+					int idx = _itemCatalogPage * 18 + i;
+					if (idx >= 0 && idx < catalog.Count)
+					{
+						GiveCatalogItem(catalog[idx], 10);
+					}
+					return;
+				}
+			}
+		}
+	}
+
+	private void GiveCatalogItem(ModItemCatalogEntry entry, int amount)
+	{
+		try
+		{
+			Item item = ItemRegistry.Create(entry.FullId, amount);
+			if (item == null && entry.FullId.StartsWith("(O)"))
+			{
+				item = ItemRegistry.Create(entry.ItemId, amount) ?? new StardewValley.Object(entry.ItemId, amount);
+			}
+			if (item != null)
+			{
+				Game1.player.addItemToInventoryBool(item);
+				Game1.playSound("coin");
+				Game1.addHUDMessage(new HUDMessage($"✨ +{amount} {entry.DisplayName}!", 2));
+			}
+			else
+			{
+				Game1.playSound("cancel");
+			}
+		}
+		catch (Exception ex)
+		{
+			Game1.log.Error($"Erro ao gerar item individual {entry.ItemId}: {ex.Message}");
+		}
+	}
+
+	private List<ModItemCatalogEntry> GetFilteredItemCatalog()
+	{
+		var all = GetAllCatalogItems();
+		if (string.Equals(_itemCatalogCategory, "Todos", StringComparison.OrdinalIgnoreCase))
+		{
+			return all;
+		}
+		return all.FindAll(e => string.Equals(e.Category, _itemCatalogCategory, StringComparison.OrdinalIgnoreCase));
+	}
+
+	private static List<ModItemCatalogEntry> GetAllCatalogItems()
+	{
+		if (_allCatalogItems != null) return _allCatalogItems;
+
+		var list = new List<ModItemCatalogEntry>();
+
+		// 1. Bolas (27 tipos)
+		string[] ballIds = {
+			"PokeBall", "GreatBall", "UltraBall", "MasterBall", "SafariBall", "FastBall", "LevelBall",
+			"LureBall", "HeavyBall", "LoveBall", "FriendBall", "MoonBall", "SportBall", "NetBall",
+			"DiveBall", "NestBall", "RepeatBall", "TimerBall", "LuxuryBall", "PremierBall", "DuskBall",
+			"HealBall", "QuickBall", "CherishBall", "ParkBall", "DreamBall", "BeastBall"
+		};
+		foreach (var b in ballIds)
+		{
+			list.Add(new ModItemCatalogEntry(b, "(O)" + b, ItemRegistry.GetData("(O)" + b)?.DisplayName ?? b, "Bolas"));
+		}
+
+		// 2. Cura & Doces
+		(string id, string name)[] meds = {
+			("PokemonPotion", "Poção"),
+			("PokemonSuperPotion", "Super Poção"),
+			("PokemonHyperPotion", "Hiper Poção"),
+			("PokemonMaxPotion", "Poção Máxima"),
+			("PokemonFullRestore", "Restaurador Total"),
+			("PokemonRevive", "Reviver"),
+			("PokemonMaxRevive", "Max Reviver"),
+			("PokemonRareCandy", "Doce Raro (+1 Lv)"),
+			("Poke_FriendshipSweet", "Doce da Amizade (+30)"),
+			("PokemonFriendshipCandy", "Bala de Amizade Máxima (255)"),
+			("Poke_AbilityPatch", "Ability Patch (Hidden Ability)"),
+			("Poke_AbilityCapsule", "Ability Capsule"),
+			("PokemonAntidote", "Antídoto"),
+			("PokemonParalyzeHeal", "Cura Paralisia"),
+			("PokemonAwakening", "Despertador"),
+			("PokemonBurnHeal", "Cura Queimadura"),
+			("PokemonIceHeal", "Cura Congelamento"),
+			("PokemonFullHeal", "Cura Total"),
+			("PokemonRepel", "Repelente"),
+			("PokemonSuperRepel", "Super Repelente"),
+			("PokemonMaxRepel", "Max Repelente")
+		};
+		foreach (var (mId, mName) in meds)
+		{
+			list.Add(new ModItemCatalogEntry(mId, "(O)" + mId, mName, "Cura"));
+		}
+
+		// 3. Pedras & Evolução
+		(string id, string name)[] evos = {
+			("PokemonFireStone", "Pedra do Fogo"),
+			("PokemonWaterStone", "Pedra da Água"),
+			("PokemonThunderStone", "Pedra do Trovão"),
+			("PokemonLeafStone", "Pedra da Folha"),
+			("PokemonMoonStone", "Pedra da Lua"),
+			("PokemonSunStone", "Pedra do Sol"),
+			("PokemonShinyStone", "Pedra do Brilho"),
+			("PokemonDuskStone", "Pedra do Anoitecer"),
+			("PokemonDawnStone", "Pedra da Alvorada"),
+			("PokemonIceStone", "Pedra do Gelo"),
+			("PokemonOvalStone", "Pedra Oval"),
+			("KingsRock", "Rocha do Rei"),
+			("MetalCoat", "Revestimento Metálico"),
+			("DragonScale", "Escama de Dragão"),
+			("UpGrade", "Upgrade"),
+			("DubiousDisc", "Disco Duvidoso"),
+			("Protector", "Protetor"),
+			("Electirizer", "Eletrizador"),
+			("Magmarizer", "Magmarizador"),
+			("RazorClaw", "Garra Afiada"),
+			("RazorFang", "Presa Afiada"),
+			("ReaperCloth", "Manto Noturno"),
+			("PrismScale", "Escama Prisma"),
+			("WhippedDream", "Sonho Batido"),
+			("Sachet", "Sachê Aromático")
+		};
+		foreach (var (eId, eName) in evos)
+		{
+			list.Add(new ModItemCatalogEntry(eId, "(O)" + eId, eName, "Evolução"));
+		}
+
+		// 4. Utilitários, Anéis & Formas Lendárias
+		(string id, string fullId, string name)[] utils = {
+			("Poke_RunningShoes", "(R)Poke_RunningShoes", "Tênis de Corrida (+2)"),
+			("Poke_ShinyCharm", "(R)Poke_ShinyCharm", "Talismã Shiny (1/128)"),
+			("Poke_PortableHealMachine", "(O)Poke_PortableHealMachine", "Centro Pokémon Portátil"),
+			("Poke_BoxLink", "(O)Poke_BoxLink", "Box Link Portátil (PC)"),
+			("Poke_MegaStoneSelector", "(O)Poke_MegaStoneSelector", "Seletor de Mega Pedras"),
+			("PokemonExpShare", "(R)PokemonExpShare", "Exp. Share (Anel Gen 6)"),
+			("Poke_MegaBracelet", "(R)Poke_MegaBracelet", "Mega Bracelete (Anel)"),
+			("Poke_ZRing", "(R)Poke_ZRing", "Z-Ring (Anel)"),
+			("Poke_ZPowerRing", "(R)Poke_ZPowerRing", "Z-Power Ring (Anel)"),
+			("Poke_DynamaxBand", "(R)Poke_DynamaxBand", "Bracelete Dynamax (Anel)"),
+			("Poke_TeraOrb", "(R)Poke_TeraOrb", "Orbe Terastal (Anel)"),
+			("PokemonPC", "(BC)PokemonPC", "Computador Pokémon (Móvel)"),
+			("PokemonTradeTerminal", "(BC)PokemonTradeTerminal", "Terminal de Trocas (Móvel)"),
+			("PokemonHealingMachine", "(BC)PokemonHealingMachine", "Mesa de Cura (Móvel)"),
+			("PokemonSuperRod", "(T)PokemonSuperRod", "Super Rod (Pescar)"),
+			("Poke_ScrollOfDarkness", "(O)Poke_ScrollOfDarkness", "Pergaminho das Trevas"),
+			("Poke_ScrollOfWaters", "(O)Poke_ScrollOfWaters", "Pergaminho das Águas"),
+			("Poke_AdamantCrystal", "(O)Poke_AdamantCrystal", "Cristal Adamante (Dialga)"),
+			("Poke_LustrousGlobe", "(O)Poke_LustrousGlobe", "Globo Lustroso (Palkia)"),
+			("Poke_GriseousCore", "(O)Poke_GriseousCore", "Núcleo Griseous (Giratina)"),
+			("Poke_Gracidea", "(O)Poke_Gracidea", "Flor Gracídea (Shaymin)"),
+			("Poke_PrisonBottle", "(O)Poke_PrisonBottle", "Garrafa Prisão (Hoopa)"),
+			("Poke_Meteorite", "(O)Poke_Meteorite", "Meteorito (Rayquaza)"),
+			("Poke_ReinsOfUnity", "(O)Poke_ReinsOfUnity", "Rédeas da Unidade (Calyrex)"),
+			("Poke_RustedSword", "(O)Poke_RustedSword", "Espada Enferrujada (Zacian)"),
+			("Poke_RustedShield", "(O)Poke_RustedShield", "Escudo Enferrujado (Zamazenta)"),
+			("Poke_DNASplicers", "(O)Poke_DNASplicers", "Fundidores de DNA (Kyurem)")
+		};
+		foreach (var (uId, uFull, uName) in utils)
+		{
+			list.Add(new ModItemCatalogEntry(uId, uFull, uName, "Utils"));
+		}
+
+		// 5. Held Items Competitivos
+		foreach (var (hId, hName, hDesc, hCost) in PokemonHeldItemManager.GetAllHeldItems())
+		{
+			list.Add(new ModItemCatalogEntry(hId, "(O)" + hId, hName, "Held"));
+		}
+
+		// 6. Mega Stones
+		foreach (var kv in PokemonItemManager.MegaStoneDefinitions)
+		{
+			list.Add(new ModItemCatalogEntry(kv.Key, "(O)" + kv.Key, kv.Value.DisplayName, "Megas"));
+		}
+
+		// 7. Cristais Z
+		foreach (var kv in PokemonItemManager.ZCrystalDefinitions)
+		{
+			list.Add(new ModItemCatalogEntry(kv.Key, "(O)" + kv.Key, kv.Value.DisplayName, "Z-Crystals"));
+		}
+		foreach (var kv in PokemonItemManager.SignatureZCrystalDefinitions)
+		{
+			list.Add(new ModItemCatalogEntry(kv.Key, "(O)" + kv.Key, kv.Value.DisplayName, "Z-Crystals"));
+		}
+
+		// 8. Plantio (Apricorns & Berries)
+		foreach (var c in PokemonItemManager.ApricornColors)
+		{
+			list.Add(new ModItemCatalogEntry($"Poke{c}Seed", $"(O)Poke{c}Seed", $"Semente Apricorn {c}", "Plantio"));
+			list.Add(new ModItemCatalogEntry($"Poke{c}Apricorn", $"(O)Poke{c}Apricorn", $"Apricorn {c}", "Plantio"));
+		}
+		string[] berries = { "OranBerry", "SitrusBerry", "LumBerry", "PechaBerry", "CheriBerry", "ChestoBerry", "RawstBerry", "AspearBerry", "LeppaBerry", "PersimBerry" };
+		foreach (var br in berries)
+		{
+			list.Add(new ModItemCatalogEntry(br, "(O)" + br, ItemRegistry.GetData("(O)" + br)?.DisplayName ?? br, "Plantio"));
+			list.Add(new ModItemCatalogEntry(br + "Seeds", "(O)" + br + "Seeds", $"Semente {br}", "Plantio"));
+		}
+
+		_allCatalogItems = list;
+		return _allCatalogItems;
+	}
+
 	public override void draw(SpriteBatch b)
 	{
 		// Scrim
@@ -2565,11 +2905,91 @@ public class PokemonDebugMenu : IClickableMenu
 		// Tab 2: Items
 		else if (_currentTab == Tab.Items)
 		{
-			foreach (var ib in _itemButtons)
+			if (_itemCatalogToggleBtn != null)
 			{
-				bool hov = ib.containsPoint(mouseX, mouseY);
-				IClickableMenu.drawTextureBox(b, ib.bounds.X, ib.bounds.Y, ib.bounds.Width, ib.bounds.Height, hov ? Color.PaleGoldenrod : Color.White);
-				PokemonUI.Text(b, Game1.smallFont, ib.label, new Rectangle(ib.bounds.X + 12, ib.bounds.Y + 6, ib.bounds.Width - 24, ib.bounds.Height - 12), hov ? Color.DarkRed : Game1.textColor, center: true, maxScale: 0.76f, shadow: false);
+				bool hov = _itemCatalogToggleBtn.containsPoint(mouseX, mouseY);
+				IClickableMenu.drawTextureBox(b, _itemCatalogToggleBtn.bounds.X, _itemCatalogToggleBtn.bounds.Y, _itemCatalogToggleBtn.bounds.Width, _itemCatalogToggleBtn.bounds.Height, hov ? new Color(255, 240, 200) : new Color(240, 248, 255));
+				PokemonUI.Text(b, Game1.smallFont, _itemCatalogToggleBtn.label, _itemCatalogToggleBtn.bounds, hov ? Color.DarkRed : Color.DarkBlue, center: true, maxScale: 0.74f, shadow: false);
+			}
+
+			if (!_itemCatalogMode)
+			{
+				foreach (var ib in _itemButtons)
+				{
+					bool hov = ib.containsPoint(mouseX, mouseY);
+					IClickableMenu.drawTextureBox(b, ib.bounds.X, ib.bounds.Y, ib.bounds.Width, ib.bounds.Height, hov ? Color.PaleGoldenrod : Color.White);
+					PokemonUI.Text(b, Game1.smallFont, ib.label, new Rectangle(ib.bounds.X + 12, ib.bounds.Y + 6, ib.bounds.Width - 24, ib.bounds.Height - 12), hov ? Color.DarkRed : Game1.textColor, center: true, maxScale: 0.76f, shadow: false);
+				}
+			}
+			else
+			{
+				// Category filter pills
+				foreach (var cf in _itemCategoryFilterButtons)
+				{
+					string cName = cf.name.Substring("cat_".Length);
+					bool active = string.Equals(_itemCatalogCategory, cName, StringComparison.OrdinalIgnoreCase);
+					bool hov = cf.containsPoint(mouseX, mouseY);
+					DrawFilterPill(b, cf.bounds, cf.label, active, hov);
+				}
+
+				// Page string
+				var catalog = GetFilteredItemCatalog();
+				int maxP = Math.Max(0, (catalog.Count - 1) / 18);
+				string pageStr = $"Página {_itemCatalogPage + 1} de {maxP + 1} ({catalog.Count} itens)";
+				PokemonUI.Text(b, Game1.tinyFont, pageStr, new Rectangle(startX + 10, contentY + 74, 300, 22), Color.DarkSlateBlue, center: false, maxScale: 0.74f, shadow: false);
+
+				if (_itemCatPrevBtn != null)
+				{
+					bool hov = _itemCatPrevBtn.containsPoint(mouseX, mouseY);
+					DrawFilterPill(b, _itemCatPrevBtn.bounds, _itemCatPrevBtn.label, false, hov);
+				}
+				if (_itemCatNextBtn != null)
+				{
+					bool hov = _itemCatNextBtn.containsPoint(mouseX, mouseY);
+					DrawFilterPill(b, _itemCatNextBtn.bounds, _itemCatNextBtn.label, false, hov);
+				}
+
+				// Render Item Cards
+				int startIdx = _itemCatalogPage * 18;
+				for (int i = 0; i < _itemCatalogCards.Count; i++)
+				{
+					var card = _itemCatalogCards[i];
+					int idx = startIdx + i;
+					if (idx >= catalog.Count) break;
+					var entry = catalog[idx];
+
+					bool hov = card.containsPoint(mouseX, mouseY);
+					Color bgCol = hov ? new Color(255, 248, 220) : new Color(245, 247, 250);
+					IClickableMenu.drawTextureBox(b, card.bounds.X, card.bounds.Y, card.bounds.Width, card.bounds.Height, bgCol);
+
+					// Icon Box (40x40)
+					int iconBoxX = card.bounds.X + 8;
+					int iconBoxY = card.bounds.Y + (card.bounds.Height - 40) / 2;
+					b.Draw(Game1.staminaRect, new Rectangle(iconBoxX, iconBoxY, 40, 40), new Color(225, 230, 240));
+					PokemonUI.DrawCardBorder(b, new Rectangle(iconBoxX, iconBoxY, 40, 40), new Color(180, 195, 215), 1);
+
+					if (PokemonItemManager.TryGetCustomTexture(entry.ItemId, out Texture2D tex, out Rectangle srcRect) && tex != null)
+					{
+						float sc = Math.Min(34f / Math.Max(1, srcRect.Width), 34f / Math.Max(1, srcRect.Height));
+						Vector2 pos = new Vector2(iconBoxX + (40 - srcRect.Width * sc) / 2f, iconBoxY + (40 - srcRect.Height * sc) / 2f);
+						b.Draw(tex, pos, srcRect, Color.White, 0f, Vector2.Zero, sc, SpriteEffects.None, 0.88f);
+					}
+					else
+					{
+						Texture2D genericBall = PokemonItemManager.GetItemBallTexture();
+						if (genericBall != null)
+						{
+							b.Draw(genericBall, new Vector2(iconBoxX + 8, iconBoxY + 8), Color.White);
+						}
+					}
+
+					// Labels
+					int textX = iconBoxX + 46;
+					int textW = card.bounds.Width - 54;
+					PokemonUI.Text(b, Game1.smallFont, entry.DisplayName, new Rectangle(textX, card.bounds.Y + 8, textW, 20), hov ? Color.DarkRed : Color.Black, center: false, maxScale: 0.70f, shadow: false);
+					string subText = $"[{entry.Category}] Esq: +1 | Dir: +10";
+					PokemonUI.Text(b, Game1.tinyFont, subText, new Rectangle(textX, card.bounds.Y + 30, textW, 16), Color.DimGray, center: false, maxScale: 0.65f, shadow: false);
+				}
 			}
 		}
 
@@ -3123,18 +3543,20 @@ public class PokemonDebugMenu : IClickableMenu
 		}
 
 		// Quadrant 2: Move FX & Animations (Top-Right, startX + 424, contentY)
-		int vfxStartY = contentY + 120;
+		int vfxStartY = contentY + 118;
 		(string tag, string label)[] vfxCol1 =
 		{
 			("vfx_flamethrower", "Flamethrower"),
 			("vfx_hydropump", "Hydro Pump"),
 			("vfx_thunderbolt", "Thunderbolt"),
 			("vfx_blizzard", "Blizzard"),
-			("vfx_earthquake", "Earthquake")
+			("vfx_earthquake", "Earthquake"),
+			("vfx_slash", "Slash / Corte"),
+			("vfx_dracometeor", "Draco Meteor")
 		};
 		for (int i = 0; i < vfxCol1.Length; i++)
 		{
-			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, vfxStartY + i * 22, 192, 20), vfxCol1[i].tag, vfxCol1[i].label));
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 434, vfxStartY + i * 18, 192, 17), vfxCol1[i].tag, vfxCol1[i].label));
 		}
 		(string tag, string label)[] vfxCol2 =
 		{
@@ -3142,40 +3564,46 @@ public class PokemonDebugMenu : IClickableMenu
 			("vfx_closecombat", "Close Combat"),
 			("vfx_shadowball", "Shadow Ball"),
 			("vfx_leafblade", "Leaf Blade"),
-			("vfx_protect", "Protect / Heal")
+			("vfx_protect", "Protect / Heal"),
+			("vfx_maxmove", "Max Move / Dinamax"),
+			("vfx_psychic", "Psychic / Psíquico")
 		};
 		for (int i = 0; i < vfxCol2.Length; i++)
 		{
-			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 634, vfxStartY + i * 22, 192, 20), vfxCol2[i].tag, vfxCol2[i].label));
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 634, vfxStartY + i * 18, 192, 17), vfxCol2[i].tag, vfxCol2[i].label));
 		}
 
 		// Quadrant 3: Jukebox BGM (Bottom-Left, startX, contentY + 246)
-		int bgmStartY = contentY + 286;
+		int bgmStartY = contentY + 280;
 		(string tag, string label)[] bgmCol1 =
 		{
 			("bgm_wild", "Emerald Wild"),
 			("bgm_rb_wild", "Red/Blue Wild"),
 			("bgm_trainer", "Emerald Treinador"),
 			("bgm_rb_trainer", "Red/Blue Treinador"),
-			("bgm_lavender", "Lavender Town")
+			("bgm_route101", "Rota 101 (Hoenn)"),
+			("bgm_petalburg", "Petalburg (Vila)"),
+			("bgm_dewford", "Dewford (Praia)")
 		};
 		for (int i = 0; i < bgmCol1.Length; i++)
 		{
-			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 14, bgmStartY + i * 28, 190, 24), bgmCol1[i].tag, bgmCol1[i].label));
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 14, bgmStartY + i * 22, 190, 20), bgmCol1[i].tag, bgmCol1[i].label));
 		}
 		(string tag, string label)[] bgmCol2 =
 		{
-			("bgm_gym", "Ginasio"),
-			("bgm_champion", "Campeao"),
-			("bgm_rayquaza", "Rayquaza"),
-			("bgm_kyogre_groudon", "Primal Kyogre/Groudon"),
-			("bgm_mewtwo", "Mewtwo")
+			("bgm_lavender", "Lavender Town"),
+			("bgm_route119", "Rota 119 (Chuva)"),
+			("bgm_route110", "Rota 110 (Bike)"),
+			("bgm_route111", "Rota 111 (Deserto)"),
+			("bgm_chimney", "Mt. Chimney (Vulcão)"),
+			("bgm_pacifidlog", "Pacifidlog (Ilha)"),
+			("bgm_victory", "Fanfarra Vitória")
 		};
 		for (int i = 0; i < bgmCol2.Length; i++)
 		{
-			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 212, bgmStartY + i * 28, 190, 24), bgmCol2[i].tag, bgmCol2[i].label));
+			_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 212, bgmStartY + i * 22, 190, 20), bgmCol2[i].tag, bgmCol2[i].label));
 		}
-		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 14, contentY + 440, 388, 30), "bgm_stop", "PARAR MUSICA / RESTAURAR VANILLA"));
+		_audioVfxButtons.Add(new ClickableComponent(new Rectangle(startX + 14, contentY + 440, 388, 28), "bgm_stop", "PARAR MUSICA / RESTAURAR VANILLA"));
 
 		// Quadrant 4: Cutscenes & Vinhetas (Bottom-Right, startX + 424, contentY + 246)
 		string cutSpecies = _cutsceneLegendaryList[_cutsceneSpeciesIdx % _cutsceneLegendaryList.Length];
@@ -3257,6 +3685,10 @@ public class PokemonDebugMenu : IClickableMenu
 			if (btn.name == "vfx_shadowball") { _activeVfxAnim = "Shadow Ball"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("wand"); return; }
 			if (btn.name == "vfx_leafblade") { _activeVfxAnim = "Leaf Blade"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("swordswipe"); return; }
 			if (btn.name == "vfx_protect") { _activeVfxAnim = "Protect"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("reward"); return; }
+			if (btn.name == "vfx_slash") { _activeVfxAnim = "Slash"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("swordswipe"); Rumble.rumble(0.5f, 180f); return; }
+			if (btn.name == "vfx_dracometeor") { _activeVfxAnim = "Draco Meteor"; _vfxAnimTimer = 1.15f; Game1.playSound("explosion"); Game1.playSound("fireball"); Rumble.rumble(0.9f, 600f); return; }
+			if (btn.name == "vfx_maxmove") { _activeVfxAnim = "Max Move"; _vfxAnimTimer = 1.25f; Game1.playSound("thunder"); Game1.playSound("explosion"); Rumble.rumble(1.0f, 750f); return; }
+			if (btn.name == "vfx_psychic") { _activeVfxAnim = "Psychic"; _vfxAnimTimer = _vfxAnimDuration; Game1.playSound("wand"); Game1.playSound("secret1"); Rumble.rumble(0.6f, 250f); return; }
 
 			// BGM
 			if (btn.name == "bgm_wild") { PokemonMusicManager.PlayMidiFile("emerald_wild.mid", loop: true); return; }
@@ -3269,6 +3701,15 @@ public class PokemonDebugMenu : IClickableMenu
 			if (btn.name == "bgm_rayquaza") { PokemonMusicManager.PlayMidiFile("rayquaza.mid", loop: true); return; }
 			if (btn.name == "bgm_kyogre_groudon") { PokemonMusicManager.PlayMidiFile("primal.mid", loop: true); return; }
 			if (btn.name == "bgm_mewtwo") { PokemonMusicManager.PlayMidiFile("mewtwo.mid", loop: true); return; }
+			if (btn.name == "bgm_route101") { PokemonMusicManager.PlayMidiFile("route101.mid", loop: true); return; }
+			if (btn.name == "bgm_petalburg") { PokemonMusicManager.PlayMidiFile("petalburg.mid", loop: true); return; }
+			if (btn.name == "bgm_dewford") { PokemonMusicManager.PlayMidiFile("dewford.mid", loop: true); return; }
+			if (btn.name == "bgm_route119") { PokemonMusicManager.PlayMidiFile("route119.mid", loop: true); return; }
+			if (btn.name == "bgm_route110") { PokemonMusicManager.PlayMidiFile("route110.mid", loop: true); return; }
+			if (btn.name == "bgm_route111") { PokemonMusicManager.PlayMidiFile("route111.mid", loop: true); return; }
+			if (btn.name == "bgm_chimney") { PokemonMusicManager.PlayMidiFile("mt_chimney.mid", loop: true); return; }
+			if (btn.name == "bgm_pacifidlog") { PokemonMusicManager.PlayMidiFile("pacifidlog.mid", loop: true); return; }
+			if (btn.name == "bgm_victory") { PokemonMusicManager.PlayMidiFile("victory_fanfare.mid", loop: false); return; }
 			if (btn.name == "bgm_stop") { PokemonMusicManager.StopAndRestoreStardewMusic(); Game1.playSound("bigDeSelect"); return; }
 
 			// Cutscenes
@@ -3483,6 +3924,51 @@ public class PokemonDebugMenu : IClickableMenu
 				float rad = 18f + (float)Math.Sin(t * Math.PI) * 10f;
 				b.Draw(Game1.staminaRect, new Rectangle((int)aPos.X - (int)rad, (int)aPos.Y - (int)rad, (int)(rad * 2), (int)(rad * 2)), Color.LightSkyBlue * 0.45f);
 				b.Draw(Game1.staminaRect, new Rectangle((int)aPos.X - 4, (int)aPos.Y - (int)rad - 4, 8, 8), Color.Gold);
+			}
+			else if (_activeVfxAnim == "Slash")
+			{
+				float sT = Math.Clamp(t * 1.4f, 0f, 1f);
+				int sLen = (int)(sT * 36f);
+				Vector2 c = dPos;
+				b.Draw(Game1.staminaRect, new Rectangle((int)c.X - sLen, (int)c.Y - sLen, sLen * 2, 4), Color.White * 0.95f);
+				b.Draw(Game1.staminaRect, new Rectangle((int)c.X - sLen + 8, (int)c.Y - sLen + 8, sLen * 2, 2), Color.LightCyan);
+				b.Draw(Game1.staminaRect, new Rectangle((int)c.X - sLen, (int)c.Y + sLen, sLen * 2, 4), Color.Silver * 0.85f);
+			}
+			else if (_activeVfxAnim == "Draco Meteor")
+			{
+				for (int m = 0; m < 4; m++)
+				{
+					float mT = Math.Clamp(t * 1.3f - m * 0.12f, 0f, 1f);
+					Vector2 startSky = new Vector2(dPos.X - 50 + m * 28, stageBox.Y + 4);
+					Vector2 target = dPos + new Vector2(-20 + m * 14, 0);
+					Vector2 cur = Vector2.Lerp(startSky, target, mT);
+					float mSize = 10f + (float)Math.Sin(mT * Math.PI) * 8f;
+					b.Draw(Game1.staminaRect, new Rectangle((int)cur.X - (int)mSize / 2, (int)cur.Y - (int)mSize / 2, (int)mSize, (int)mSize), Color.OrangeRed);
+					b.Draw(Game1.staminaRect, new Rectangle((int)cur.X - (int)mSize / 4, (int)cur.Y - (int)mSize / 4, (int)mSize / 2, (int)mSize / 2), Color.Gold);
+				}
+			}
+			else if (_activeVfxAnim == "Max Move")
+			{
+				float pAlpha = (float)Math.Sin(t * Math.PI);
+				int colW = (int)(28f + pAlpha * 24f);
+				Rectangle pillar = new Rectangle((int)dPos.X - colW / 2, stageBox.Y + 2, colW, stageBox.Height - 8);
+				b.Draw(Game1.staminaRect, pillar, Color.DeepPink * (0.4f + pAlpha * 0.5f));
+				b.Draw(Game1.staminaRect, new Rectangle((int)dPos.X - colW / 4, stageBox.Y + 2, colW / 2, stageBox.Height - 8), Color.White * (0.6f + pAlpha * 0.4f));
+				for (int ring = 0; ring < 3; ring++)
+				{
+					float rRad = 12f + ring * 14f * pAlpha;
+					b.Draw(Game1.staminaRect, new Rectangle((int)dPos.X - (int)rRad, (int)dPos.Y - 4, (int)rRad * 2, 8), Color.Crimson * 0.7f);
+				}
+			}
+			else if (_activeVfxAnim == "Psychic")
+			{
+				float wave = (float)Math.Sin(t * 18f);
+				for (int w = 0; w < 4; w++)
+				{
+					float wRad = 10f + w * 12f + wave * 4f;
+					b.Draw(Game1.staminaRect, new Rectangle((int)dPos.X - (int)wRad, (int)dPos.Y - (int)wRad, (int)wRad * 2, (int)wRad * 2), new Color(180, 70, 220) * (0.35f - w * 0.06f));
+					b.Draw(Game1.staminaRect, new Rectangle((int)dPos.X - 3, (int)dPos.Y - (int)wRad, 6, 6), Color.HotPink);
+				}
 			}
 		}
 		else

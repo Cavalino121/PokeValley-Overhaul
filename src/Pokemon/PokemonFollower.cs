@@ -65,6 +65,8 @@ public class PokemonFollower
 	private string _lastLocationName = null;
 	private ButtonState _lastMouseRight = ButtonState.Released;
 	private ButtonState _lastMouseLeft = ButtonState.Released;
+	private ButtonState _lastGamepadA = ButtonState.Released;
+	private ButtonState _lastGamepadX = ButtonState.Released;
 	private Rectangle _lastDrawnWorldBounds = Rectangle.Empty;
 	private float _petCooldown = 0f;
 	private float _stuckTimer = 0f;
@@ -416,31 +418,63 @@ public class PokemonFollower
 		_lastMouseRight = curMouse.RightButton;
 		_lastMouseLeft = curMouse.LeftButton;
 
+		var curPad = Game1.input.GetGamePadState();
+		bool aJustPressed = curPad.IsButtonDown(Buttons.A) && _lastGamepadA == ButtonState.Released;
+		bool xJustPressed = curPad.IsButtonDown(Buttons.X) && _lastGamepadX == ButtonState.Released;
+		_lastGamepadA = curPad.IsButtonDown(Buttons.A) ? ButtonState.Pressed : ButtonState.Released;
+		_lastGamepadX = curPad.IsButtonDown(Buttons.X) ? ButtonState.Pressed : ButtonState.Released;
+
 		if (_petCooldown > 0f) return;
-		if (!rightJustPressed && !leftJustPressed) return;
+		if (!rightJustPressed && !leftJustPressed && !aJustPressed && !xJustPressed) return;
 
-		int uiMx = Game1.getMouseX(true);
-		int uiMy = Game1.getMouseY(true);
-		if (PokemonHUD.Instance != null && PokemonHUD.Instance.IsMouseOverHUD(uiMx, uiMy))
-			return;
-
-		// Exact world coordinates under the mouse cursor (matches GameLocation.draw world space)
-		int worldMouseX = Game1.getMouseX(ui_scale: false) + Game1.viewport.X;
-		int worldMouseY = Game1.getMouseY(ui_scale: false) + Game1.viewport.Y;
-
-		Rectangle hitBounds = _lastDrawnWorldBounds;
-		if (hitBounds.IsEmpty)
-		{
-			hitBounds = new Rectangle((int)_position.X - 30, (int)_position.Y - 58, 60, 62);
-		}
-
-		bool clickedSprite = hitBounds.Contains(worldMouseX, worldMouseY);
 		Farmer farmer = CurrentFarmer;
 		if (farmer == null) return;
 		Rectangle pBox = farmer.GetBoundingBox();
-		float playerDist = Vector2.Distance(new Vector2(pBox.Center.X, pBox.Center.Y), _position);
+		Vector2 pCenter = new Vector2(pBox.Center.X, pBox.Center.Y);
+		float playerDist = Vector2.Distance(pCenter, _position);
 
-		if (clickedSprite && playerDist <= 240f)
+		bool triggeredByGamepad = false;
+		if (aJustPressed || xJustPressed)
+		{
+			if (playerDist <= 120f)
+			{
+				Vector2 diff = _position - pCenter;
+				bool isFacing = farmer.FacingDirection switch
+				{
+					0 => diff.Y < 12f && Math.Abs(diff.X) < 64f,
+					1 => diff.X > -12f && Math.Abs(diff.Y) < 64f,
+					2 => diff.Y > -12f && Math.Abs(diff.X) < 64f,
+					3 => diff.X < 12f && Math.Abs(diff.Y) < 64f,
+					_ => true
+				};
+				if (playerDist < 48f) isFacing = true;
+				triggeredByGamepad = isFacing;
+			}
+		}
+
+		bool triggeredByMouse = false;
+		if (rightJustPressed || leftJustPressed)
+		{
+			int uiMx = Game1.getMouseX(true);
+			int uiMy = Game1.getMouseY(true);
+			if (PokemonHUD.Instance != null && PokemonHUD.Instance.IsMouseOverHUD(uiMx, uiMy))
+				return;
+
+			// Exact world coordinates under the mouse cursor (matches GameLocation.draw world space)
+			int worldMouseX = Game1.getMouseX(ui_scale: false) + Game1.viewport.X;
+			int worldMouseY = Game1.getMouseY(ui_scale: false) + Game1.viewport.Y;
+
+			Rectangle hitBounds = _lastDrawnWorldBounds;
+			if (hitBounds.IsEmpty)
+			{
+				hitBounds = new Rectangle((int)_position.X - 30, (int)_position.Y - 58, 60, 62);
+			}
+
+			bool clickedSprite = hitBounds.Contains(worldMouseX, worldMouseY);
+			triggeredByMouse = clickedSprite && (playerDist <= 240f);
+		}
+
+		if (triggeredByGamepad || triggeredByMouse)
 		{
 			var active = PlayerParty.GetForFarmer(FarmerId).ActivePokemon;
 			if (active != null)

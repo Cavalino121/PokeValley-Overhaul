@@ -123,7 +123,12 @@ public class PokemonInstance
 
 	// Held Item & Passive Ability (attached directly to this Pokémon)
 	public string HeldItem { get; set; } = null;
-	public string Ability { get; set; } = null;
+	private string _ability = null;
+	public string Ability
+	{
+		get => _ability?.Replace(" ", "").Replace("-", "").Replace("'", "");
+		set => _ability = value?.Replace(" ", "").Replace("-", "").Replace("'", "");
+	}
 	public string OriginalTrainer { get; set; } = Game1.player?.Name ?? "Treinador";
 	public int TrainerID { get; set; } = (int)(Game1.player?.UniqueMultiplayerID ?? 12345) % 100000;
 

@@ -142,6 +142,23 @@ public class PokemonWarpMenu : IClickableMenu
 			d.Bounds = new Rectangle(listX, listY + i * (itemH + 6), 300, itemH);
 			_destinations.Add(d);
 		}
+
+		if (_destinations.Count > 0)
+		{
+			_hoveredDest = _destinations[0];
+		}
+
+		populateClickableComponentList();
+	}
+
+	public override void populateClickableComponentList()
+	{
+		allClickableComponents = new List<ClickableComponent>();
+		if (_closeButton != null) allClickableComponents.Add(_closeButton);
+		for (int i = 0; i < _destinations.Count; i++)
+		{
+			allClickableComponents.Add(new ClickableComponent(_destinations[i].Bounds, $"dest_{i}"));
+		}
 	}
 
 	public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -307,7 +324,7 @@ public class PokemonWarpMenu : IClickableMenu
 		float pulse = (float)(0.8 + 0.2 * Math.Sin(Game1.currentGameTime.TotalGameTime.TotalSeconds * 5.0));
 		foreach (var d in _destinations)
 		{
-			bool isHov = (_hoveredDest == d);
+			bool isHov = (_hoveredDest == d) || (isGamepad && _gamepadIndex >= 0 && _gamepadIndex < _destinations.Count && _destinations[_gamepadIndex] == d);
 			Vector2 pinPos = d.MapCoord;
 
 			if (isHov)

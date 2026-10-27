@@ -57,7 +57,7 @@ public static class PokemonItemUse
 		return id is "HPUp" or "Protein" or "Iron" or "Calcium" or "Zinc" or "Carbos" or "PPUp" or "PPMax";
 	}
 
-	public static bool IsMedicine(string localId) => localId == "PokemonPotion" || localId == "PokemonSuperPotion" || localId == "PokemonMaxPotion" || localId == "PokemonAntidote" || localId == "PokemonParalyzeHeal" || localId == "PokemonAwakening" || localId == "PokemonBurnHeal" || localId == "PokemonIceHeal" || localId == "PokemonFullHeal" || localId == "PokemonRevive" || localId == "PokemonRareCandy" || localId == "PokemonFriendshipCandy" || IsVitamin(localId);
+	public static bool IsMedicine(string localId) => localId == "PokemonPotion" || localId == "PokemonSuperPotion" || localId == "PokemonMaxPotion" || localId == "PokemonAntidote" || localId == "PokemonParalyzeHeal" || localId == "PokemonAwakening" || localId == "PokemonBurnHeal" || localId == "PokemonIceHeal" || localId == "PokemonFullHeal" || localId == "PokemonRevive" || localId == "PokemonRareCandy" || localId == "PokemonFriendshipCandy" || localId == "Poke_FriendshipSweet" || localId == "FriendshipSweet" || IsVitamin(localId);
 
 	public static bool IsEvolutionItem(string localId)
 	{
@@ -270,6 +270,7 @@ public static class PokemonItemUse
 			"PokemonRevive" => "Revive",
 			"PokemonRareCandy" => "Rare Candy",
 			"PokemonFriendshipCandy" => "Friendship Candy",
+			"Poke_FriendshipSweet" or "FriendshipSweet" => "Doce da Amizade",
 			"PokemonRepel" => "Repel",
 			"PokemonSuperRepel" => "Super Repel",
 			"PokemonMaxRepel" => "Max Repel",
@@ -339,6 +340,8 @@ public static class PokemonItemUse
 			case "PokemonRareCandy":
 				return p.Level < 100;
 			case "PokemonFriendshipCandy":
+			case "Poke_FriendshipSweet":
+			case "FriendshipSweet":
 				return p.Friendship < 255;
 			default:
 				return false;
@@ -591,6 +594,20 @@ public static class PokemonItemUse
 				}
 				return true;
 			}
+			case "FriendshipSweet":
+			{
+				p.AdjustFriendship(30);
+				message = $"{p.Nickname} adorou o Doce da Amizade! (+30 Amizade, Atual: {p.Friendship}/255)";
+				Game1.playSound("reward");
+
+				var evo = PokemonEvolution.CheckEvolution(p, EvolutionTrigger.Friendship);
+				PokemonSpecies evoTarget = evo != null ? PokemonSpecies.Get(evo.TargetSpecies) : null;
+				if (evoTarget != null)
+				{
+					Game1.activeClickableMenu = new PokemonEvolutionMenu(p, evoTarget);
+				}
+				return true;
+			}
 			default:
 				return false;
 		}
@@ -623,8 +640,15 @@ public static class PokemonItemUse
 		if (cleanMilestoneId is "PortableHealMachine")
 		{
 			PlayerParty.Instance.HealAll();
-			Game1.playSound("heal");
-			Game1.addHUDMessage(new HUDMessage("✨ Toda a sua equipe Pokémon foi completamente curada e restaurada!", 2));
+			Game1.playSound("reward");
+			Game1.playSound("crystal");
+			if (Game1.currentLocation != null && Game1.player != null)
+			{
+				Vector2 pTile = Game1.player.Tile;
+				Utility.addStarsAndSpirals(Game1.currentLocation, (int)pTile.X, (int)pTile.Y, 2, 2, 80, 20, Color.LightGreen);
+				Utility.addStarsAndSpirals(Game1.currentLocation, (int)pTile.X, (int)pTile.Y, 1, 1, 60, 25, Color.Gold);
+			}
+			Game1.addHUDMessage(new HUDMessage("✨ Centro Pokémon Portátil: Toda a sua equipe Pokémon foi completamente curada e restaurada!", 2));
 			return false;
 		}
 
@@ -660,15 +684,15 @@ public static class PokemonItemUse
 
 		if (cleanMilestoneId is "MegaStoneSelector")
 		{
-			Game1.player.Items.ReduceId("(O)" + id, 1);
-			string[] stones = new[] { "CharizarditeX", "CharizarditeY", "MewtwoniteX", "MewtwoniteY", "Gengarite", "Lucarionite", "Salamencite", "Garchompite" };
-			foreach (var ms in stones)
-			{
-				var item = ItemRegistry.Create("(O)" + ms, 1, 0, allowNull: true) ?? new StardewValley.Object(ms, 1);
-				if (item != null) Game1.player.addItemByMenuIfNecessary(item);
-			}
-			Game1.playSound("reward");
-			Game1.addHUDMessage(new HUDMessage("💎 Cofre aberto! Mega Pedras ancestrais (Charizardite, Mewtwonite, Gengarite, Lucarionite, etc.) recebidas!", 2));
+			Game1.activeClickableMenu = new PokemonItemPickerMenu(
+				null,
+				PokemonItemPickerMenu.PickerMode.MegaStones,
+				singleChoiceMode: true,
+				onItemSelected: (chosenId) =>
+				{
+					Game1.player.Items.ReduceId("(O)" + id, 1);
+				}
+			);
 			return false;
 		}
 

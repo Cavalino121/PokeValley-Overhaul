@@ -315,8 +315,8 @@ public static class PokemonItemManager
 		RegisterRing(objectData, "Poke_DynamaxBand", "Bracelete Dynamax", "Bracelete energético de Galar forjado com Estrela Desejante. Equipado no slot de Anel, permite Dynamax e Gigantamax em batalha.", 12000, 534);
 
 				// Register Pokedex Milestone Rewards & Key Utility Items
-		RegisterSimple(objectData, "Poke_RunningShoes", "Tênis de Corrida", "Calçados esportivos lendários da Silph Co. Enquanto carregados no inventário, aumentam permanentemente a velocidade de locomoção no vale em +1.", 10000, 514);
-		RegisterSimple(objectData, "RunningShoes", "Tênis de Corrida", "Calçados esportivos lendários da Silph Co. Enquanto carregados no inventário, aumentam permanentemente a velocidade de locomoção no vale em +1.", 10000, 514);
+		RegisterRing(objectData, "Poke_RunningShoes", "Tênis de Corrida", "Calçados esportivos lendários da Silph Co. Equipado no slot de Anel/Acessório ou na mochila, aumenta a velocidade de corrida no vale em +2.", 10000, 514);
+		RegisterRing(objectData, "RunningShoes", "Tênis de Corrida", "Calçados esportivos lendários da Silph Co. Equipado no slot de Anel/Acessório ou na mochila, aumenta a velocidade de corrida no vale em +2.", 10000, 514);
 
 		RegisterSimple(objectData, "Poke_CompetitiveCase", "Estojo de Itens Competitivos", "Um kit profissional da Silph Co contendo itens essenciais de combate competitivo (Life Orb, Choice Scarf, Choice Band, Focus Sash, Leftovers, etc.). Use para abrir.", 25000, 166);
 		RegisterSimple(objectData, "CompetitiveCase", "Estojo de Itens Competitivos", "Um kit profissional da Silph Co contendo itens essenciais de combate competitivo (Life Orb, Choice Scarf, Choice Band, Focus Sash, Leftovers, etc.). Use para abrir.", 25000, 166);
@@ -333,8 +333,11 @@ public static class PokemonItemManager
 		RegisterSimple(objectData, "Poke_AbilityPatch", "Ability Patch", "Dispositivo nanotecnológico avançado que desperta e desbloqueia a Habilidade Oculta (Hidden Ability) de um Pokémon da equipe.", 15000, 72);
 		RegisterSimple(objectData, "AbilityPatch", "Ability Patch", "Dispositivo nanotecnológico avançado que desperta e desbloqueia a Habilidade Oculta (Hidden Ability) de um Pokémon da equipe.", 15000, 72);
 
-		RegisterSimple(objectData, "Poke_ShinyCharm", "Amuleto Brilhante (Shiny Charm)", "Um talismã brilhante misterioso que triplica a chance de encontrar Pokémon brilhantes (Shiny) no vale.", 50000, 74);
-		RegisterSimple(objectData, "ShinyCharm", "Amuleto Brilhante (Shiny Charm)", "Um talismã brilhante misterioso que triplica a chance de encontrar Pokémon brilhantes (Shiny) no vale.", 50000, 74);
+		RegisterRing(objectData, "Poke_ShinyCharm", "Amuleto Brilhante (Shiny Charm)", "Um talismã brilhante misterioso. Equipado no slot de Anel/Acessório ou na mochila, triplica a chance de encontrar Pokémon brilhantes (Shiny) no vale.", 50000, 74);
+		RegisterRing(objectData, "ShinyCharm", "Amuleto Brilhante (Shiny Charm)", "Um talismã brilhante misterioso. Equipado no slot de Anel/Acessório ou na mochila, triplica a chance de encontrar Pokémon brilhantes (Shiny) no vale.", 50000, 74);
+
+		RegisterSimple(objectData, "Poke_FriendshipSweet", "Doce da Amizade (+30)", "Um confeito artesanal de Poképuff que fortalece o laço de amizade do Pokémon em +30 pontos.", 2500, 245);
+		RegisterSimple(objectData, "FriendshipSweet", "Doce da Amizade (+30)", "Um confeito artesanal de Poképuff que fortalece o laço de amizade do Pokémon em +30 pontos.", 2500, 245);
 
 		RegisterSimple(objectData, "Poke_MasterBallBundle", "Maleta de Master Balls", "Uma remessa ultra secreta da Silph Co contendo 5x Master Balls com taxa de captura infalível de 100%. Use para abrir.", 100000, 166);
 		RegisterSimple(objectData, "MasterBallBundle", "Maleta de Master Balls", "Uma remessa ultra secreta da Silph Co contendo 5x Master Balls com taxa de captura infalível de 100%. Use para abrir.", 100000, 166);
@@ -1556,6 +1559,15 @@ RegisterRing(objectData, "Poke_TeraOrb", "Orbe Tera (Tera Orb)", "Esfera cristal
 			"AspearBerry" or "Poke_AspearBerry" => "aspear_berry.png",
 			"LeppaBerry" or "Poke_LeppaBerry" => "leppa_berry.png",
 			"PersimBerry" or "Poke_PersimBerry" => "persim_berry.png",
+
+			"Poke_AbilityPatch" or "AbilityPatch" => "ability_patch.png",
+			"Poke_PortableHealMachine" or "PortableHealMachine" => "max_potion.png",
+			"Poke_BoxLink" or "BoxLink" => "pokemon_box_link.png",
+			"Poke_ShinyCharm" or "ShinyCharm" => "shiny_charm.png",
+			"Poke_RunningShoes" or "RunningShoes" => "heavy_duty_boots.png",
+			"Poke_FriendshipSweet" or "FriendshipSweet" => "rare_candy.png",
+			"Poke_FriendshipCandy" or "FriendshipCandy" => "rare_candy.png",
+			"Poke_MegaStoneSelector" or "MegaStoneSelector" => "charizardite_x.png",
 
 			"Poke_MegaBracelet" or "MegaBracelet" => "mega_bracelet.png",
 			"Poke_ZRing" or "ZRing" => "z_ring.png",

@@ -201,15 +201,13 @@ public class PokemonPokedex
 			case 25:
 				GiveItem("Poke_CompetitiveCase", 1);
 				GiveItem("PokemonExpShare", 1);
-				GiveItem("Leftovers", 1);
-				GiveItem("LifeOrb", 1);
 				Game1.addHUDMessage(new HUDMessage("🏆 Marco 25% da Pokédex: Estojo de Itens de Combate e Exp. Share recebidos!", 2));
 				break;
 			case 50:
 				GiveItem("Poke_PortableHealMachine", 1);
 				GiveItem("Poke_AbilityPatch", 2);
-				GiveItem("PokemonFriendshipCandy", 5);
-				Game1.addHUDMessage(new HUDMessage("🏆 Marco 50% da Pokédex: Centro Pokémon Portátil e Ability Patches recebidos!", 2));
+				GiveItem("Poke_FriendshipSweet", 5);
+				Game1.addHUDMessage(new HUDMessage("🏆 Marco 50% da Pokédex: Centro Pokémon Portátil, Doces da Amizade e Ability Patches recebidos!", 2));
 				break;
 			case 75:
 				GiveItem("Poke_BoxLink", 1);

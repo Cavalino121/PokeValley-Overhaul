@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
@@ -317,7 +318,8 @@ public class PokemonStorageMenu : IClickableMenu
 		{
 			if (_boxSlots[i].containsPoint(x, y) && i < PokemonStorage.SlotsPerBox && box.Slots[i] != null)
 			{
-				Game1.activeClickableMenu = new PokemonSummaryMenu(box.Slots[i], null, this);
+				var boxList = box.Slots.Where(p => p != null).ToList();
+				Game1.activeClickableMenu = new PokemonSummaryMenu(box.Slots[i], boxList, this);
 				return;
 			}
 		}
@@ -380,7 +382,8 @@ public class PokemonStorageMenu : IClickableMenu
 
 			if (action == "summary" && box.Slots[_actionTargetSlot] != null)
 			{
-				Game1.activeClickableMenu = new PokemonSummaryMenu(box.Slots[_actionTargetSlot], null, this);
+				var boxList = box.Slots.Where(p => p != null).ToList();
+				Game1.activeClickableMenu = new PokemonSummaryMenu(box.Slots[_actionTargetSlot], boxList, this);
 				return;
 			}
 			if (action == "withdraw")
@@ -673,7 +676,8 @@ public class PokemonStorageMenu : IClickableMenu
 				var box = Storage.CurrentBox;
 				if (_gamepadBoxIndex >= 0 && _gamepadBoxIndex < box.Slots.Length && box.Slots[_gamepadBoxIndex] != null)
 				{
-					Game1.activeClickableMenu = new PokemonSummaryMenu(box.Slots[_gamepadBoxIndex], null, this);
+					var boxList = box.Slots.Where(p => p != null).ToList();
+					Game1.activeClickableMenu = new PokemonSummaryMenu(box.Slots[_gamepadBoxIndex], boxList, this);
 					return;
 				}
 			}

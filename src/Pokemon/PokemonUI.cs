@@ -369,6 +369,15 @@ public static class PokemonUI
 		return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokemon_trainer_skin.txt");
 	}
 
+	public static string GetTrainerSkin(Farmer farmer)
+	{
+		if (farmer?.modData != null && farmer.modData.TryGetValue("PokeValley.TrainerSkin", out var val) && !string.IsNullOrWhiteSpace(val))
+		{
+			return val;
+		}
+		return (farmer != null && !farmer.IsMale) ? "May" : "Brendan";
+	}
+
 	public static string TrainerSkin
 	{
 		get

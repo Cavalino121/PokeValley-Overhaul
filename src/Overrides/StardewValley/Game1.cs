@@ -7744,6 +7744,7 @@ public class Game1 : InstanceGame
 
 	public static void newDayAfterFade(Action after)
 	{
+		StardewValley.Pokemon.PokemonMusicManager.StopAndRestoreStardewMusic();
 		StardewValley.Pokemon.PokemonBreeding.OnDayStarted();
 
 		if (player.currentLocation != null)

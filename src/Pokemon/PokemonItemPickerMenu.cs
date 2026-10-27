@@ -29,6 +29,8 @@ public class PokemonItemPickerMenu : IClickableMenu
 	}
 
 	private readonly IClickableMenu _parentMenu;
+	private readonly bool _singleChoiceMode;
+	private readonly Action<string> _onItemSelected;
 	private PickerMode _mode;
 	private readonly List<ItemEntry> _items = new();
 	private readonly List<ClickableComponent> _itemButtons = new();
@@ -45,7 +47,7 @@ public class PokemonItemPickerMenu : IClickableMenu
 	// Cache textures specifically for item picker to prevent lag
 	private static readonly Dictionary<string, (Texture2D tex, Rectangle rect)> _pickerIconCache = new(StringComparer.OrdinalIgnoreCase);
 
-	public PokemonItemPickerMenu(IClickableMenu parentMenu, PickerMode initialMode = PickerMode.MegaStones)
+	public PokemonItemPickerMenu(IClickableMenu parentMenu, PickerMode initialMode = PickerMode.MegaStones, bool singleChoiceMode = false, Action<string> onItemSelected = null)
 		: base(
 			(Game1.uiViewport.Width - 920) / 2,
 			(Game1.uiViewport.Height - 640) / 2,
@@ -54,6 +56,8 @@ public class PokemonItemPickerMenu : IClickableMenu
 			showUpperRightCloseButton: true)
 	{
 		_parentMenu = parentMenu;
+		_singleChoiceMode = singleChoiceMode;
+		_onItemSelected = onItemSelected;
 		_mode = initialMode;
 		RefreshItems();
 		SetupButtons();
@@ -165,9 +169,12 @@ public class PokemonItemPickerMenu : IClickableMenu
 		int zCount = PokemonItemManager.ZCrystalDefinitions.Count;
 		int heldCount = PokemonHeldItemManager.AllHeldItems.Count;
 
-		_modeButtons.Add(new ClickableComponent(new Rectangle(tabStartX, tabY, tabW, tabH), "MegaStones", $"🧬 Megas ({megaCount})"));
-		_modeButtons.Add(new ClickableComponent(new Rectangle(tabStartX + tabW + 10, tabY, tabW, tabH), "ZCrystals", $"💎 Z-Moves ({zCount})"));
-		_modeButtons.Add(new ClickableComponent(new Rectangle(tabStartX + (tabW + 10) * 2, tabY, tabW, tabH), "HeldItems", $"🎒 Held ({heldCount})"));
+		if (!_singleChoiceMode)
+		{
+			_modeButtons.Add(new ClickableComponent(new Rectangle(tabStartX, tabY, tabW, tabH), "MegaStones", $"🧬 Megas ({megaCount})"));
+			_modeButtons.Add(new ClickableComponent(new Rectangle(tabStartX + tabW + 10, tabY, tabW, tabH), "ZCrystals", $"💎 Z-Moves ({zCount})"));
+			_modeButtons.Add(new ClickableComponent(new Rectangle(tabStartX + (tabW + 10) * 2, tabY, tabW, tabH), "HeldItems", $"🎒 Held ({heldCount})"));
+		}
 
 		_itemButtons.Clear();
 		int maxPages = Math.Max(0, (_items.Count - 1) / ItemsPerPage);
@@ -200,15 +207,22 @@ public class PokemonItemPickerMenu : IClickableMenu
 		_prevPageBtn = new ClickableComponent(new Rectangle(gridStartX, bottomY, 110, 36), "prev", "◀ Anterior");
 		_nextPageBtn = new ClickableComponent(new Rectangle(gridStartX + 120, bottomY, 110, 36), "next", "Próximo ▶");
 
-		string giveAllLabel = _mode switch
+		if (!_singleChoiceMode)
 		{
-			PickerMode.MegaStones => "📦 +1 Todas as Megas",
-			PickerMode.ZCrystals => "📦 +1 Todos os Z-Crystals",
-			_ => "📦 +1 Todos os Held Items"
-		};
-		_giveAllCurrentBtn = new ClickableComponent(new Rectangle(gridStartX + 250, bottomY, 260, 36), "give_all", giveAllLabel);
-
-		_backBtn = new ClickableComponent(new Rectangle(xPositionOnScreen + width - 210, bottomY, 178, 36), "back", "↩ Voltar ao Debug");
+			string giveAllLabel = _mode switch
+			{
+				PickerMode.MegaStones => "📦 +1 Todas as Megas",
+				PickerMode.ZCrystals => "📦 +1 Todos os Z-Crystals",
+				_ => "📦 +1 Todos os Held Items"
+			};
+			_giveAllCurrentBtn = new ClickableComponent(new Rectangle(gridStartX + 250, bottomY, 260, 36), "give_all", giveAllLabel);
+			_backBtn = new ClickableComponent(new Rectangle(xPositionOnScreen + width - 210, bottomY, 178, 36), "back", "↩ Voltar ao Debug");
+		}
+		else
+		{
+			_giveAllCurrentBtn = null;
+			_backBtn = new ClickableComponent(new Rectangle(xPositionOnScreen + width - 210, bottomY, 178, 36), "back", "↩ Fechar");
+		}
 	}
 
 	public override void receiveLeftClick(int x, int y, bool playSound = true)
@@ -293,8 +307,14 @@ public class PokemonItemPickerMenu : IClickableMenu
 					{
 						if (Game1.player.addItemToInventoryBool(item))
 						{
-							Game1.playSound("coin");
+							Game1.playSound("reward");
 							Game1.addHUDMessage(new HUDMessage($"✨ Obteve {entry.DisplayName}!", 2));
+							if (_singleChoiceMode)
+							{
+								_onItemSelected?.Invoke(entry.ItemId);
+								exitThisMenu();
+								return;
+							}
 						}
 						else
 						{
@@ -458,12 +478,14 @@ public class PokemonItemPickerMenu : IClickableMenu
 			drawShadow: true);
 
 		// Header Title
-		string title = _mode switch
-		{
-			PickerMode.MegaStones => "🧬 Seletor de Mega Pedras (Mega Stones)",
-			PickerMode.ZCrystals => "💎 Seletor de Cristais Z (Z-Crystals)",
-			_ => "🎒 Seletor de Itens Segurados (Held Items)"
-		};
+		string title = _singleChoiceMode
+			? "💎 Escolha a sua Mega Pedra Ancestral:"
+			: _mode switch
+			{
+				PickerMode.MegaStones => "🧬 Seletor de Mega Pedras (Mega Stones)",
+				PickerMode.ZCrystals => "💎 Seletor de Cristais Z (Z-Crystals)",
+				_ => "🎒 Seletor de Itens Segurados (Held Items)"
+			};
 		Utility.drawTextWithShadow(
 			b,
 			title,

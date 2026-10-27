@@ -134,6 +134,24 @@ public class PokemonTradeMenu : IClickableMenu
 		}
 		catch { }
 
+		// Pre-warm party sprites and icons in background to avoid any frame hitch during slot selection
+		try
+		{
+			var myParty = PlayerParty.GetForFarmer(_myPlayerId)?.Team;
+			if (myParty != null)
+			{
+				foreach (var mon in myParty)
+				{
+					if (mon?.Species != null && Game1.graphics?.GraphicsDevice != null)
+					{
+						mon.GetFrontSprite(Game1.graphics.GraphicsDevice);
+						mon.GetIconSprite(Game1.graphics.GraphicsDevice);
+					}
+				}
+			}
+		}
+		catch { }
+
 		SetupNpcPresets();
 
 		// If in single player, default to solo NPC mode directly
@@ -325,6 +343,11 @@ public class PokemonTradeMenu : IClickableMenu
 								_offeredPartnerMon = PokemonFromDto(dto);
 								_partnerConfirmed = false;
 								Game1.playSound("smallSelect");
+								try
+								{
+									_offeredPartnerMon?.GetFrontSprite(Game1.graphics.GraphicsDevice);
+								}
+								catch { }
 							}
 						}
 					}
@@ -360,6 +383,10 @@ public class PokemonTradeMenu : IClickableMenu
 			case "CANCEL":
 				if (_partnerId == senderId)
 				{
+					if (_state == TradeState.Transferring || _state == TradeState.Complete)
+					{
+						return; // Nunca aborta uma transferência que já foi iniciada ou concluída
+					}
 					string pName = !string.IsNullOrEmpty(_partnerName) ? _partnerName : "O outro jogador";
 					_partnerCancelled = true;
 					_partnerCancelMessage = $"{pName} cancelou a sessão de troca.";
@@ -848,7 +875,7 @@ public class PokemonTradeMenu : IClickableMenu
 		}
 
 		Game1.addHUDMessage(new HUDMessage($"Troca concluída com sucesso com {_partnerName}! Recebeu {receivedMon.Nickname}!", 2));
-		CloseAndCleanup();
+		CloseAndCleanup(notifyPartner: false);
 	}
 
 	private void CloseAndCleanup(bool notifyPartner = true)

@@ -54,7 +54,16 @@ $midiManifest = @(
     @{ File = "mewtwo.mid";          LocalEmerald = "mus_vs_mewtwo.mid";         Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_vs_mewtwo.mid" },
     @{ File = "rb_trainer.mid";      LocalFirered = "mus_rg_vs_trainer.mid";     Url = "https://raw.githubusercontent.com/pret/pokefirered/master/sound/songs/midi/mus_rg_vs_trainer.mid" },
     @{ File = "rb_wild.mid";         LocalFirered = "mus_rg_vs_wild.mid";        Url = "https://raw.githubusercontent.com/pret/pokefirered/master/sound/songs/midi/mus_rg_vs_wild.mid" },
-    @{ File = "lavender_town.mid";   LocalFirered = "mus_rg_lavender.mid";       Url = "https://raw.githubusercontent.com/pret/pokefirered/master/sound/songs/midi/mus_rg_lavender.mid" }
+    @{ File = "lavender_town.mid";   LocalEmerald = "mus_rg_lavender.mid";       LocalFirered = "mus_rg_lavender.mid"; Url = "https://raw.githubusercontent.com/pret/pokefirered/master/sound/songs/midi/mus_rg_lavender.mid" },
+    @{ File = "route101.mid";        LocalEmerald = "mus_route101.mid";          Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_route101.mid" },
+    @{ File = "petalburg.mid";       LocalEmerald = "mus_petalburg.mid";         Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_petalburg.mid" },
+    @{ File = "dewford.mid";         LocalEmerald = "mus_dewford.mid";           Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_dewford.mid" },
+    @{ File = "route119.mid";        LocalEmerald = "mus_route119.mid";          Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_route119.mid" },
+    @{ File = "route110.mid";        LocalEmerald = "mus_route110.mid";          Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_route110.mid" },
+    @{ File = "route111.mid";        LocalEmerald = "mus_route111.mid";          Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_route111.mid" },
+    @{ File = "mt_chimney.mid";      LocalEmerald = "mus_mt_chimney.mid";        Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_mt_chimney.mid" },
+    @{ File = "pacifidlog.mid";      LocalEmerald = "mus_dewford.mid";           Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_dewford.mid" },
+    @{ File = "victory_fanfare.mid"; LocalEmerald = "mus_victory_wild.mid";      Url = "https://raw.githubusercontent.com/pret/pokeemerald/master/sound/songs/midi/mus_victory_wild.mid" }
 )
 
 # Caminhos locais de decomp
