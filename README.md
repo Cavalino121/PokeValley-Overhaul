@@ -1,6 +1,6 @@
 # 🎮 PokeValley Overhaul (v2.7)
 
-[![Discord]([https://img.shields.io/discord/1234567890?color=7289da&label=Discord&logo=discord&logoColor=white](https://img.shields.io/discord/1561471225665028330?style=flat&logo=discord&logoColor=white&label=Discord&color=%235865F2%20))](https://discord.gg/TycA6bQVMa)
+[![Discord]((https://img.shields.io/discord/1561471225665028330?style=flat&logo=discord&logoColor=white&label=Discord&color=%235865F2%20))](https://discord.gg/TycA6bQVMa)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20SteamDeck-blue)](https://dotnet.microsoft.com/)
 [![Target](https://img.shields.io/badge/Stardew%20Valley-1.6.15%20(exato)-brightgreen)](https://www.stardewvalley.net/)
 [![Language](https://img.shields.io/badge/Language-C%23%2010%20%2F%20.NET%206.0-purple)](https://dotnet.microsoft.com/)
