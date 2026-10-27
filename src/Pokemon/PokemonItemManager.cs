@@ -1657,8 +1657,6 @@ RegisterRing(objectData, "Poke_TeraOrb", "Orbe Tera (Tera Orb)", "Esfera cristal
 		string[] searchFolders = new[]
 		{
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Pokemon"),
-			@"D:\Projetos\Nova pasta\pokeemerald-expansion\graphics\items\icons",
-			@"D:\Projetos\Nova pasta\pokeemerald\graphics\items\icons",
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald-expansion", "graphics", "items", "icons"),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "graphics", "items", "icons"),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeplatinum", "res", "items", "icons")

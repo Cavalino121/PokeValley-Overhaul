@@ -303,7 +303,6 @@ public static class PokemonUI
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".."),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", ".."),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", ".."),
-			@"D:\Projetos\Nova pasta"
 		};
 		foreach (string root in roots)
 		{

@@ -97,19 +97,12 @@ public static class PokemonCryManager
 		string key = NormalizeSpeciesKey(speciesName);
 		try
 		{
-			// 1. Busca via PokemonUI.FindInProject
+			// Busca via PokemonUI.FindInProject dinamicamente
 			string p1 = PokemonUI.FindInProject("pokeemerald", "sound", "direct_sound_samples", "cries", key + ".wav");
 			if (!string.IsNullOrEmpty(p1) && File.Exists(p1)) return p1;
 
 			string p2 = PokemonUI.FindInProject("pokefirered", "sound", "direct_sound_samples", "cries", key + ".wav");
 			if (!string.IsNullOrEmpty(p2) && File.Exists(p2)) return p2;
-
-			// 2. Caminho absoluto direto como fallback
-			string direct1 = Path.Combine(@"D:\Projetos\Nova pasta\pokeemerald\sound\direct_sound_samples\cries", key + ".wav");
-			if (File.Exists(direct1)) return direct1;
-
-			string direct2 = Path.Combine(@"D:\Projetos\Nova pasta\pokefirered\sound\direct_sound_samples\cries", key + ".wav");
-			if (File.Exists(direct2)) return direct2;
 		}
 		catch { }
 		return null;
@@ -130,8 +123,7 @@ public static class PokemonCryManager
 			{
 				Path.Combine(Game1.content.RootDirectory, "Pokemon", "Audio", "cries"),
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Pokemon", "Audio", "cries"),
-				@"D:\SteamLibrary\steamapps\common\Stardew Valley\Content\Pokemon\Audio\cries",
-				@"D:\Projetos\Nova pasta\PokeValley-Overhaul\src\Content\Pokemon\Audio\cries"
+				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "src", "Content", "Pokemon", "Audio", "cries")
 			};
 
 			foreach (var dir in candidateDirs)

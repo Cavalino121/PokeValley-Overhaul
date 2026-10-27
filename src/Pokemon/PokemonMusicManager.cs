@@ -213,9 +213,12 @@ public static class PokemonMusicManager
 		string nameWithExt = baseName.EndsWith(ext, StringComparison.OrdinalIgnoreCase) ? baseName : (baseName + ext);
 		string[] searchDirs = new[]
 		{
+			Path.Combine(Game1.content?.RootDirectory ?? "Content", "Pokemon", "Audio", "music"),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Content", "Pokemon", "Audio", "music"),
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "src", "Content", "Pokemon", "Audio", "music"),
 			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "sound", "songs", "midi"),
-			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "sound", "songs")
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokeemerald", "sound", "songs"),
+			Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pokefirered", "sound", "songs", "midi")
 		};
 		foreach (var dir in searchDirs)
 		{
@@ -225,6 +228,13 @@ public static class PokemonMusicManager
 				if (File.Exists(p)) return p;
 			}
 		}
+
+		string pProj = PokemonUI.FindInProject("pokeemerald", "sound", "songs", "midi", nameWithExt);
+		if (!string.IsNullOrEmpty(pProj) && File.Exists(pProj)) return pProj;
+
+		string pProjFr = PokemonUI.FindInProject("pokefirered", "sound", "songs", "midi", nameWithExt);
+		if (!string.IsNullOrEmpty(pProjFr) && File.Exists(pProjFr)) return pProjFr;
+
 		return null;
 	}
 

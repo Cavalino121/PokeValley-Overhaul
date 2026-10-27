@@ -44,6 +44,17 @@ if (Test-Path $overridesSrc) {
     Copy-Item -Path "$overridesSrc\*" -Destination $targetOverrides -Recurse -Force
 }
 
+# 2.1 Garantir assets de áudio clean-room
+$musicDir = Join-Path $repoRoot "src\Content\Pokemon\Audio\music"
+$testSong = Join-Path $musicDir "champion.ogg"
+if (-not (Test-Path $testSong)) {
+    Write-Host "[-] Baixando assets de áudio clean-room..." -ForegroundColor Cyan
+    $downloadScript = Join-Path $PSScriptRoot "download_audio_assets.ps1"
+    if (Test-Path $downloadScript) {
+        & $downloadScript -TargetDir $musicDir -SteamGameDir (Join-Path $SteamGameDir "Content\Pokemon\Audio\music")
+    }
+}
+
 Write-Host "[-] Sincronizando Content/Pokemon..." -ForegroundColor Gray
 $contentSrc = Join-Path $repoRoot "src\Content\Pokemon"
 $targetContent = Join-Path $SteamGameDir "Content\Pokemon"

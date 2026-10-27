@@ -113,6 +113,12 @@ public class ChatBox : IClickableMenu
 		{
 			return;
 		}
+		if (text_to_send.StartsWith("[POKE_TRADE]:", System.StringComparison.OrdinalIgnoreCase) ||
+		    text_to_send.StartsWith("[POKE_BATTLE]:", System.StringComparison.OrdinalIgnoreCase))
+		{
+			addErrorMessage("Comando reservado para o sistema de rede do PokeValley.");
+			return;
+		}
 		if (text_to_send[0] == '/')
 		{
 			string firstWord = ArgUtility.SplitBySpaceAndGet(text_to_send, 0);

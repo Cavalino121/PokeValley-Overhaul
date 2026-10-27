@@ -35,6 +35,15 @@ Content/Pokemon/*.ico
 *.wav
 *.mp3
 *.ogg
+*.mid
+
+# Audio and Asset Cache (Clean Room Policy - downloaded dynamically via scripts/download_audio_assets)
+src/Content/Pokemon/Audio/music/*.ogg
+src/Content/Pokemon/Audio/music/*.mid
+src/Content/Pokemon/Audio/cries/*.ogg
+src/Content/Pokemon/Audio/cries/*.wav
+Content/Pokemon/Audio/
+.asset_cache/
 
 # Temporary files
 *.tmp

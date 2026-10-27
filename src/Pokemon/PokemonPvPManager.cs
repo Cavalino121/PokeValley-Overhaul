@@ -161,22 +161,41 @@ public static class PokemonPvPManager
 				break;
 
 			case "ACTION":
-				if (parts.Length >= 11)
+				if (parts.Length >= 11 && long.TryParse(parts[1], out long actionSenderId))
 				{
 					if (PokemonBattleMenu.ActiveBattles.TryGetValue(Game1.player.UniqueMultiplayerID, out var battle) && battle != null && battle.IsPvP)
 					{
+						if (senderId != battle.OpponentFarmerId && actionSenderId != battle.OpponentFarmerId)
+							return;
+
+						if (!Enum.TryParse<PokemonBattleMenu.PvPActionType>(parts[2], true, out var actionType))
+							return;
+
+						if (!int.TryParse(parts[3], out int moveIndex))
+							return;
+
+						string moveName = parts[4];
+						if (!int.TryParse(parts[5], out int actSwitchSlot))
+							return;
+
+						bool useMega = parts.Length > 6 && bool.TryParse(parts[6], out bool b6) && b6;
+						bool useZMove = parts.Length > 7 && bool.TryParse(parts[7], out bool b7) && b7;
+						bool useDynamax = parts.Length > 8 && bool.TryParse(parts[8], out bool b8) && b8;
+						bool useGMax = parts.Length > 9 && bool.TryParse(parts[9], out bool b9) && b9;
+						bool useTera = parts.Length > 10 && bool.TryParse(parts[10], out bool b10) && b10;
+
 						int actionSeed = (parts.Length >= 12 && int.TryParse(parts[11], out int parsedSeed)) ? parsedSeed : 1337;
 						var act = new PokemonBattleMenu.PvPAction
 						{
-							ActionType = Enum.Parse<PokemonBattleMenu.PvPActionType>(parts[2]),
-							MoveIndex = int.Parse(parts[3]),
-							MoveName = parts[4],
-							SwitchSlot = int.Parse(parts[5]),
-							UseMega = bool.Parse(parts[6]),
-							UseZMove = bool.Parse(parts[7]),
-							UseDynamax = bool.Parse(parts[8]),
-							UseGMax = bool.Parse(parts[9]),
-							UseTera = bool.Parse(parts[10]),
+							ActionType = actionType,
+							MoveIndex = Math.Clamp(moveIndex, -1, 3),
+							MoveName = moveName,
+							SwitchSlot = Math.Clamp(actSwitchSlot, 0, 5),
+							UseMega = useMega,
+							UseZMove = useZMove,
+							UseDynamax = useDynamax,
+							UseGMax = useGMax,
+							UseTera = useTera,
 							ActionSeed = actionSeed
 						};
 						battle.ReceiveOpponentAction(act);
@@ -185,19 +204,30 @@ public static class PokemonPvPManager
 				break;
 
 			case "SWITCH":
-				if (parts.Length >= 4 && int.TryParse(parts[2], out int switchSlot))
+				if (parts.Length >= 4 && long.TryParse(parts[1], out long switchSenderId) && int.TryParse(parts[2], out int newSwitchSlot))
 				{
 					if (PokemonBattleMenu.ActiveBattles.TryGetValue(Game1.player.UniqueMultiplayerID, out var battle) && battle != null && battle.IsPvP)
 					{
+						if (senderId != battle.OpponentFarmerId && switchSenderId != battle.OpponentFarmerId)
+							return;
+
+						if (newSwitchSlot < 0 || newSwitchSlot >= 6)
+							return;
+
 						string nickname = parts[3];
-						battle.ReceiveOpponentSwitch(switchSlot, nickname);
+						battle.ReceiveOpponentSwitch(newSwitchSlot, nickname);
 					}
 				}
 				break;
 
 			case "FORFEIT":
+				long forfeitSenderId = 0L;
+				if (parts.Length > 1) long.TryParse(parts[1], out forfeitSenderId);
 				if (PokemonBattleMenu.ActiveBattles.TryGetValue(Game1.player.UniqueMultiplayerID, out var bEnd) && bEnd != null && bEnd.IsPvP)
 				{
+					if (senderId != bEnd.OpponentFarmerId && forfeitSenderId != bEnd.OpponentFarmerId)
+						return;
+
 					bEnd.ReceiveOpponentForfeit();
 				}
 				break;

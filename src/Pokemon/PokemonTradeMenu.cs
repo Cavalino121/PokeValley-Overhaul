@@ -284,7 +284,7 @@ public class PokemonTradeMenu : IClickableMenu
 				break;
 
 			case "CONNECT":
-				if ((_state == TradeState.WaitingForPartner || _partnerId == 0) && !_isSoloNpcMode)
+				if (_state == TradeState.WaitingForPartner && _partnerId == 0 && !_isSoloNpcMode)
 				{
 					_partnerId = senderId;
 					_partnerName = parts.Length > 2 ? parts[2] : $"Jogador {senderId % 1000}";
@@ -299,7 +299,7 @@ public class PokemonTradeMenu : IClickableMenu
 				break;
 
 			case "CONNECT_ACK":
-				if (_partnerId == senderId || _partnerId == 0)
+				if (_partnerId == senderId || (_partnerId == 0 && _state == TradeState.WaitingForPartner))
 				{
 					_partnerId = senderId;
 					_partnerName = parts.Length > 2 ? parts[2] : $"Jogador {senderId % 1000}";
@@ -358,7 +358,7 @@ public class PokemonTradeMenu : IClickableMenu
 				break;
 
 			case "CANCEL":
-				if (_partnerId == senderId || _state == TradeState.Selecting || _state == TradeState.WaitingForPartner)
+				if (_partnerId == senderId)
 				{
 					string pName = !string.IsNullOrEmpty(_partnerName) ? _partnerName : "O outro jogador";
 					_partnerCancelled = true;
